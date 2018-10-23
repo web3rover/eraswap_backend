@@ -1,0 +1,39 @@
+{
+  "name": "eraswap_backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "private":true,
+  "scripts": {
+    "start": "node ./bin/www",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "lint-staged": {
+    "*.{json,md,graphql}": [
+      "prettier --write",
+      "git add --force"
+    ],
+    "*.{css,less,styl,scss,sass,sss}": [
+      "stylelint --fix",
+      "git add --force"
+    ]
+  },
+  "author": "saikatharryc",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt-nodejs": "0.0.3",
+    "body-parser": "^1.18.3",
+    "cors": "^2.8.4",
+    "crypto-js": "^3.1.9-1",
+    "express": "^4.16.4",
+    "express-jwt": "^5.3.1",
+    "helmet": "^3.14.0",
+    "mongoose": "^5.3.5",
+    "mongoose-beautiful-unique-validation": "^7.1.1",
+    "request-promise": "^4.2.2"
+  },
+  "devDependencies": {
+    "lint-staged": "^7.3.0",
+    "prettier": "^1.14.3"
+  }
+}
