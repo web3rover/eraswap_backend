@@ -5,22 +5,22 @@ const bcrypt = require('bcrypt-nodejs');
 const UserSchema = new mongoose.Schema({
   username: {
     type: String,
-    unique: 'Username Already Exist',
+    unique: '({VALUE}) Already Exist in Username',
     required: true,
   },
   password: {
     type: String,
+    select:false,
     required: true,
   },
   email: {
     type: String,
-    unique: 'Email Already Exist',
+    unique: 'Email ({VALUE}) Already Exist',
     required: true,
   },
   wallet: Object,
   //add more user metadata here
 });
-UserSchema.plugin(beautifyUnique);
 
 UserSchema.pre('save', function(next) {
   var user = this;
@@ -42,14 +42,22 @@ UserSchema.pre('save', function(next) {
   }
 });
 
-UserSchema.methods.comparePassword = function(passw, cb) {
-  bcrypt.compare(passw, this.password, function(err, isMatch) {
+
+UserSchema.methods.comparePassword = function(pass, cb) {
+  Users.findOne({_id:this._id}).select('_id').select('+password').exec().then(data=>{
+  bcrypt.compare(pass, data.password, function(err, isMatch) {
     if (err) {
       return cb(err);
     }
-    cb(null, isMatch);
+    return cb(null, isMatch);
   });
+}).catch(error=>{
+  return cb(error)
+});
 };
 
+UserSchema.plugin(beautifyUnique,{
+  defaultMessage:'username or email already exist'
+});
 const Users = mongoose.model('Users', UserSchema);
 module.exports = Users;

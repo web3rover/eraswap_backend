@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "private":true,
+  "private": true,
   "scripts": {
     "start": "node ./bin/www",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -28,6 +28,7 @@
     "express": "^4.16.4",
     "express-jwt": "^5.3.1",
     "helmet": "^3.14.0",
+    "jsonwebtoken": "^8.3.0",
     "mongoose": "^5.3.5",
     "mongoose-beautiful-unique-validation": "^7.1.1",
     "request-promise": "^4.2.2"

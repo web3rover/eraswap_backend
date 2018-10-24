@@ -59,9 +59,9 @@ app.use((err, req, res, next) => {
   } else {
     errorObj.head = err.head || null;
 
-    errorObj.message = err.message;
+   
 
-    errorObj.message = 'Unknown Error Occurred';
+    errorObj.message = err.message || 'Unknown Error Occurred';
   }
 
   next();
