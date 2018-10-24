@@ -26,7 +26,7 @@ const login =  body => {
         var token = jwt.sign(user.toObject(), config.JWT.secret, {expiresIn: config.JWT.expire})
         return resolve({token: token,user:user});
       } else {
-       return reject(new Error(error))
+       return reject(new Error("wrong password"))
       }
   });
 }).catch(error=>{

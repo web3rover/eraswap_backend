@@ -36,7 +36,9 @@ api.includeRoutes = app => {
 
   app.use('/auth', userAuth);
   app.use('/apis/*',isAuth);
-
+  app.use('/apis/ping',(req,res,next)=>{
+    return res.send({'ok':true});
+  });
   app.use('/apis/user',users);
 
 };

@@ -2,13 +2,14 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const helmet = require('helmet');
+const cors = require('cors');
 
 const apiRoutes = require('./routes');
 
 const app = express();
 
 app.use(helmet());
-
+app.use(cors());
 app.get('/ping', (req, res) => {
   res.status(200).send('pong');
 });
