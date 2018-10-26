@@ -33,6 +33,7 @@ isAuth =(req,res,next)=>{
 api.includeRoutes = app => {
   var userAuth = require('./user.auth');
   var users = require('./users');
+  var currency = require('./currency');
 
   app.use('/auth', userAuth);
   app.use('/apis/*',isAuth);
@@ -40,6 +41,7 @@ api.includeRoutes = app => {
     return res.send({'ok':true});
   });
   app.use('/apis/user',users);
+  app.use('/apis/cur',currency);
 
 };
 
