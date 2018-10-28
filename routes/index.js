@@ -33,7 +33,7 @@ isAuth =(req,res,next)=>{
 api.includeRoutes = app => {
   var userAuth = require('./user.auth');
   var users = require('./users');
-  var currency = require('./currency');
+  var currency = require('./cur');
 
   app.use('/auth', userAuth);
   app.use('/apis/*',isAuth);
