@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const currencyCont = require('../controllers/currency');
+
 router.get('/get_all_supported_currency', (req, res, next) => {
   currencyCont
-    .get_supported_currency()
+    .get_supported_currency(req.query.keyWord)
     .then(data => {
       return res.json(data);
     })
