@@ -34,6 +34,7 @@ api.includeRoutes = app => {
   var userAuth = require('./user.auth');
   var users = require('./users');
   var currency = require('./cur');
+  var txn = require('./txn');
 
   app.use('/auth', userAuth);
   app.use('/apis/*',isAuth);
@@ -42,7 +43,7 @@ api.includeRoutes = app => {
   });
   app.use('/apis/user',users);
   app.use('/apis/cur',currency);
-
+  app.use('/apis/txn', txn);
 };
 
 module.exports = api;
