@@ -17,16 +17,27 @@ router.get('/get_all_supported_currency', (req, res, next) => {
     });
 });
 router.get('/get_exchange_values', (req, res, next) => {
-  return res.json([
-    {
-      name: 'bittrex',
-      value: 10,
-    },
-    { name: 'binance', value: 100 },
-    { name: 'poloniex', value: 18 },
-    { name: 'kraken', value: 17.5 },
-    { name: 'bitfinex', value: 6 },
-  ]);
+  currencyCont.getMax(req.query.from,req.query.to).then(data=>{
+    return res.json(data)
+  }).catch(error=>{
+    return next(error);
+  });
 });
-
+router.get('/get_epositAddress',(req,res,next)=>{
+  if(!req.query.platform || !req.query.symbol){
+    return next({
+      status:400,
+      message:"Please pass all the params."
+    });
+  }
+  currencyCont.getAddress(req.query.platform,req.query.symbol).then(data=>{
+    return res.json(data);
+  }).catch(error=>{
+    return next({
+      status:400,
+      message:error.message,
+      stack:error.stack
+    });
+  })
+});
 module.exports = router;

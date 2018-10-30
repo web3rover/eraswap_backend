@@ -30,7 +30,7 @@ app.use(
 );
 apiRoutes.includeRoutes(app);
 const Currency = require('./models/Currency');
-Currency.count({}).exec().then(async(isUpdated)=>{
+Currency.estimatedDocumentCount({}).exec().then(async(isUpdated)=>{
   if(!isUpdated){
     const allCur =await require('./helpers/cryptos').getAllCurrency();
     return Currency.insertMany(allCur);

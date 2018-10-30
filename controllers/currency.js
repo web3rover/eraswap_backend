@@ -1,4 +1,6 @@
-const Currency = require('../models/Currency')
+const Currency = require('../models/Currency');
+const cryptoHelper = require('../helpers/cryptos');
+
 const get_supported_currency = async(value) => {
   const currency = await Currency.find({$or:[
 {
@@ -10,4 +12,13 @@ const get_supported_currency = async(value) => {
   ]}).limit(8).exec();
   return currency;
 };
-module.exports = { get_supported_currency };
+
+const getMax =async(from,to)=>{
+return await cryptoHelper.getExchangeVal(from,to);
+}
+
+const getAddress = async(platform,symbol)=>{
+  return await cryptoHelper.getDepositAddress(platform,symbol);
+};
+
+module.exports = { get_supported_currency,getMax,getAddress };

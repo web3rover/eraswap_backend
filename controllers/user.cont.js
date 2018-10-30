@@ -5,6 +5,6 @@ const getUsers = async () => {
   return await Users.find(query).exec();
 };
 
-module.exports ={
-    getUsers
-}
+module.exports = {
+  getUsers,
+};
