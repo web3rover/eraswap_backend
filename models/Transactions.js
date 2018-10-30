@@ -26,7 +26,7 @@ exchToCurrency:{
     type:String,
     required:true
 },
-exchToCurrencyAmt:{
+exchToCurrencyRate:{
     type:Number,
     required:true
 },
@@ -50,6 +50,10 @@ eraswapSendAddress:{
     require:true
 },
 exchangePlatform:{
+    type:String,
+    required:true
+},
+totalExchangeAmout:{
     type:String,
     required:true
 }

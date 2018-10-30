@@ -1,7 +1,12 @@
 const Txn = require('../models/Transactions');
+const  cryptoHelper =require('../helpers/cryptos');
 
-const verifyTxn = async txnId => {
-  return true;
+const verifyTxn = async (txnId,platForm,symbol,amount) => {
+ return await cryptoHelper.verifyTxn(txnId,platForm,symbol,amount);
+
+};
+const sendToCustomer = async(platForm,address,amount,symbol)=>{
+return await cryptoHelper.sendCurrency(platForm,address,amount,symbol)
 };
 
 const saveTxn = data => {
@@ -22,4 +27,5 @@ module.exports = {
   saveTxn,
   verifyTxn,
   getMytxn,
+  sendToCustomer
 };

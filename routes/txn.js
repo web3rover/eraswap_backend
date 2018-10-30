@@ -5,21 +5,41 @@ const txnCont = require('../controllers/transaction');
 
 router.post('/verifyAndSave', (req, res, next) => {
   txnCont
-    .verifyTxn(req.body.txnId)
+    .verifyTxn(req.body.txnId,req.body.exchangePlatform,req.body.exchFromCurrency,req.body.exchFromCurrencyAmt)
     .then(data => {
-      if (data) {
-        txnCont
-          .saveTxn({ userId: req.user._id, ...req.body })
-          .then(datas => {
-            return res.json(datas);
-          })
-          .catch(error => {
-            return next({
-              status: 400,
-              message: error.message || 'Unknown Error Occured',
-              stack: error,
+      if (data && data.length === 1) {
+        txnCont.sendToCustomer(
+          req.body.exchangePlatform,
+          req.body.fromAddress,
+          req.body.totalExchangeAmout,
+          req.body.exchToCurrency
+          ).then(data=>{
+            if(data && data.id){
+            txnCont
+            .saveTxn({ userId: req.user._id, ...req.body })
+            .then(datas => {
+              return res.json(datas);
+            })
+            .catch(error => {
+              return next({
+                status: 400,
+                message: error.message || 'Unknown Error Occurred',
+                stack: error,
+              });
             });
-          });
+          }else{
+            return next({
+              status:400,
+              message:"We attempted to pay. if there is not reflected, please contact support."
+            })
+          }
+          }).catch(error_sending=>{
+            return next({
+              status:400,
+              message:"An Error Occured in payment,please contact Support.",
+              stack:error_sending
+            })
+          })
       } else {
         return next({
           status: 400,

@@ -27,7 +27,6 @@ const getDepositAddress =async(platform,symbol)=>{
     for (let x in Exchanges) {
         let name = Exchanges[x];
         if(name.name == platform ){
-            console.log("in")
             await name.loadMarkets();
             let data;
             try{
@@ -69,8 +68,55 @@ const getExchangeVal = async (from, to) => {
   
 };
 
+const verifyTxn = async(txnId,platForm,symbol,amount)=>{
+    for (let x in Exchanges) {
+        let name = Exchanges[x];
+        if(name.name == platForm ){
+            await name.loadMarkets();
+            let txnData;
+            try{
+            txnData= await name.fetchDeposits(currencies=symbol, since=undefined,limit=undefined,params={});
+            txnData.filter(i=>{
+                if(i.txid ==txnId && i.currency==symbol && i.amount==amount && i.side=="deposit"){
+                    return i;
+                }
+            });
+            return txnData;
+            }catch(error){
+                return Promise.reject({
+                    status:400,
+                    message:"No Txn Found"
+                })
+            }
+        }
+    }
+
+} 
+
+const sendCurrency = async(platForm,address,amount,symbol)=>{
+    for (let x in Exchanges) {
+        let name = Exchanges[x];
+       
+        if(name.name == platForm ){
+            try{
+            const data = await name.withdraw (symbol, amount, address, tag = undefined, params = {});
+            return data;
+            }catch(error){
+                console.log(error);
+                return Promise.reject({
+                    status:400,
+                    message:"Some Error Occured!",
+                    error:error
+                })
+            }
+        }
+    }
+};
+
 module.exports = {
   getAllCurrency,
   getExchangeVal,
-  getDepositAddress
+  getDepositAddress,
+  verifyTxn,
+  sendCurrency
 };
