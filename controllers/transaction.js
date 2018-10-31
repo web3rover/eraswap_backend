@@ -69,7 +69,7 @@ const sendToCustomer = (txnDocId, userId, platForm, address, amount, symbol) => 
               txndata.witdrawn = true;
               txndata.ersToCastTxid = dataOfSending.id;
               txndata.save();
-              return resolve(data);
+              return resolve(txndata);
             })
             .catch(error_sending => {
               return reject({

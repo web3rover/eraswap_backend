@@ -93,12 +93,12 @@ const verifyTxn = async(dipositTxnId,tiMeFrom,platForm,symbol,amount)=>{
             //         }
             //     }
             // ]
-            txnData.filter(i=>{
+            const a =txnData.filter(i=>{
                 if((dipositTxnId && (i.txid==dipositTxnId )) || i.currency==symbol && i.amount==amount && i.side=="deposit"){
                     return i;
                 }
             });
-            return txnData;
+            return a;
             }catch(error){
                 return Promise.reject({
                     status:400,
