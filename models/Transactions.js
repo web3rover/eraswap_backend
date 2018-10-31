@@ -8,6 +8,7 @@ userId:{
 },
 dipositTxnId:{
     type:String,
+    unique:true
 },
 dipositTxnStatus:{
     type:String,
@@ -34,7 +35,7 @@ exchToCurrencyRate:{
     required:true
 },
 allExchResult:{
-    type:Object
+    type:Array
 },
 eraswapAcceptAddress:{
     type:String,

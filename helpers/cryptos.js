@@ -8,7 +8,7 @@ let Bittrex = new ccxt.bittrex(config.keys.BITTREX);
 let Polonix = new ccxt.poloniex(config.keys.POLONIEX);
 let Binance = new ccxt.binance(config.keys.BINANCE);
 let Bitfinex = new ccxt.bitfinex();
-const Exchanges = [Binance,Bittrex, Polonix, Kraken, Bitfinex];
+const Exchanges = [Binance,Bittrex, Polonix];
 
 const getAllCurrency = async () => {
   let allCurs = [];
@@ -68,33 +68,33 @@ const getExchangeVal = async (from, to) => {
   
 };
 
-const verifyTxn = async(tiMeFrom,platForm,symbol,amount)=>{
+const verifyTxn = async(dipositTxnId,tiMeFrom,platForm,symbol,amount)=>{
     for (let x in Exchanges) {
         let name = Exchanges[x];
         if(name.name == platForm ){
             await name.loadMarkets();
             let txnData;
             try{
-            // txnData= await name.fetchDeposits(currencies=symbol, since=tiMeFrom,limit=50,params={});
-            txnData=[
-                {
-                    'id':        '12345-67890:09876/54321', // string transaction id
-                    'txid':      'ddsjfdlskjflksdjfkldsjf', // txid in terms of corresponding currency
-                    'timestamp':  1502962946216,            // Unix timestamp in milliseconds
-                    'datetime':  '2017-08-17 12:42:48.000', // ISO8601 datetime with milliseconds
-                    'currency':  'ETH',                     // currency code 
-                    'status':    'ok',                 // status of the transaction, "pending", "ok"... to be discussed
-                    'side':      'deposit',                 // direction of the transaction, 'deposit' or 'withdraw'
-                    'price':      0.06917684,               // float price in quote currency
-                    'amount':     1.5,                      // absolute amount of base currency
-                    'fee': {
-                        'cost': 1, // we also need to somehow designate if...
-                        'rate': 1, // ...it is a network fee or the exchange fee or both
-                    }
-                }
-            ]
+            txnData= await name.fetchDeposits(currencies=symbol, since=undefined,limit=50,params={}); //change since=timeFrom
+            // txnData=[
+            //     {
+            //         'id':        '12345-67890:09876/54321', // string transaction id
+            //         'txid':      'ddsjfdlskjflksdjfkldsjf', // txid in terms of corresponding currency
+            //         'timestamp':  1502962946216,            // Unix timestamp in milliseconds
+            //         'datetime':  '2017-08-17 12:42:48.000', // ISO8601 datetime with milliseconds
+            //         'currency':  'ETH',                     // currency code 
+            //         'status':    'ok',                 // status of the transaction, "pending", "ok"... to be discussed
+            //         'side':      'deposit',                 // direction of the transaction, 'deposit' or 'withdraw'
+            //         'price':      0.06917684,               // float price in quote currency
+            //         'amount':     1.5,                      // absolute amount of base currency
+            //         'fee': {
+            //             'cost': 1, // we also need to somehow designate if...
+            //             'rate': 1, // ...it is a network fee or the exchange fee or both
+            //         }
+            //     }
+            // ]
             txnData.filter(i=>{
-                if(i.currency==symbol && i.amount==amount && i.side=="deposit"){
+                if((dipositTxnId && (i.txid==dipositTxnId )) || i.currency==symbol && i.amount==amount && i.side=="deposit"){
                     return i;
                 }
             });
@@ -102,7 +102,8 @@ const verifyTxn = async(tiMeFrom,platForm,symbol,amount)=>{
             }catch(error){
                 return Promise.reject({
                     status:400,
-                    message:"No Txn Found"
+                    message:error.message||"No Txn Found",
+                    error:error
                 })
             }
         }
@@ -116,11 +117,11 @@ const sendCurrency = async(platForm,address,amount,symbol)=>{
        
         if(name.name == platForm ){
             try{
-                const data={
-                    info:"",
-                    id:121212
-                }
-            // const data = await name.withdraw (symbol, amount, address, tag = undefined, params = {});
+                // const data={
+                //     info:"",
+                //     id:121212
+                // }
+            const data = await name.withdraw (symbol, amount, address, tag = undefined, params = {});
             return data;
             }catch(error){
                 console.log(error.constructor.name);

@@ -21,22 +21,16 @@ agenda.define('CheckForTxn and Send',(job,done)=>{
     txnCont
     .verifyTxn(jobData.eraswapSendAddress, jobData.lctxid, jobData.tiMeFrom, jobData.exchangePlatform, jobData.exchFromCurrency, jobData.exchFromCurrencyAmt)
     .then(data => {
-      if (data.status === "ok") {
+      if (data.txIdExist && data.status == "ok") {
         txnCont
           .sendToCustomer(data._id, jobData.userID, jobData.exchangePlatform, jobData.eraswapSendAddress, jobData.totalExchangeAmout, jobData.exchToCurrency)
           .then(dataOfSending => {
             if (dataOfSending && dataOfSending.id) {
-               return done();
-               
-            } else {
-               return done({
-                status: 400,
-                message: 'We attempted to pay. we will try again, if not received within 5 hours,please contact support',
-              });
+               agenda.cancel({_id:job.attrs._id});
+               done();
             }
           })
           .catch(error_sending => {
-            agenda.schedule('every 2 minutes','CheckForTxn and Send',jobData);
             return done({
               stack: error_sending,
             });

@@ -3,12 +3,13 @@ const cryptoHelper = require('../helpers/cryptos');
 
 const verifyTxn = (eraswapSendAddress, lctxid, timeFrom, platForm, symbol, amount) => {
   return new Promise((resolve, reject) => {
+    return Txn.findOne({ _id: lctxid })
+    .exec()
+    .then(data => {
     return cryptoHelper
-      .verifyTxn(timeFrom, platForm, symbol, amount)
+      .verifyTxn(data.dipositTxnId ,timeFrom, platForm, symbol, amount)
       .then(verified_data => {
-        return Txn.findOne({ _id: lctxid })
-          .exec()
-          .then(data => {
+       
             if (data.witdrawn) {
               return reject({
                 status: 400,
@@ -16,22 +17,34 @@ const verifyTxn = (eraswapSendAddress, lctxid, timeFrom, platForm, symbol, amoun
               });
             }
             data.eraswapSendAddress = eraswapSendAddress;
-            (data.dipositTxnStatus = verified_data[0].status), (data.dipositTxnId = verified_data[0].txid), data.save();
-            return resolve({ _id: data._id, status: verified_data[0].status });
+            if (verified_data.length && !data.dipositTxnId) {
+              verified_data.some(async i => {
+                const count = Txn.countDocuments({ dipositTxnId: i }).exec();
+                if (!count) {
+                  data.dipositTxnStatus = verified_data[i].status;
+                  data.dipositTxnId = verified_data[i].txid;
+                }
+                return true;
+              });
+            }else if(verified_data.length){
+              data.dipositTxnStatus = verified_data[0].status;
+            }
+            data.save();
+            return resolve({ _id: data._id, status: verified_data[0].status, txIdExist: data.dipositTxnId ? data.dipositTxnId : null });
           })
-          .catch(error_findtxn => {
+          .catch( error=> {
             return reject({
-              message: 'Error occured while attempting to update txn',
+              message: 'Verification failed.',
               status: 400,
-              error: error_findtxn,
+              error: error,
             });
           });
       })
-      .catch(error => {
+      .catch(error_findtxn => {
         return next({
           status: 400,
-          message: 'Verification failed.',
-          error: error,
+          message: 'Error occured while attempting to update txn',
+          error: error_findtxn,
         });
       });
   });
@@ -54,7 +67,7 @@ const sendToCustomer = (txnDocId, userId, platForm, address, amount, symbol) => 
               console.log('Data Of sending:  ' + dataOfSending);
 
               txndata.witdrawn = true;
-              txndata.ersToCastTxid=dataOfSending.id;
+              txndata.ersToCastTxid = dataOfSending.id;
               txndata.save();
               return resolve(data);
             })
