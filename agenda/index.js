@@ -26,7 +26,7 @@ agenda.define('CheckForTxn and Send',(job,done)=>{
           .sendToCustomer(data._id, jobData.userID, jobData.exchangePlatform, jobData.eraswapSendAddress, jobData.totalExchangeAmout, jobData.exchToCurrency)
           .then(dataOfSending => {
             if (dataOfSending && dataOfSending.id) {
-               agenda.cancel({_id:job.attrs._id});
+               job.remove();
                done();
             }
           })
@@ -42,8 +42,9 @@ agenda.define('CheckForTxn and Send',(job,done)=>{
       }
     })
     .catch(error => {
+        job.remove();
       return done({
-        message: 'Verification failed.',
+        message: error.message||'Verification failed.',
         error: error,
       });
     });
