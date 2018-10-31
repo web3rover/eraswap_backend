@@ -21,6 +21,7 @@
   "author": "saikatharryc",
   "license": "ISC",
   "dependencies": {
+    "agenda": "^2.0.2",
     "bcrypt-nodejs": "0.0.3",
     "body-parser": "^1.18.3",
     "ccxt": "^1.17.432",

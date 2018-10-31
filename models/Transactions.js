@@ -6,13 +6,16 @@ userId:{
     ref:'Users',
     required:true
 },
-txnId:{
+dipositTxnId:{
     type:String,
-    required:true
 },
-txnStatus:{
+dipositTxnStatus:{
     type:String,
     
+},
+witdrawn:{
+    type:Boolean,
+    default:false
 },
 exchFromCurrency:{
     type:String,
@@ -33,14 +36,6 @@ exchToCurrencyRate:{
 allExchResult:{
     type:Object
 },
-toAddress:{
-    type:String,
-    required:true
-},
-fromAddress:{
-    type:String,
-    required:true
-},
 eraswapAcceptAddress:{
     type:String,
     require:true
@@ -51,11 +46,13 @@ eraswapSendAddress:{
 },
 exchangePlatform:{
     type:String,
-    required:true
 },
 totalExchangeAmout:{
     type:String,
     required:true
+},
+ersToCastTxid:{
+    type:String
 }
 },{timestamps:true});
 

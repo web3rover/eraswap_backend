@@ -35,7 +35,8 @@ Currency.estimatedDocumentCount({}).exec().then(async(isUpdated)=>{
     const allCur =await require('./helpers/cryptos').getAllCurrency();
     return Currency.insertMany(allCur);
   }
-})
+});
+var agenda = require('./agenda')
 
 app.use((err, req, res, next) => {
   // set locals, only providing error in development
@@ -74,6 +75,14 @@ app.use((err, req, res, next) => {
 
   next();
   return res.status(err.status || 500).json(errorObj);
+});
+process.on('SIGTERM', function () {
+  agenda.stop();
+  process.exit(0);
+});
+process.on('SIGINT', function () {
+  agenda.stop();
+  process.exit(0);
 });
 
 module.exports = app;
