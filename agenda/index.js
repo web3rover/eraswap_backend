@@ -42,7 +42,6 @@ agenda.define('CheckForTxn and Send',(job,done)=>{
       }
     })
     .catch(error => {
-        job.remove();
       return done({
         message: error.message||'Verification failed.',
         error: error,

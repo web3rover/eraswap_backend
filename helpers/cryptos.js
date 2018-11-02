@@ -39,7 +39,6 @@ const getDepositAddress =async(platform,symbol)=>{
             return data;
         }
     }
-
 }
 const getExchangeVal = async (from, to) => {
   let allVals = [];
@@ -75,7 +74,7 @@ const verifyTxn = async(dipositTxnId,tiMeFrom,platForm,symbol,amount)=>{
             await name.loadMarkets();
             let txnData;
             try{
-            txnData= await name.fetchDeposits(currencies=symbol, since=undefined,limit=50,params={}); //change since=timeFrom
+            txnData= await name.fetchDeposits(currencies=symbol, since=tiMeFrom,limit=50,params={}); //change since=timeFrom
             // txnData=[
             //     {
             //         'id':        '12345-67890:09876/54321', // string transaction id
