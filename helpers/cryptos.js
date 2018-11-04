@@ -3,12 +3,13 @@ var fs = require('fs');
 var _ = require('lodash');
 const config = require('../configs/config');
 
-let Kraken = new ccxt.kraken();
+let Kraken = new ccxt.kraken(config.keys.KRAKEN);
 let Bittrex = new ccxt.bittrex(config.keys.BITTREX);
 let Polonix = new ccxt.poloniex(config.keys.POLONIEX);
 let Binance = new ccxt.binance(config.keys.BINANCE);
+let Coinex= new ccxt.coinex(config.keys.COINEX);
 let Bitfinex = new ccxt.bitfinex();
-const Exchanges = [Binance,Bittrex, Polonix];
+const Exchanges = [Binance,Bittrex, Polonix,Kraken,Coinex];
 
 const getAllCurrency = async () => {
   let allCurs = [];

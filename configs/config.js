@@ -15,6 +15,14 @@ module.exports = {
       apiKey: 'p3iw39fpUogNwFDOF02RQnhJLnxJVILWePQ0wlnwAp9Ijbrsk68a4HJfiDPjJIQm',
       secret: 'x1BlkMdVntAFZ2G44uGmHGsLXnVbAvwu4djt9ollBoHglLcmbCUHPtJyNBkeB01V',
     },
+    KRAKEN:{
+      apiKey: "/QjQYP0EzexoqNLnLgRQ0R1TioY7gUzBpjGd0O1Eevt38Gt5uYwkbtzJ",
+      secret:"C9tE1Afxj/LHATgR2rzZIdozAdBQ+fit/pJJOOo8Hlo/cPuqOwAK1pkbuNKg6c7BsxAO6ugGilOQv3iMxOaK5Q=="
+    },
+    COINEX:{
+      apiKey:"9C11DBDB3EDF47CDA580C9654547E5F8",
+      secret:"67E20129ED49469EACBE6397022876CB3ACA035DD0253434"
+    }
   },
   JWT: {
     secret: 'HelloBlcko',
