@@ -7,8 +7,7 @@ userId:{
     required:true
 },
 dipositTxnId:{
-    type:String,
-    unique:true
+    type:String
 },
 dipositTxnStatus:{
     type:String,

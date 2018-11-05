@@ -9,7 +9,8 @@ let Polonix = new ccxt.poloniex(config.keys.POLONIEX);
 let Binance = new ccxt.binance(config.keys.BINANCE);
 let Coinex= new ccxt.coinex(config.keys.COINEX);
 let Bitfinex = new ccxt.bitfinex();
-const Exchanges = [Binance,Bittrex, Polonix,Kraken,Coinex];
+let Yobit = new ccxt.yobit(config.keys.YOBIT);
+const Exchanges = [Bittrex,Binance,Polonix,Kraken,Yobit];
 
 const getAllCurrency = async () => {
   let allCurs = [];

@@ -22,6 +22,10 @@ module.exports = {
     COINEX:{
       apiKey:"9C11DBDB3EDF47CDA580C9654547E5F8",
       secret:"67E20129ED49469EACBE6397022876CB3ACA035DD0253434"
+    },
+    YOBIT:{
+      apiKey:"855C5F6098C53FF9B78D61615374B5EE",
+      secret:"e0cddc4eb63d471e63ad667712a2e36d"
     }
   },
   JWT: {
