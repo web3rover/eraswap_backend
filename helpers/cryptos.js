@@ -11,6 +11,7 @@ let Coinex= new ccxt.coinex(config.keys.COINEX);
 let Bitfinex = new ccxt.bitfinex();
 let Yobit = new ccxt.yobit(config.keys.YOBIT);
 const Exchanges = [Bittrex,Binance,Polonix,Kraken,Yobit];
+// const Exchanges = [Binance];
 
 const getAllCurrency = async () => {
   let allCurs = [];
@@ -77,6 +78,7 @@ const verifyTxn = async(dipositTxnId,tiMeFrom,platForm,symbol,amount)=>{
             let txnData;
             try{
             txnData= await name.fetchDeposits(currencies=symbol, since=tiMeFrom,limit=50,params={}); //change since=timeFrom
+            console.log(JSON.stringify(txnData))
             // txnData=[
             //     {
             //         'id':        '12345-67890:09876/54321', // string transaction id
@@ -95,7 +97,7 @@ const verifyTxn = async(dipositTxnId,tiMeFrom,platForm,symbol,amount)=>{
             //     }
             // ]
             const a =txnData.filter(i=>{
-                if((dipositTxnId && (i.txid==dipositTxnId )) || i.currency==symbol && i.amount==amount && i.side=="deposit"){
+                if((dipositTxnId ? i.txid==dipositTxnId : true) && i.currency==symbol && i.amount==amount){
                     return i;
                 }
             });
@@ -111,12 +113,37 @@ const verifyTxn = async(dipositTxnId,tiMeFrom,platForm,symbol,amount)=>{
     }
 
 } 
+const convertCurrency =async(platForm,fromSymbol,toSymbol,amount)=>{
+    for (let x in Exchanges) {
+        let name = Exchanges[x];
+       
+        if(name.name == platForm ){
+            await name.loadMarkets();
+            try{
+                console.log(await name.fetchBalance())
+            const symbol =fromSymbol+'/'+toSymbol;
+            const data = await name.createOrder(symbol,"market","sell",Number(amount));
+            return data;
+            }catch(error){
+                console.log (name.iso8601 (Date.now ()), error.constructor.name, error.message)
+                console.log(error.constructor.name);
+                return Promise.reject({
+                    status:400,
+                    message:error.constructor.name || "Some Error Occured!",
+                    error:error
+                })
+            }
+    
+        }
+    }
 
+};
 const sendCurrency = async(platForm,address,amount,symbol)=>{
     for (let x in Exchanges) {
         let name = Exchanges[x];
        
         if(name.name == platForm ){
+            await name.loadMarkets();
             try{
                 // const data={
                 //     info:"",
@@ -136,10 +163,40 @@ const sendCurrency = async(platForm,address,amount,symbol)=>{
     }
 };
 
+const verifyOrder = async(timeFrom,platForm,symbol,amount)=>{
+    for (let x in Exchanges) {
+        let name = Exchanges[x];
+       
+        if(name.name == platForm ){
+            try{
+                const data = await name.fetchMyTrades(symbol=symbol,since=timeFrom,limit=50,params={});
+                if(data.length){
+                    const a =data.filter(i=>{
+                        if(i.cost==amount){
+                            return i;
+                        }
+                    });
+                    return a;
+                }
+                return data;
+            }catch(error){
+                console.log(error.constructor.name);
+                return Promise.reject({
+                    status:400,
+                    message:error.constructor.name || "Some Error Occured!",
+                    error:error
+                })
+            }
+        }
+    }
+};
+
 module.exports = {
   getAllCurrency,
   getExchangeVal,
   getDepositAddress,
   verifyTxn,
-  sendCurrency
+  sendCurrency,
+  convertCurrency,
+  verifyOrder
 };

@@ -13,6 +13,20 @@ dipositTxnStatus:{
     type:String,
     
 },
+conversation_fees:{
+    type:Number
+},
+convertedYet:{
+    type:String,
+    default:null,
+    enum:[null,"started","finished"]
+},
+amtToSend:{
+    type:Number
+},
+convertionTime:{
+    type: Number
+},
 witdrawn:{
     type:Boolean,
     default:false
