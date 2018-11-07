@@ -40,4 +40,23 @@ router.get('/get_epositAddress',(req,res,next)=>{
     });
   })
 });
+router.get('/getPrice',(req,res,next)=>{
+  const platform = req.query.platform;
+  const symbol = req.query.symbol;
+  if(!platform || !symbol){
+    return next({
+      status:400,
+      message:"Please pass all the params."
+    });
+  }
+  currencyCont.getCurrentMarket(platform,symbol).then(data=>{
+    return res.json(data);
+  }).catch(error=>{
+    return next({
+      status:400,
+      message:error.message,
+      stack:error.stack
+    });
+  })
+});
 module.exports = router;

@@ -43,6 +43,17 @@ const getDepositAddress =async(platform,symbol)=>{
         }
     }
 }
+const getCurrentMarket = async(platform,symbol)=>{
+    for (let x in Exchanges) {
+        let name = Exchanges[x];
+        if(name.name.toLocaleLowerCase() == platform ){
+            await name.loadMarkets();
+            const data = await name.fetchTicker(symbol);
+            return data;
+        }
+    }
+}
+
 const getExchangeVal = async (from, to) => {
   let allVals = [];
   for (let x in Exchanges) {
@@ -198,5 +209,7 @@ module.exports = {
   verifyTxn,
   sendCurrency,
   convertCurrency,
-  verifyOrder
+  verifyOrder,
+ getCurrentMarket
+
 };
