@@ -22,7 +22,7 @@ agenda.define('CheckForTxn and Send',(job,done)=>{
     .verifyTxn(jobData.eraswapSendAddress, jobData.lctxid, jobData.tiMeFrom, jobData.exchangePlatform, jobData.exchFromCurrency, jobData.exchFromCurrencyAmt)
     .then(data => {
       if (data.txIdExist && data.status == "ok" && !data.convertedYet) {
-        txnCont.converTdata(jobData.lctxid,jobData.exchangePlatform,jobData.exchFromCurrency,jobData.exchToCurrency,jobData.exchFromCurrencyAmt).then(conversation_data=>{
+        txnCont.converTdata(jobData.symbol, jobData.lctxid,jobData.exchangePlatform,jobData.exchFromCurrency,jobData.exchToCurrency,jobData.exchFromCurrencyAmt).then(conversation_data=>{
           if(conversation_data.status=="closed"&& conversation_data.cost ==jobData.exchFromCurrencyAmt){
             txnCont
           .sendToCustomer(data._id, jobData.userID, jobData.exchangePlatform, jobData.eraswapSendAddress, data.amtToSend, jobData.exchToCurrency)
@@ -43,7 +43,7 @@ agenda.define('CheckForTxn and Send',(job,done)=>{
           done(error_converting);
         });
       }else if(data.convertedYet==="started"){
-        txnCont.verifyConvertion(jobData.lctxid,jobData.exchangePlatform,jobData.exchFromCurrency+'/'+jobData.exchToCurrency).then(verified=>{
+        txnCont.verifyConvertion(jobData.lctxid,jobData.exchangePlatform,jobData.symbol).then(verified=>{
           if(verified.verified && verified.amtToSend){
           txnCont
           .sendToCustomer(data._id, jobData.userID, jobData.exchangePlatform, jobData.eraswapSendAddress, verified.amtToSend, jobData.exchToCurrency)

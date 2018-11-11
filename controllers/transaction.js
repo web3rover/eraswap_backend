@@ -145,10 +145,10 @@ const getMytxn = user => {
     .sort({ createdAt: -1 })
     .exec();
 };
-const converTdata = (id, platForm, fromSymbol, toSymbol, amount) => {
+const converTdata = (symbol,id, platForm, fromSymbol, toSymbol, amount) => {
   return new Promise((resolve, reject) => {
     return cryptoHelper
-      .convertCurrency(platForm, fromSymbol, toSymbol, amount)
+      .convertCurrency(symbol,platForm, fromSymbol, toSymbol, amount)
       .then(data => {
         console.log('currencyConvertion:', data);
         return Txn.findOneAndUpdate({ _id: id }, { $set: { convertedYet: 'started' ,convertionTime:data.timestamp,amtToSend:data.cost} })

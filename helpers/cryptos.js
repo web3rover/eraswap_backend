@@ -56,18 +56,22 @@ const getCurrentMarket = async(platform,symbol)=>{
 
 const getExchangeVal = async (from, to) => {
   let allVals = [];
+  let symbol;
   for (let x in Exchanges) {
     let name = Exchanges[x];
     await name.loadMarkets();
     let data; 
     try{
+        symbol==from+'/'+to;
     data= await name
-      .fetchTicker(`${from}/${to}`);
+      .fetchTicker(symbol);
           
     }
     catch(error){
-       
-            console.log(error)
+        symbol=to+'/'+from
+        data= await name
+      .fetchTicker(symbol);
+            // console.log(error)
         
     }
     const marketObj = {
@@ -77,7 +81,7 @@ const getExchangeVal = async (from, to) => {
       };
       allVals.push(marketObj);
   }
-  return allVals;
+  return {[symbol]:allVals};
   
 };
 
@@ -124,7 +128,7 @@ const verifyTxn = async(dipositTxnId,tiMeFrom,platForm,symbol,amount)=>{
     }
 
 } 
-const convertCurrency =async(platForm,fromSymbol,toSymbol,amount)=>{
+const convertCurrency =async(symbol,platForm,fromSymbol,toSymbol,amount)=>{
     for (let x in Exchanges) {
         let name = Exchanges[x];
        
@@ -132,8 +136,16 @@ const convertCurrency =async(platForm,fromSymbol,toSymbol,amount)=>{
             await name.loadMarkets();
             try{
                 console.log(await name.fetchBalance())
-            const symbol =fromSymbol+'/'+toSymbol;
-            const data = await name.createOrder(symbol,"market","sell",Number(amount));
+            // const symbol =fromSymbol+'/'+toSymbol;
+
+            let data;
+            if(symbol === fromSymbol + "/" + toSymbol) {
+              data = await name.createOrder(symbol,"market","sell",Number(amount));
+              console.log("sell order placed",symbol,fromSymbol,toSymbol);
+            }else if(symbol === toSymbol + "/" + fromSymbol) {
+                data = await name.createOrder(symbol,"market","buy",Number(amount));
+                console.log("buy order placed",symbol,fromSymbol,toSymbol);
+            }
             return data;
             }catch(error){
                 console.log (name.iso8601 (Date.now ()), error.constructor.name, error.message)
