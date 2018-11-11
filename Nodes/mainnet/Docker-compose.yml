@@ -1,0 +1,25 @@
+version: '3.0'
+
+services:
+
+  eth_node:
+    build: eth
+    ports:
+      - "8545:8545"
+      - "8546:8546"
+      - "30303:30303"
+    volumes:
+      - EthData_main:/root/.ethereum
+
+  btc_node:
+    image: ruimarinho/bitcoin-core:0.17-alpine
+    ports:
+      - "8555:8555"
+    command: -rpcport=8555 -printtoconsole -rpcuser=foo -rpcpassword=bar -rpcallowip='0.0.0.0/0' -rpcbind='0.0.0.0' -wallet
+    volumes:
+      - BtcData_main:/home/bitcoin
+
+
+volumes:
+  EthData_main:
+  BtcData_main:
