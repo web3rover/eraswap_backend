@@ -67,12 +67,14 @@ const getExchangeVal = async (from, to) => {
       .fetchTicker(symbol);
           
     }
-    catch(error){
-        symbol=to+'/'+from
+    catch(err){
+        try{
+            symbol=to+'/'+from
         data= await name
       .fetchTicker(symbol);
-            // console.log(error)
-        
+        }catch(error){
+            console.log(error)
+        }
     }
     const marketObj = {
         name: name.name,
