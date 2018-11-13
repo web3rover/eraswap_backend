@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const currencyCont = require('../controllers/currency');
+const request = require('request-promise');
 
 router.get('/get_all_supported_currency', (req, res, next) => {
   currencyCont
@@ -59,4 +60,16 @@ router.get('/getPrice',(req,res,next)=>{
     });
   })
 });
+router.get('/current_BTC',(req,res,next)=>{
+  request.get(`https://blockchain.info/tobtc?currency=${req.query.currency}&value=1`).then(data=>{
+    if(data){
+      const mainData= 1/data;
+      return res.send({data:mainData});
+    }else{
+      return next("Error Occured");
+    }
+  }).catch(error=>{
+    return next(error);
+  })
+})
 module.exports = router;

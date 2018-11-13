@@ -2,6 +2,11 @@ module.exports = {
   mongo: {
     url: 'mongodb://abcd:saikat95@ds129720.mlab.com:29720/test2',
   },
+  BLOCKCLUSTER:{
+    host:"app-ap-south-1b.blockcluster.io",
+    instanceId:"jgvyjgub",
+    assetName:"p2pMarketplace"
+  },
   keys: {
     BITTREX: {
       apiKey: 'a75b68ba617d4e4a99c7d6812f898325',

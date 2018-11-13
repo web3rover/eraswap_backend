@@ -35,6 +35,7 @@ api.includeRoutes = app => {
   var users = require('./users');
   var currency = require('./cur');
   var txn = require('./txn');
+  var p2p = require('./p2p');
 
   app.use('/auth', userAuth);
   app.use('/apis/*',isAuth);
@@ -44,6 +45,7 @@ api.includeRoutes = app => {
   app.use('/apis/user',users);
   app.use('/apis/cur',currency);
   app.use('/apis/txn', txn);
+  app.use('/apis/p2p',p2p);
 };
 
 module.exports = api;
