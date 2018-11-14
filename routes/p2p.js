@@ -33,4 +33,22 @@ router.get('/get_count',(req,res,next)=>{
     })
 });
 
+router.post('/showInterest',(req,res,next)=>{
+    
+    let message={
+        subject:`[Eraswap Marketplace] ${req.user.username} just showed interest on your listing.`,
+        body: `<body>
+                Hi, ${req.body.username},
+                ${req.user.username} Just showed You interest on your listing.
+                he/she Interested to ${req.body.wantsToBuy ? 'buy your' : 'sell to you'} the listed asset,
+                Please contact to email: ${req.user.email} .
+                Thank you!
+              </body>`
+    };
+    currencyCont.showInterestMailSender(req.body,message).then(data=>{
+        return res.json(data);
+    }).catch(error=>{
+        return next(error)
+    })
+});
 module.exports = router;

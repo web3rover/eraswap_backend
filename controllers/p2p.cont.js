@@ -1,5 +1,8 @@
 var Blockcluster = require('blockcluster');
 const shortid = require("shortid");
+
+const mailHelper = require('../helpers/mailHelper');
+const Users = require('../models/Users');
 const config = require('../configs/config');
 
 const node = new Blockcluster.Dynamo({
@@ -50,16 +53,24 @@ const getCount = async(type)=>{
     let additionalQuery = type.wantsToBuy!="false" ? {wantsToBuy:true}:{wantsToSell:true}
         const countObj =await node.callAPI('assets/count',{
        
-            "assetName": config.BLOCKCLUSTER.assetName,
+           $query:{ "assetName": config.BLOCKCLUSTER.assetName,
             "status": "open",
             ...additionalQuery
-          
+        }
     });
-    return JSON.parse(countObj)[0].units;
+    return countObj.message;
+}
+
+const showInterestMailSender =async(record,message)=>{
+    
+   const userData = await Users.findOne({_id:record.userId}).select({"email":1}).exec();
+   message["to"] =userData.email
+    return await mailHelper.SendMail(message);
 }
 
 module.exports={
     addListing,
     searchListing,
-    getCount
+    getCount,
+    showInterestMailSender
 }
