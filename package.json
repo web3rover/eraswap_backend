@@ -23,7 +23,7 @@
   "dependencies": {
     "agenda": "^2.0.2",
     "bcrypt-nodejs": "0.0.3",
-    "blockcluster": "^1.0.1",
+    "blockcluster": "^1.0.3",
     "body-parser": "^1.18.3",
     "ccxt": "^1.17.432",
     "cors": "^2.8.4",
@@ -36,6 +36,7 @@
     "moment": "^2.22.2",
     "mongoose": "^5.3.5",
     "mongoose-beautiful-unique-validation": "^7.1.1",
+    "nodemailer": "^4.6.8",
     "request": "^2.88.0",
     "request-promise": "^4.2.2",
     "shortid": "^2.2.14"
