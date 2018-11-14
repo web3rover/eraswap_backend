@@ -3,14 +3,14 @@ const router = express.Router();
 const currencyCont = require('../controllers/p2p.cont');
 
 router.post('/add_buy_listing',(req,res,next)=>{
-    currencyCont.addListing({wantsToBuy:true,username:req.user.username,userId:req.user._id,...req.body}).then(data=>{
+    currencyCont.addListing({show:true,wantsToBuy:true,username:req.user.username,userId:req.user._id,...req.body}).then(data=>{
         return res.json(data);
     }).catch(error=>{
         return next(error);
     })
 });
 router.post('/add_sell_listing',(req,res,next)=>{
-    currencyCont.addListing({wantsToSell:true,username:req.user.username,userId:req.user._id,...req.body}).then(data=>{
+    currencyCont.addListing({show:true,wantsToSell:true,username:req.user.username,userId:req.user._id,...req.body}).then(data=>{
         return res.json(data);
     }).catch(error=>{
         return next(error);
@@ -25,9 +25,31 @@ router.get('/search_listing',(req,res,next)=>{
     })
 });
 
+router.get('/my_listings',(req,res,next)=>{
+    currencyCont.getAllListings({...req.query,query:{userId:req.user._id}}).then(data=>{
+        return res.json(data);
+    }).catch(error=>{
+        return next(error);
+    })
+});
+router.get('/my_listings_count',(req,res,next)=>{
+    currencyCont.getListingCount({userId:req.user._id}).then(data=>{
+        return res.json(data);
+    }).catch(error=>{
+        return next(error);
+    })
+})
+
 router.get('/get_count',(req,res,next)=>{
     currencyCont.getCount(req.query).then(data=>{
         return res.json({count:data});
+    }).catch(error=>{
+        return next(error);
+    })
+});
+router.post('/change_status',(req,res,next)=>{
+    currencyCont.updateListing(req.user._id,req.body.id,req.body.active).then(data=>{
+        return res.json(data);
     }).catch(error=>{
         return next(error);
     })

@@ -29,13 +29,14 @@ const addListing =async(data)=>{
 };
 
 const searchListing = async(params)=>{
-    let additionalQuery = JSON.parse(params.query).wantsToBuy ? {wantsToBuy:true}:{wantsToSell:true};
+   let additionalQuery = JSON.parse(params.query).wantsToBuy ? {wantsToBuy:true}:{wantsToSell:true};
    let data;
    try{
         data=  await node.callAPI("assets/search", {
         $query: {
             "assetName": config.BLOCKCLUSTER.assetName,
             "status": "open",
+            "show":true,
             ...additionalQuery
           },
           $limit:Number(params.results) || 10,
@@ -49,6 +50,28 @@ const searchListing = async(params)=>{
     }
       return data;
 }
+
+const getAllListings = async(params)=>{
+    const additionalQuery = params.query;
+    let data;
+    try{
+         data=  await node.callAPI("assets/search", {
+         $query: {
+             "assetName": config.BLOCKCLUSTER.assetName,
+             "status": "open",
+             ...additionalQuery
+           },
+           $limit:Number(params.results) || 10,
+           $skip: params.results && params.page ?  (Number(params.page)-1)*Number(params.results) :0,
+           $sort: {
+             timestamp: 1
+           }
+       });
+     }catch(error){
+         console.log(error)
+     }
+       return data;
+}
 const getCount = async(type)=>{
     let additionalQuery = type.wantsToBuy!="false" ? {wantsToBuy:true}:{wantsToSell:true}
         const countObj =await node.callAPI('assets/count',{
@@ -59,6 +82,34 @@ const getCount = async(type)=>{
         }
     });
     return countObj.message;
+}
+
+const getListingCount = async(type)=>{
+    
+        const countObj =await node.callAPI('assets/count',{
+       
+           $query:{ "assetName": config.BLOCKCLUSTER.assetName,
+            "status": "open",
+            ...type
+        }
+    });
+    return countObj.message;
+}
+
+const updateListing =async(userId,id,active)=>{
+    //active is the current 
+    const status = active ? false : true;
+    const data =await node.callAPI('assets/updateAssetInfo', {
+        assetName: config.BLOCKCLUSTER.assetName,
+        fromAccount: node.getWeb3().eth.accounts[0],
+        identifier: id,
+        userId:userId,
+        "public": {
+            show:status
+        }
+      });
+    
+      return data;
 }
 
 const showInterestMailSender =async(record,message)=>{
@@ -72,5 +123,8 @@ module.exports={
     addListing,
     searchListing,
     getCount,
-    showInterestMailSender
+    showInterestMailSender,
+    getListingCount,
+    getAllListings,
+    updateListing
 }
