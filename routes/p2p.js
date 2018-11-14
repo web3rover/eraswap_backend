@@ -17,11 +17,20 @@ router.post('/add_sell_listing',(req,res,next)=>{
     })
 });
 router.get('/search_listing',(req,res,next)=>{
-    currencyCont.searchListing().then(data=>{
+    console.log(req.query);
+    currencyCont.searchListing(req.query).then(data=>{
         return res.json(data);
     }).catch(error=>{
         return next(error);
     })
-})
+});
+
+router.get('/get_count',(req,res,next)=>{
+    currencyCont.getCount(req.query).then(data=>{
+        return res.json({count:data});
+    }).catch(error=>{
+        return next(error);
+    })
+});
 
 module.exports = router;

@@ -26,27 +26,36 @@ const addListing =async(data)=>{
 };
 
 const searchListing = async(params)=>{
-   const data=  await node.callAPI("assets/search", {
+    let additionalQuery = JSON.parse(params.query).wantsToBuy ? {wantsToBuy:true}:{wantsToSell:true};
+   let data;
+   try{
+        data=  await node.callAPI("assets/search", {
         $query: {
             "assetName": config.BLOCKCLUSTER.assetName,
-            "status": "open"
+            "status": "open",
+            ...additionalQuery
           },
+          $limit:Number(params.results) || 10,
+          $skip: params.results && params.page ?  (Number(params.page)-1)*Number(params.results) :0,
           $sort: {
             timestamp: 1
           }
       });
+    }catch(error){
+        console.log(error)
+    }
       return data;
 }
-const getCount = async()=>{
-    const countObj =await node.callAPI('assets/assetTypes',{
-        $query: {
+const getCount = async(type)=>{
+    let additionalQuery = type.wantsToBuy!="false" ? {wantsToBuy:true}:{wantsToSell:true}
+        const countObj =await node.callAPI('assets/count',{
+       
             "assetName": config.BLOCKCLUSTER.assetName,
             "status": "open",
-            "wantsToBuy": true,
-          }
+            ...additionalQuery
+          
     });
-    console.log(JSON.parse(countObj)[0].units);
-    return count;
+    return JSON.parse(countObj)[0].units;
 }
 
 module.exports={

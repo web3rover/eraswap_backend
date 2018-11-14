@@ -61,10 +61,11 @@ router.get('/getPrice',(req,res,next)=>{
   })
 });
 router.get('/current_BTC',(req,res,next)=>{
-  request.get(`https://blockchain.info/tobtc?currency=${req.query.currency}&value=1`).then(data=>{
+  //https://blockchain.info/tobtc?currency=${req.query.currency}&value=1
+  request.get(`https://localbitcoins.com/equation/btc_in_usd*USD_in_${req.query.currency}*1`).then(data=>{
     if(data){
-      const mainData= 1/data;
-      return res.send({data:mainData});
+      // const mainData= 1/data;
+      return res.send({data:data});
     }else{
       return next("Error Occured");
     }
