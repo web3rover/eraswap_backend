@@ -61,9 +61,15 @@ router.post('/showInterest',(req,res,next)=>{
         subject:`[Eraswap Marketplace] ${req.user.username} just showed interest on your listing.`,
         body: `<body>
                 Hi, ${req.body.username},
+                <br />
                 ${req.user.username} Just showed You interest on your listing.
+                <br />
                 he/she Interested to ${req.body.wantsToBuy ? 'buy your' : 'sell to you'} the listed asset,
+                <br />
+                Special Message from user: <i><b>${req.body.specialMessage || '-'}</b></i>
+                <br />
                 Please contact to email: ${req.user.email} .
+                <br />
                 Thank you!
               </body>`
     };

@@ -62,7 +62,7 @@ const getExchangeVal = async (from, to) => {
     await name.loadMarkets();
     let data; 
     try{
-        symbol==from+'/'+to;
+    symbol=from+'/'+to;
     data= await name
       .fetchTicker(symbol);
           
