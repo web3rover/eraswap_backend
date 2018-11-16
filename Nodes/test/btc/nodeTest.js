@@ -1,39 +1,51 @@
-const Client = require('bitcoin-core');
+// const Client = require('bitcoin-core');
 const request = require('request');
-// User and password specified like so: node index.js username password.
+const BtcRpc = require('../../BTCRpc');
+
+let BtcNodeHost = "http://52.172.139.25";
+let BtcNodePort = 8555;
+
 let username = "foo";
 let password = "bar";
 
-const client = new Client(
-    {
-        username: 'foo',
-        password: 'bar',
-        port: '8555'
-    }
-);
+let btcRpc = new BtcRpc(BtcNodeHost, BtcNodePort, username, password);
+// User and password specified like so: node index.js username password.
 
-BtcRpcCall("foo", "bar", "loadwallet", ["uk"]).then((responses) => {
-    console.log(responses)
+btcRpc.GetAddressesForWallet("uk14@uk.com").then(res => console.log(res));
+btcRpc.SendBtcToEmail("dhiren", "uk13@uk.com", 0.001).then(res => console.log(res.result));
+btcRpc.GetBalanceForWallet("uk14@uk.com").then(console.log);
 
-     let newAddress = "2NBijVKWFgoUVqeCQsqASvNeJtwF6LrppL1";
 
-    BtcRpcCall("foo", "bar", "getaddressinfo", [newAddress], "/wallet/uk").then(result => {
-        console.log("Address info: "+result);
-    });
+// const client = new Client(
+//     {
+//         username: 'foo',
+//         password: 'bar',
+//         port: '8555'
+//     }
+// );
 
-    BtcRpcCall("foo", "bar", "getnewaddress", ["uk"], "/wallet/uk").then(res => {
-         console.log("new address: "+res);
-     });
+// BtcRpcCall("foo", "bar", "loadwallet", ["uk"]).then((responses) => {
+//     console.log(responses)
 
-    BtcRpcCall("foo", "bar", "getbalance", ["*", 1], "/wallet/uk").then(console.log);
+//      let newAddress = "2NBijVKWFgoUVqeCQsqASvNeJtwF6LrppL1";
 
-    BtcRpcCall("foo", "bar", "getwalletinfo", [], "/wallet/uk").then(console.log);
+//     BtcRpcCall("foo", "bar", "getaddressinfo", [newAddress], "/wallet/uk").then(result => {
+//         console.log("Address info: "+result);
+//     });
 
-    BtcRpcCall("foo", "bar", "getaddressesbylabel", ["uk"], "/wallet/uk").then((res) => {
-        console.log(res);
-        BtcRpcCall("foo", "bar", "unloadwallet", ["uk"], "/wallet/uk").then(console.log);
-    });
-});
+//     BtcRpcCall("foo", "bar", "getnewaddress", ["uk"], "/wallet/uk").then(res => {
+//          console.log("new address: "+res);
+//      });
+
+//     BtcRpcCall("foo", "bar", "getbalance", ["*", 1], "/wallet/uk").then(console.log);
+
+//     BtcRpcCall("foo", "bar", "getwalletinfo", [], "/wallet/uk").then(console.log);
+
+//     BtcRpcCall("foo", "bar", "getaddressesbylabel", ["uk"], "/wallet/uk").then((res) => {
+//         console.log(res);
+//         BtcRpcCall("foo", "bar", "unloadwallet", ["uk"], "/wallet/uk").then(console.log);
+//     });
+// });
 
 //client.command([{ method: 'listwallets', parameters: [] }]).then((responses) => console.log(responses));
 
