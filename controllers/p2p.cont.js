@@ -78,6 +78,7 @@ const getCount = async(type)=>{
        
            $query:{ "assetName": config.BLOCKCLUSTER.assetName,
             "status": "open",
+            show:true,
             ...additionalQuery
         }
     });
