@@ -10,7 +10,7 @@ let Binance = new ccxt.binance(config.keys.BINANCE);
 let Coinex= new ccxt.coinex(config.keys.COINEX);
 let Bitfinex = new ccxt.bitfinex();
 let Yobit = new ccxt.yobit(config.keys.YOBIT);
-const Exchanges = [Bittrex,Binance,Polonix,Kraken,Yobit];
+const Exchanges = [Bittrex,Binance,Polonix,Yobit];
 // const Exchanges = [Binance];
 
 const getAllCurrency = async () => {
@@ -44,12 +44,22 @@ const getDepositAddress =async(platform,symbol)=>{
     }
 }
 const getCurrentMarket = async(platform,symbol)=>{
+    let sym ;
     for (let x in Exchanges) {
         let name = Exchanges[x];
         if(name.name.toLocaleLowerCase() == platform ){
             await name.loadMarkets();
-            const data = await name.fetchTicker(symbol);
-            return data;
+            let data;
+            try{
+            sym=symbol;
+            data= await name.fetchTicker(symbol);
+            }catch(error){
+                var from=symbol.split('/')[0];
+                var to=symbol.split('/')[1];
+                sym=to+'/'+from;
+                data= await name.fetchTicker(sym);
+            }
+            return {data:data,symbol:sym};
         }
     }
 }
@@ -68,6 +78,7 @@ const getExchangeVal = async (from, to) => {
           
     }
     catch(err){
+        console.log(err);
         try{
             symbol=to+'/'+from
         data= await name
