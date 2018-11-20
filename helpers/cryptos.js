@@ -47,7 +47,7 @@ const getCurrentMarket = async(platform,symbol)=>{
     let sym ;
     for (let x in Exchanges) {
         let name = Exchanges[x];
-        if(name.name.toLocaleLowerCase() == platform ){
+        if(name.name.toLowerCase() == platform.toLowerCase() ){
             await name.loadMarkets();
             let data;
             try{
@@ -152,11 +152,23 @@ const convertCurrency =async(symbol,platForm,fromSymbol,toSymbol,amount)=>{
             // const symbol =fromSymbol+'/'+toSymbol;
 
             let data;
+         
             if(symbol === fromSymbol + "/" + toSymbol) {
-              data = await name.createOrder(symbol,"market","sell",Number(amount));
+                if(name.name=="Poloniex"){
+                    const curMar = await getCurrentMarket(platForm,symbol);
+                    data = await name.createOrder(symbol,"limit","sell",Number(amount),curMar.data.ask);
+                }else{
+                    data = await name.createOrder(symbol,"market","sell",Number(amount));
+                }
+              
               console.log("sell order placed",symbol,fromSymbol,toSymbol);
             }else if(symbol === toSymbol + "/" + fromSymbol) {
-                data = await name.createOrder(symbol,"market","buy",Number(amount));
+                if(name.name=="Poloniex"){
+                    const curMar = await getCurrentMarket(platForm,symbol)
+                    data = await name.createOrder(symbol,"limit","buy",Number(amount),curMar.data.bid,{});
+                }else{
+                    data = await name.createOrder(symbol,"market","buy",Number(amount));
+                }
                 console.log("buy order placed",symbol,fromSymbol,toSymbol);
             }
             return data;
@@ -166,14 +178,14 @@ const convertCurrency =async(symbol,platForm,fromSymbol,toSymbol,amount)=>{
                 return Promise.reject({
                     status:400,
                     message:error.constructor.name || "Some Error Occured!",
-                    error:error
+                    error:error.message
                 })
             }
     
         }
     }
 
-};
+x};
 const sendCurrency = async(platForm,address,amount,symbol)=>{
     for (let x in Exchanges) {
         let name = Exchanges[x];

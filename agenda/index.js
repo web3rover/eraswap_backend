@@ -11,6 +11,7 @@ const agenda = new Agenda({
 
 (async function() {
   await agenda.start();
+  agenda.every("2 minutes","CheckForTxn and Send");
   console.log("Started agenda");
 })();
 

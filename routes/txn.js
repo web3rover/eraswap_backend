@@ -4,7 +4,7 @@ const agenda = require('../agenda');
 const txnCont = require('../controllers/transaction');
 
 router.post('/verifyAndSave', async(req, res, next) => {
-  await agenda.every('2 minutes', 'CheckForTxn and Send',{userID:req.user._id,...req.body});
+  await agenda.create('CheckForTxn and Send',{userID:req.user._id,...req.body}).save();
   res.json({status:"Done"});
 });
 
