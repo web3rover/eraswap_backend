@@ -1,6 +1,6 @@
 // const Client = require('bitcoin-core');
 const request = require('request');
-const BtcRpc = require('../../BTCRpc');
+const BtcRpc = require('../../BtcRpc');
 
 let BtcNodeHost = "http://52.172.139.25";
 let BtcNodePort = 8555;
