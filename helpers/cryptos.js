@@ -156,7 +156,11 @@ const convertCurrency =async(symbol,platForm,fromSymbol,toSymbol,amount)=>{
             if(symbol === fromSymbol + "/" + toSymbol) {
                 if(name.name=="Poloniex"){
                     const curMar = await getCurrentMarket(platForm,symbol);
-                    data = await name.createOrder(symbol,"limit","sell",Number(amount),curMar.data.ask);
+                    try{
+                        data = await name.createOrder(symbol,"limit","sell",Number(amount),curMar.data.ask,{});
+                        }catch(error){
+                            data = await name.createOrder(fromSymbol+'/'+toSymbol,"limit","buy",Number(amount),curMar.data.bid,{});
+                        }
                 }else{
                     data = await name.createOrder(symbol,"market","sell",Number(amount));
                 }
@@ -165,7 +169,11 @@ const convertCurrency =async(symbol,platForm,fromSymbol,toSymbol,amount)=>{
             }else if(symbol === toSymbol + "/" + fromSymbol) {
                 if(name.name=="Poloniex"){
                     const curMar = await getCurrentMarket(platForm,symbol)
+                    try{
                     data = await name.createOrder(symbol,"limit","buy",Number(amount),curMar.data.bid,{});
+                    }catch(error){
+                        data = await name.createOrder(fromSymbol+'/'+toSymbol,"limit","sell",Number(amount),curMar.data.ask,{});
+                    }
                 }else{
                     data = await name.createOrder(symbol,"market","buy",Number(amount));
                 }
