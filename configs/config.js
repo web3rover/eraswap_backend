@@ -37,4 +37,7 @@ module.exports = {
     secret: 'HelloBlcko',
     expire: 604800,
   },
+  ethWalletApi:{
+      password: "eraswap",
+  }
 };
