@@ -11,7 +11,6 @@ const agenda = new Agenda({
 
 (async function() {
   await agenda.start();
-  agenda.every("2 minutes","CheckForTxn and Send");
   console.log("Started agenda");
 })();
 
@@ -23,22 +22,24 @@ agenda.define('CheckForTxn and Send',(job,done)=>{
     .verifyTxn(jobData.eraswapSendAddress, jobData.lctxid, jobData.tiMeFrom, jobData.exchangePlatform, jobData.exchFromCurrency, jobData.exchFromCurrencyAmt)
     .then(data => {
       if (data.txIdExist && data.status == "ok" && !data.convertedYet) {
-        txnCont.converTdata(jobData.symbol, jobData.lctxid,jobData.exchangePlatform,jobData.exchFromCurrency,jobData.exchToCurrency,jobData.exchFromCurrencyAmt).then(conversation_data=>{
-          if(conversation_data.status=="closed"&& conversation_data.cost ==jobData.exchFromCurrencyAmt){
-            txnCont
-          .sendToCustomer(data._id, jobData.userID, jobData.exchangePlatform, jobData.eraswapSendAddress, data.amtToSend, jobData.exchToCurrency)
-          .then(dataOfSending => {
-            if (dataOfSending && dataOfSending.id) {
-               job.remove();
-               done();
-            }
-          })
-          .catch(error_sending => {
-            return done({
-              stack: error_sending,
-            });
-          });    
-          }
+        txnCont.converTdata(jobData.symbol, jobData.lctxid,jobData.exchangePlatform,jobData.exchFromCurrency,jobData.exchToCurrency,jobData.exchFromCurrencyAmt)
+        .then(conversation_data=>{
+          // if(conversation_data.status=="closed"&& conversation_data.cost ==jobData.exchFromCurrencyAmt){
+          //   txnCont
+          // .sendToCustomer(data._id, jobData.userID, jobData.exchangePlatform, jobData.eraswapSendAddress, data.amtToSend, jobData.exchToCurrency)
+          // .then(dataOfSending => {
+          //   if (dataOfSending && dataOfSending.id) {
+          //      job.remove();
+          //      done();
+          //   }
+          // })
+          // .catch(error_sending => {
+          //   return done({
+          //     stack: error_sending,
+          //   });
+          // });    
+          // }
+          done();
          
         }).catch(error_converting=>{
           done(error_converting);

@@ -31,7 +31,7 @@ router.get('/get_epositAddress',(req,res,next)=>{
       message:"Please pass all the params."
     });
   }
-  currencyCont.getAddress(req.query.platform,req.query.symbol).then(data=>{
+  return currencyCont.getAddress(req.query.platform,req.query.symbol).then(data=>{
     return res.json(data);
   }).catch(error=>{
     return next({

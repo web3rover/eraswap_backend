@@ -22,6 +22,7 @@
   "license": "ISC",
   "dependencies": {
     "agenda": "^2.0.2",
+    "as-table": "^1.0.36",
     "bcrypt-nodejs": "0.0.3",
     "blockcluster": "^1.0.3",
     "bluebird": "^3.5.3",
@@ -39,6 +40,7 @@
     "mongoose": "^5.3.5",
     "mongoose-beautiful-unique-validation": "^7.1.1",
     "nodemailer": "^4.6.8",
+    "ololog": "^1.1.113",
     "request": "^2.88.0",
     "request-promise": "^4.2.2",
     "shortid": "^2.2.14",

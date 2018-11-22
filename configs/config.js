@@ -31,6 +31,14 @@ module.exports = {
     YOBIT:{
       apiKey:"855C5F6098C53FF9B78D61615374B5EE",
       secret:"e0cddc4eb63d471e63ad667712a2e36d"
+    },
+    OKEX:{
+      apiKey:"21aa6369-e743-4278-a86e-9a281893a9c7",
+      secret:"2096DEC29C5875235826B84100A95EF2"
+    },
+    OKEX_V1:{
+      apiKey:"fc217c23-5887-4fc1-bb7a-63c8e649185e",
+      secret:"D35802E871C8676199084B7236BF9D2A"
     }
   },
   JWT: {

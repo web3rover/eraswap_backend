@@ -80,7 +80,7 @@ const verifyTxn = (eraswapSendAddress, lctxid, timeFrom, platForm, symbol, amoun
           });
       })
       .catch(error_findtxn => {
-        return next({
+        return reject({
           status: 400,
           message: 'Error occured while attempting to update txn',
           error: error_findtxn,
@@ -151,7 +151,7 @@ const converTdata = (symbol,id, platForm, fromSymbol, toSymbol, amount) => {
       .convertCurrency(symbol,platForm, fromSymbol, toSymbol, amount)
       .then(data => {
         console.log('currencyConvertion:', data);
-        return Txn.findOneAndUpdate({ _id: id }, { $set: { convertedYet: 'started' ,convertionTime:data.timestamp,amtToSend:data.cost} })
+        return Txn.findOneAndUpdate({ _id: id }, { $set: { convertedYet: 'started' ,convertionTime:data.timestamp,orderId:data.id} })
           .exec()
           .then(updated_data => {
             return resolve(data);
@@ -168,11 +168,11 @@ const converTdata = (symbol,id, platForm, fromSymbol, toSymbol, amount) => {
 const verifyConvertion =(id,platForm,symbol)=>{
   return new Promise((resolve,reject)=>{
   Txn.findOne({_id:id}).exec().then(data=>{
-    cryptoHelper.verifyOrder(data.convertionTime,platForm,symbol,data.amtToSend).then(data_verified=>{
-      if(data_verified.length === 1){
+    cryptoHelper.verifyOrder(data.convertionTime,platForm,symbol,data.orderId).then(data_verified=>{
+      if(data_verified && data_verified.status=="closed"){
         if(!data.conversation_fees){
-          data.conversation_fees = data_verified[0].fee.cost;
-          data.amtToSend = data.amtToSend- data_verified[0].fee.cost;
+          data.conversation_fees = data_verified.fee ? data_verified.fee.cost : 0;
+          data.amtToSend =  data_verified.cost-data.conversation_fees;
         }
         data.convertedYet= "finished";
         data.save();

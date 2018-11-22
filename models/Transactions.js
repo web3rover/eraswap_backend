@@ -24,6 +24,9 @@ convertedYet:{
 amtToSend:{
     type:Number
 },
+orderId:{
+    type:String
+},
 convertionTime:{
     type: Number
 },
