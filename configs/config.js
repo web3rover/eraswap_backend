@@ -45,7 +45,16 @@ module.exports = {
     secret: 'HelloBlcko',
     expire: 604800,
   },
-  ethWalletApi:{
-      password: "eraswap",
+  NODES: {
+      btc: {
+          host: '52.172.135.196',
+          port: '8555',
+          username: 'foo',
+          password: 'bar'
+      },
+      eth: {
+          host: '52.172.135.196',
+          port: '8545'
+      }
   }
 };

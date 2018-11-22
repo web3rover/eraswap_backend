@@ -1,32 +1,78 @@
 const Web3 = require('web3');
-const EthWallet = require('./ethWallet');
 const web3 = new Web3();
-const ethWallet = new EthWallet();
+const request = require('request');
+const Users = require('../models/Users');
+const Wallets = require('../models/Wallets');
 
 class EthRpc {
-    constructor(address) {
-        if (!address) {
-            throw "Please provide address of node!";
+    constructor(host, port) {
+        if (!host || !port) {
+            throw "Please provide host & port of node!";
         }
         else {
-            this.address = address;
-            web3.setProvider(new web3.providers.HttpProvider(address));
+            this.host = host;
+            this.port = port;
+            web3.setProvider(new web3.providers.HttpProvider("http://" + host + ":" + port));
         }
     }
 
     async createWallet(email) {
-        var op = await ethWallet.createNewWallet(email);
-        if (op.error) {
-            return op.error;
-        }
-        else {
-            return op.data;
+        try {
+            var op = await web3.eth.personal.newAccount(email);
+
+            var privKey = await this.getPrivateKey(op, email);
+
+            if (!privKey.error)
+                return { publicKey: op, privateKey: JSON.parse(privKey).privateKey, password: email };
+            else
+                return privKey;
+        } catch (ex) {
+            return ex;
         }
     }
 
+    async getPrivateKey(address, password) {
+
+        var postData = {
+            address: address,
+            password: password
+        };
+
+        var op = {};
+
+        return new Promise((resolve, reject) => {
+            require('request').post({
+                uri: "http://" + this.host + ":" + 8080 + "/getPrivateKey",
+                headers: { 'content-type': 'application/x-www-form-urlencoded' },
+                body: require('querystring').stringify(postData)
+            }, function (err, res, body) {
+                if (err) {
+                    reject({ error: err });
+                }
+                else {
+                    resolve(body);
+                }
+            });
+        });
+    }
+
     async getAddress(email) {
-        var op = await ethWallet.getAddress(email);
-        return op;
+        try {
+            var user = await Users.findOne({ email: email }).populate('wallet');
+            var address = "";
+            for (var i = 0; i < user.wallet.length; i++) {
+                if (user.wallet[i].type == 'eth') {
+                    address = user.wallet[i].publicKey;
+                    break;
+                }
+            }
+            if (address == "") {
+                return { error: "Eth wallet not found!" };
+            }
+            return { data: address };
+        } catch (ex) {
+            return { error: ex };
+        }
     }
 
     async getBalance(address) {
@@ -35,32 +81,11 @@ class EthRpc {
         return balance;
     }
 
-    async SendEthToEmail(senderEmail, receiverEmail, amount) {
-        var senderAddress = "";
-        var receiverAddress = "";
-        var op = await this.getAddress(senderEmail);
-        if (op.error) {
-            return op;
-        }
-        else {
-            senderAddress = op.data;
-            op = await this.getAddress(receiverEmail);
-            if (op.error) {
-                return op;
-            }
-            else {
-                receiverAddress = op.data;
-                op = await this.sendEthToAddress(senderAddress, receiverAddress, amount);
-                return op;
-            }
-        }
-    }
-
-    async sendEthToAddress(sender, receiver, amount) {
+    async send(sender, receiver, amount) {
 
         try {
 
-            var op = await ethWallet.getPrivateKey(sender);
+            var op = await this.getPrivateKey(sender);
             if (op.error) {
                 return op;
             }
@@ -88,7 +113,7 @@ class EthRpc {
                         txResult = { error: err };
                     }
                 });
-                return txResult.error ? txResult : {txHash: txResult.txHash, blockInfo: txInfo};
+                return txResult.error ? txResult : { txHash: txResult.txHash, blockInfo: txInfo };
             }
         }
         catch (ex) {

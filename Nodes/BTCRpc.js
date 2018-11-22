@@ -13,7 +13,7 @@ class BTCRpc {
         }
     }
 
-    async BtcRpcCall(command, params = [], path = "") {
+    async _btcRpcCall(command, params = [], path = "") {
 
         if (!params instanceof Array) {
             throw { error: true, message: "params must an array" };
@@ -23,7 +23,7 @@ class BTCRpc {
         }
 
         let options = {
-            url: this.host + ":" + this.port + path,
+            url: "http://" + this.host + ":" + this.port + path,
             method: "post",
             headers:
                 {
@@ -64,20 +64,27 @@ class BTCRpc {
         });
     }
 
-
-    async CreateWallet(email) {
+    async createWallet(email) {
         return new Promise((resolve, reject) => {
-            this.BtcRpcCall("createwallet", [email]).then((res) => {
-                resolve(res);
+            this._btcRpcCall("createwallet", [email]).then((res) => {
+                this._getNewAddressForWallet(email).then(res => {
+                    var wallet = { publicKey: res.result, password: email };
+                    this._getPrivateKey(email, res.result).then(op => {
+                        wallet["privateKey"] = op.result;
+                        resolve(wallet);
+                    }).catch(err => 
+                        reject(err));
+                }).catch(err => 
+                    reject(err));
             }).catch(err => {
                 reject(err);
             });
         });
     }
 
-    async UnloadWallet(email) {
+    async _unloadWallet(email) {
         return new Promise((resolve, reject) => {
-            this.BtcRpcCall("unloadwallet", [email], '/wallet/' + email).then(result => {
+            this._btcRpcCall("unloadwallet", [email], '/wallet/' + email).then(result => {
                 resolve(result);
             }).catch(err => {
                 reject(err);
@@ -85,9 +92,9 @@ class BTCRpc {
         });
     }
 
-    async GetNewAddressForWallet(email) {
+    async _getNewAddressForWallet(email) {
         return new Promise((resolve, reject) => {
-            this.BtcRpcCall("getnewaddress", [email], '/wallet/' + email).then(result => {
+            this._btcRpcCall("getnewaddress", [email], '/wallet/' + email).then(result => {
                 resolve(result);
             }).catch(err => {
                 reject(err);
@@ -95,9 +102,9 @@ class BTCRpc {
         });
     }
 
-    async GetBalanceForWallet(email) {
+    async getBalance(email) {
         return new Promise((resolve, reject) => {
-            this.BtcRpcCall("getbalance", ["*", 1], "/wallet/" + email).then(result => {
+            this._btcRpcCall("getbalance", ["*", 1], "/wallet/" + email).then(result => {
                 resolve(result);
             }).catch(err => {
                 reject(err);
@@ -105,36 +112,9 @@ class BTCRpc {
         });
     }
 
-    async SendBtcToEmail(senderEmail, receiverEmail, amount) {
+    async send(address, sendingWallet, amount) {
         return new Promise((resolve, reject) => {
-            this.GetAddressesForWallet(receiverEmail).then(result => {
-                if (result instanceof Array) {
-                    if (result.length >= 1) {
-                        this.SendBtcToAddress(result[0], senderEmail, amount).then(txnInfo => resolve(txnInfo))
-                            .catch(error => reject(error));
-                    }
-                    else {
-                        reject({
-                            error: true,
-                            message: "No address exists for receiver."
-                        });
-                    }
-                } else {
-                    reject({
-                        error: true,
-                        message: "Unexpectederror occured",
-                        error: result
-                    });
-                }
-            }).catch(err => {
-                reject(err);
-            });
-        });
-    }
-
-    async SendBtcToAddress(address, sendingWallet, amount) {
-        return new Promise((resolve, reject) => {
-            this.BtcRpcCall("sendtoaddress", [address, amount], "/wallet/" + sendingWallet).then(result => {
+            this._btcRpcCall("sendtoaddress", [address, amount], "/wallet/" + sendingWallet).then(result => {
                 resolve(result);
             }).catch(err => {
                 reject(err);
@@ -142,9 +122,10 @@ class BTCRpc {
         });
     }
 
-    async GetAddressesForWallet(email) {
-        return new Promise((resolve, reject) => {
-            this.BtcRpcCall("getaddressesbylabel", [email], "/wallet/" + email).then(result => {
+    async getAddress(email) {
+        return new Promise(async (resolve, reject) => {
+            var loadOp = await this._loadWallet(email).catch(console.log);
+            this._btcRpcCall("getaddressesbylabel", [email], "/wallet/" + email).then(result => {
                 if (result.result) {
                     var keys = [];
                     for (var key in result.result)
@@ -157,6 +138,24 @@ class BTCRpc {
             }).catch(err => {
                 reject(err);
             });
+        });
+    }
+
+    async _loadWallet(email) {
+        return new Promise((resolve, reject) => {
+            this._btcRpcCall("loadwallet", [email]).then((res) => {
+                resolve(res);
+            }).catch(err => {
+                reject(err);
+            });
+        });
+    }
+
+    async _getPrivateKey(email, publicKey) {
+        return new Promise((resolve, reject) => {
+            this._btcRpcCall("dumpprivkey", [publicKey], '/wallet/' + email).
+                then(res => resolve(res))
+                .catch(err => reject(err));
         });
     }
 

@@ -1,16 +1,8 @@
 const express = require('express');
-const BTCRpc = require('../Nodes/BTCRpc');
 const router = express.Router();
 
-let BtcNodeUsername = "foo";
-let BtcNodePassword = "bar";
-
-let BtcNodeHost = "http://52.172.139.25";
-let BtcNodePort = 8555;
-
-const btcRpc = new BTCRpc(BtcNodeHost, BtcNodePort, BtcNodeUsername, BtcNodePassword);
-
 const UserAuthCont = require('../controllers/user.auth.cont');
+const WalletCont = require('../controllers/wallets');
 
 router.post('/signup', (req, res, next) => {
     if (!req.body.email || !req.body.username || !req.body.password) {
@@ -22,18 +14,9 @@ router.post('/signup', (req, res, next) => {
 
     UserAuthCont.register(req.body).then(data => {
         delete data.password;
-
-        btcRpc.CreateWallet(data.email).then((walletRes) => {
-            console.log(walletRes);
-            btcRpc.GetNewAddressForWallet(data.email).then(result => {
-                console.log("Address info: " + result);
-                return res.json(data);
-            }).catch(err => {
-                next(err);
-            });
-        }).catch(err => {
-            next(err);
-        });
+        WalletCont.createWallets(data).then(op => {
+            return res.json(op)
+        }).catch(err => next(err));
     }).catch(error => {
         return next(error);
     });

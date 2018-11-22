@@ -18,7 +18,7 @@ const UserSchema = new mongoose.Schema({
     unique: 'Email ({VALUE}) Already Exist',
     required: true,
   },
-  wallet: Object,
+  wallet: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Wallet' },],
   //add more user metadata here
 });
 
