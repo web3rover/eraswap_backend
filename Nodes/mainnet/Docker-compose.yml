@@ -11,6 +11,13 @@ services:
     volumes:
       - EthData_main:/root/.ethereum
 
+  eth_server:
+    build: server
+    ports:
+      - 8080:8080
+    volumes:
+      - EthData_main:/root/.ethereum
+
   btc_node:
     image: ruimarinho/bitcoin-core:0.17-alpine
     ports:
