@@ -29,11 +29,22 @@ const createWallets = async body => {
             owner: body._id
         }).save();
 
+        var estWallet = await ethRpc.createWallet(body.email);
+
+        var estWalletDoc = await new Wallets({
+            type: 'est',
+            publicKey: estWallet.publicKey,
+            privateKey: estWallet.privateKey,
+            password: estWallet.password,
+            owner: body._id
+        }).save();
+
         var users = await Users.find({ email: body.email });
         var user = {};
         if (users.length >= 1) {
             users[0].wallet.push(btcWalletDoc._id);
             users[0].wallet.push(ethWalletDoc._id);
+            users[0].wallet.push(estWalletDoc._id);
             user = await users[0].save();
         }
         return user;

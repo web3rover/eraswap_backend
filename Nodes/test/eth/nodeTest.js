@@ -8,4 +8,6 @@ mongoose.connect(
   config.mongo.url,
   { useNewUrlParser: true }
 );
-ethRpc.getAddress("uk11peesp@uk.com").then(op => {console.log(op)});
+ethRpc.getAddress("uk11peesp@uk.com").then(op => {console.log(op)
+    ethRpc.getBalance(op.data).then(console.log);
+});

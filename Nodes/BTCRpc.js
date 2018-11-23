@@ -72,9 +72,9 @@ class BTCRpc {
                     this._getPrivateKey(email, res.result).then(op => {
                         wallet["privateKey"] = op.result;
                         resolve(wallet);
-                    }).catch(err => 
+                    }).catch(err =>
                         reject(err));
-                }).catch(err => 
+                }).catch(err =>
                     reject(err));
             }).catch(err => {
                 reject(err);
@@ -123,22 +123,22 @@ class BTCRpc {
     }
 
     async getAddress(email) {
-        return new Promise(async (resolve, reject) => {
-            var loadOp = await this._loadWallet(email).catch(console.log);
-            this._btcRpcCall("getaddressesbylabel", [email], "/wallet/" + email).then(result => {
-                if (result.result) {
-                    var keys = [];
-                    for (var key in result.result)
-                        keys.push(key);
-                    resolve(keys);
+        try {
+            var user = await Users.findOne({ email: email }).populate('wallet');
+            var address = "";
+            for (var i = 0; i < user.wallet.length; i++) {
+                if (user.wallet[i].type == 'btc') {
+                    address = user.wallet[i].publicKey;
+                    break;
                 }
-                else {
-                    reject(result);
-                }
-            }).catch(err => {
-                reject(err);
-            });
-        });
+            }
+            if (address == "") {
+                return { error: "Eth wallet not found!" };
+            }
+            return { data: address };
+        } catch (ex) {
+            return { error: ex };
+        }
     }
 
     async _loadWallet(email) {
