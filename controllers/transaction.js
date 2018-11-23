@@ -21,6 +21,7 @@ const verifyTxn = (eraswapSendAddress, lctxid, timeFrom, platForm, symbol, amoun
                Txn.countDocuments({ dipositTxnId: i.txid }).exec().then(count=>{
                 if (!count) {
                   //change and iterate this thing after
+                  data.depositNotFpund =false,
                   data.dipositTxnStatus = verified_data[0].status;
                   data.dipositTxnId = verified_data[0].txid;
                 }
@@ -189,6 +190,28 @@ const verifyConvertion =(id,platForm,symbol)=>{
 });
   
 };
+//call it for cancel order and refund
+const cancelAndRefundExistingOrder =(id,platForm,fromSymbol,symbol)=>{
+  return new Promise((resolve,reject)=>{
+    Txn.findOne({_id:id}).exec().then(data=>{
+        cryptoHelper.cancelOrder(platForm,symbol,data.orderId).then(data=>{
+          data.cancelledConvertion =true;
+            //data.refundAddress is not there, save it somehow. or tress the depositor address
+          cryptoHelper.sendCurrency(platForm,data.refundAddress,data.exchFromCurrencyAmt,fromSymbol).then(data=>{
+            data.refunded = true;
+          }).catch(error=>{
+            data.save();
+            return reject(error);
+          });
+          data.save();
+        }).catch(unable_to_cancel=>{
+          return reject(unable_to_cancel);
+        })
+    }).catch(error_finding=>{
+      return reject(error_finding);
+    })
+  });
+}
 module.exports = {
   saveTxn,
   verifyTxn,
@@ -196,4 +219,6 @@ module.exports = {
   sendToCustomer,
   converTdata,
   verifyConvertion,
+  cancelExistingOrder,
+  cancelAndRefundExistingOrder
 };
