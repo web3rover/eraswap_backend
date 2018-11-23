@@ -1,0 +1,14 @@
+{
+	"apps" : [{
+	  "name"        : "eraswap_backend",
+	  "script"      : "./bin/www",
+	  "watch"       : true,
+	  "env": {
+		"ENV": "dev"
+	  },
+	  "env_production" : {
+         "ENV": "prod",
+         "PORT":7000
+	  }
+	}]
+  }
