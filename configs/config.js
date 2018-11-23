@@ -25,8 +25,10 @@ module.exports = {
       secret:"FmoPYYlwb1+KK8qyiZZm20fABjhSVXKb+ISBh1CU00g="
     },
     OKEX:{
-      apiKey:"21aa6369-e743-4278-a86e-9a281893a9c7",
-      secret:"2096DEC29C5875235826B84100A95EF2"
+      // apiKey:"21aa6369-e743-4278-a86e-9a281893a9c7",
+      // secret:"2096DEC29C5875235826B84100A95EF2"
+      apiKey:"bea39634-a54c-47b3-8d6e-7dc6c030eebb",
+      secret:"EBA812E08ADCFFB1E3D19BC6E1A685CF"
     },
     KUKOIN:{
       apiKey:"5bf7dc5dc0391f204e8ccc5a",
