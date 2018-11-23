@@ -20,22 +20,18 @@ module.exports = {
       apiKey: 'p3iw39fpUogNwFDOF02RQnhJLnxJVILWePQ0wlnwAp9Ijbrsk68a4HJfiDPjJIQm',
       secret: 'x1BlkMdVntAFZ2G44uGmHGsLXnVbAvwu4djt9ollBoHglLcmbCUHPtJyNBkeB01V',
     },
-    KRAKEN:{
-      apiKey: "/QjQYP0EzexoqNLnLgRQ0R1TioY7gUzBpjGd0O1Eevt38Gt5uYwkbtzJ",
-      secret:"C9tE1Afxj/LHATgR2rzZIdozAdBQ+fit/pJJOOo8Hlo/cPuqOwAK1pkbuNKg6c7BsxAO6ugGilOQv3iMxOaK5Q=="
-    },
-    COINEX:{
-      apiKey:"9C11DBDB3EDF47CDA580C9654547E5F8",
-      secret:"67E20129ED49469EACBE6397022876CB3ACA035DD0253434"
-    },
-    YOBIT:{
-      apiKey:"855C5F6098C53FF9B78D61615374B5EE",
-      secret:"e0cddc4eb63d471e63ad667712a2e36d"
+    CRYPTOPIA:{
+      apiKey: "000d8e0b0854469b8346f587f806fda1",
+      secret:"FmoPYYlwb1+KK8qyiZZm20fABjhSVXKb+ISBh1CU00g="
     },
     OKEX:{
       apiKey:"21aa6369-e743-4278-a86e-9a281893a9c7",
       secret:"2096DEC29C5875235826B84100A95EF2"
     },
+    KUKOIN:{
+      apiKey:"5bf7dc5dc0391f204e8ccc5a",
+      secret:"cf3f1368-8846-46cd-8a36-94dd95bfaf92"
+    }, 
     OKEX_V1:{
       apiKey:"fc217c23-5887-4fc1-bb7a-63c8e649185e",
       secret:"D35802E871C8676199084B7236BF9D2A"
