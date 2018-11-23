@@ -11,7 +11,18 @@ dipositTxnId:{
 },
 dipositTxnStatus:{
     type:String,
-    
+},
+refunded:{
+    type:Boolean,
+    default:false
+},
+cancelledConvertion:{
+    type:Boolean,
+    default:false
+},
+depositNotFpund:{
+    type:Boolean,
+    default:true
 },
 conversation_fees:{
     type:Number
