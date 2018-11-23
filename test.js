@@ -255,10 +255,30 @@ console.log(data);
     console.log(error)
   }
 }
+
+const crypto = require('crypto');
+
+let gh = function (coin="ETH") {
+  const Kucoin = require('kucoin-api')
+
+let kc = new Kucoin(config.keys.KUKOIN.apiKey, config.keys.KUKOIN.apiKey)
+
+kc.getBalance({
+    symbol: 'GAS'
+  })
+  .then((result) => {
+    console.log(result)
+  })
+  .catch((err) => {
+    console.log(err)
+  })
+};
+
 module.exports={
     ab,
     bc,
     cd,
     ef,
-    fg
+    fg,
+    gh
 }
