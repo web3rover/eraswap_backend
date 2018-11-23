@@ -219,6 +219,5 @@ module.exports = {
   sendToCustomer,
   converTdata,
   verifyConvertion,
-  cancelExistingOrder,
   cancelAndRefundExistingOrder
 };
