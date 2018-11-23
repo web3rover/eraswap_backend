@@ -37,7 +37,7 @@ Currency.estimatedDocumentCount({}).exec().then(async(isUpdated)=>{
   }else{
     
     // await require('./test').bc("ETH/USDT","USDT","ETH",9.93945744)
-    // await require('./test').fg()
+    // await require('./test').gh()
     // do some testing stuffs here, if needed
     // await require('./controllers/p2p.cont').getCount();
   }
