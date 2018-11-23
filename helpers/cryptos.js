@@ -6,14 +6,14 @@ var rp =require('request-promise');
 
 const config = require('../configs/config');
 
-let Kraken = new ccxt.kraken(config.keys.KRAKEN);
-let Bittrex = new ccxt.bittrex(config.keys.BITTREX);
-let Polonix = new ccxt.poloniex(config.keys.POLONIEX);
-let Binance = new ccxt.binance(config.keys.BINANCE);
-let Coinex = new ccxt.coinex(config.keys.COINEX);
-let Okex = new ccxt.okex(config.keys.OKEX_V1);
+let Cryptopia = new ccxt.cryptopia({verbose:true,...config.keys.CRYPTOPIA});
+// let Kukoin = new ccxt.kucoin(config.keys.KUKOIN);
+let Bittrex = new ccxt.bittrex({verbose:false,...config.keys.BITTREX});
+let Polonix = new ccxt.poloniex({verbose:false,...config.keys.POLONIEX});
+let Binance = new ccxt.binance({verbose:false,...config.keys.BINANCE});
+let Okex = new ccxt.okex({verbose:false,...config.keys.OKEX_V1});
 
-const Exchanges = [Bittrex, Binance, Polonix, Okex];
+const Exchanges = [Bittrex, Binance,Cryptopia, Polonix, Okex];
 // const Exchanges = [Binance];
 
 const getAllCurrency = async () => {
@@ -191,7 +191,7 @@ const verifyTxn = async (dipositTxnId, tiMeFrom, platForm, symbol, amount) => {
             console.log(err);
           });
       } else if (name.name.toLowerCase() == platForm.toLowerCase()) {
-      await name.loadMarkets();
+      // await name.loadMarkets();
       let txnData;
       try {
         txnData = await name.fetchDeposits((currencies = symbol), (since = tiMeFrom), (limit = 50), (params = {})); //change since=timeFrom
@@ -262,21 +262,21 @@ const convertCurrency = async (symbol, platForm, fromSymbol, toSymbol, amount) =
            }
 
 
-        if (symbol === fromSymbol + '/' + toSymbol) {
+        if (curMar.symbol === fromSymbol + '/' + toSymbol) {
           try {
-            data = await name.createOrder(symbol, 'limit', 'sell', Number(amount), curMar.data.ask);
+            data = await name.createOrder(curMar.symbol, 'limit', 'sell', Number(amount), curMar.data.ask);
           } catch (error) {
             console.log(error);
-            data = await name.createOrder(symbol, 'limit', 'buy', Number(amount), curMar.data.ask);
+            data = await name.createOrder(curMar.symbol, 'limit', 'buy', Number(amount), curMar.data.ask);
           }
 
           console.log('sell order placed', symbol, fromSymbol, toSymbol);
-        } else if (symbol === toSymbol + '/' + fromSymbol) {
+        } else if (curMar.symbol === toSymbol + '/' + fromSymbol) {
           try {
-            data = await name.createOrder(symbol, 'limit', 'buy', Number(amount), curMar.data.ask);
+            data = await name.createOrder(curMar.symbol, 'limit', 'buy', Number(amount), curMar.data.ask);
           } catch (error) {
             console.log(error);
-            data = await name.createOrder(symbol, 'limit', 'sell', Number(amount), curMar.data.ask);
+            data = await name.createOrder(curMar.symbol, 'limit', 'sell', Number(amount), curMar.data.ask);
           }
 
           console.log('buy order placed', symbol, fromSymbol, toSymbol);
@@ -366,6 +366,25 @@ const verifyOrder = async (timeFrom, platForm, symbol, orderId) => {
     }
   }
 };
+const cancelOrder =async(platForm,symbol,orderId)=>{
+  for (let x in Exchanges) {
+    let name = Exchanges[x];
+
+    if (name.name.toLowerCase() == platForm.toLowerCase()) {
+      try {
+        const data = await name.cancelOrder(orderId,symbol);
+        return data;
+      }
+      catch(error){
+        return Promise.reject({
+          status: 400,
+          message: error.constructor.name || 'Some Error Occured cancelling order!',
+          error: error,
+        });
+      }
+    }
+  }
+}
 
 module.exports = {
   getAllCurrency,
@@ -376,4 +395,5 @@ module.exports = {
   convertCurrency,
   verifyOrder,
   getCurrentMarket,
+  cancelOrder
 };
