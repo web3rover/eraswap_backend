@@ -178,7 +178,11 @@ const verifyConvertion =(id,platForm,symbol)=>{
         data.convertedYet= "finished";
         data.save();
         return resolve({verified:true, amtToSend:data.amtToSend});
-      }else{
+      }else if(data_verified && data_verified.status=="canceled"){
+        //save to db , this order cancelled manually
+        return reject({canceled:true,verified:false}); 
+      }
+      else{
         return reject({verified:false});
       }
     }).catch(error_verification=>{

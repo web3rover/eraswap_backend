@@ -54,6 +54,10 @@ return crypto.getCurrentMarket(jobData.exchangePlatform, jobData.symbol).then(cu
       });
     }else if(data.convertedYet==="started"){
       txnCont.verifyConvertion(jobData.lctxid,jobData.exchangePlatform,curMar.symbol).then(verified=>{
+        if(!verified.verified && verified.canceled){
+          job.remove();
+          done();
+        }
         if(verified.verified && verified.amtToSend){
         txnCont
         .sendToCustomer(data._id, jobData.userID, jobData.exchangePlatform, jobData.eraswapSendAddress, verified.amtToSend, jobData.exchToCurrency)
