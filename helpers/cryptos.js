@@ -260,23 +260,23 @@ const convertCurrency = async (symbol, platForm, fromSymbol, toSymbol, amount) =
                     return Promise.reject({message:"unable to transfer to the spot account"})
                   }
            }
-
+           console.log(await name.fetchBalance('DOGE'));
 
         if (curMar.symbol === fromSymbol + '/' + toSymbol) {
           try {
             data = await name.createOrder(curMar.symbol, 'limit', 'sell', Number(amount), curMar.data.ask);
           } catch (error) {
             console.log(error);
-            data = await name.createOrder(curMar.symbol, 'limit', 'buy', Number(amount), curMar.data.ask);
+            // data = await name.createOrder(curMar.symbol, 'limit', 'buy', Number(amount), curMar.data.bid);
           }
 
           console.log('sell order placed', symbol, fromSymbol, toSymbol);
         } else if (curMar.symbol === toSymbol + '/' + fromSymbol) {
           try {
-            data = await name.createOrder(curMar.symbol, 'limit', 'buy', Number(amount), curMar.data.ask);
+            data = await name.createOrder(curMar.symbol, 'limit', 'buy', Number(amount), curMar.data.bid);
           } catch (error) {
             console.log(error);
-            data = await name.createOrder(curMar.symbol, 'limit', 'sell', Number(amount), curMar.data.ask);
+            // data = await name.createOrder(curMar.symbol, 'limit', 'sell', Number(amount), curMar.data.ask);
           }
 
           console.log('buy order placed', symbol, fromSymbol, toSymbol);
@@ -353,6 +353,19 @@ const verifyOrder = async (timeFrom, platForm, symbol, orderId,fromAmount) => {
            cost:fee,
            currency:symbol
          };
+        }
+        if(data.status=='closed' && name.name.toLowerCase() == 'cryptopia'){
+          const MyTrades = await name.fetchMyTrades(symbol,timeFrom);
+          console.log(MyTrades);
+          const a = MyTrades.filter(i=>{
+              if(i.amount == fromAmount)
+              {
+                return i;
+              }
+          });
+          if(a.length == 1){
+          data.fee.cost = data.fee.cost && data.fee.cost >0 ? data.fee.cost : a[0].fee.cost;
+          }
         }
         return data;
       } catch (error) {

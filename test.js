@@ -261,10 +261,10 @@ const crypto = require('crypto');
 let gh = function (coin="ETH") {
   const Kucoin = require('kucoin-api')
 
-let kc = new Kucoin(config.keys.KUKOIN.apiKey, config.keys.KUKOIN.apiKey)
+let kc = new Kucoin(config.keys.KUKOIN.apiKey, config.keys.KUKOIN.secret)
 
-kc.getBalance({
-    symbol: 'GAS'
+kc.get({
+    symbol: 'DOGE'
   })
   .then((result) => {
     console.log(result)
