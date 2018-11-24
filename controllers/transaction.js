@@ -166,12 +166,13 @@ const converTdata = (symbol,id, platForm, fromSymbol, toSymbol, amount) => {
       });
   });
 };
-const verifyConvertion =(id,platForm,symbol)=>{
+const verifyConvertion =(id,platForm,symbol,fromAmount)=>{
   return new Promise((resolve,reject)=>{
   Txn.findOne({_id:id}).exec().then(data=>{
-    cryptoHelper.verifyOrder(data.convertionTime,platForm,symbol,data.orderId).then(data_verified=>{
+    cryptoHelper.verifyOrder(data.convertionTime,platForm,symbol,data.orderId,fromAmount).then(data_verified=>{
       if(data_verified && data_verified.status=="closed"){
         if(!data.conversation_fees){
+          data.convertionTime=data_verified.timestamp;
           data.conversation_fees = data_verified.fee ? data_verified.fee.cost : 0;
           data.amtToSend =  data_verified.cost-data.conversation_fees;
         }

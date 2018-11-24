@@ -6,7 +6,7 @@ var rp =require('request-promise');
 
 const config = require('../configs/config');
 
-let Cryptopia = new ccxt.cryptopia({verbose:true,...config.keys.CRYPTOPIA});
+let Cryptopia = new ccxt.cryptopia({verbose:false,...config.keys.CRYPTOPIA});
 // let Kukoin = new ccxt.kucoin(config.keys.KUKOIN);
 let Bittrex = new ccxt.bittrex({verbose:false,...config.keys.BITTREX});
 let Polonix = new ccxt.poloniex({verbose:false,...config.keys.POLONIEX});
@@ -332,7 +332,7 @@ const sendCurrency = async (platForm, address, amount, symbol) => {
   }
 };
 
-const verifyOrder = async (timeFrom, platForm, symbol, orderId) => {
+const verifyOrder = async (timeFrom, platForm, symbol, orderId,fromAmount) => {
   for (let x in Exchanges) {
     let name = Exchanges[x];
 
@@ -356,15 +356,40 @@ const verifyOrder = async (timeFrom, platForm, symbol, orderId) => {
         }
         return data;
       } catch (error) {
-        console.log(error.constructor.name);
+        if(error.constructor.name ==="OrderNotCached"){
+        try{
+          const data = await name.fetchMyTrades(symbol,timeFrom);
+          console.log(data);
+          const a = data.filter(i=>{
+              if(i.amount == fromAmount)
+              {
+                return i;
+              }
+          });
+          if(a.length != 1){
+            return Promise.reject({
+              status: 400,
+              message: 'Found more than one order of same amount and same symbol',
+              error: error,
+            });
+          }
+          return {status:'closed',...a[0]};
+        }catch(errors){
+          return Promise.reject({
+            status: 400,
+            message: error.constructor.name || 'Some Error Occured!',
+            error: error,
+          });
+        }
+      }
         return Promise.reject({
           status: 400,
           message: error.constructor.name || 'Some Error Occured!',
           error: error,
-        });
+            });
+          }
       }
     }
-  }
 };
 const cancelOrder =async(platForm,symbol,orderId)=>{
   for (let x in Exchanges) {

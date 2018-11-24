@@ -53,7 +53,7 @@ return crypto.getCurrentMarket(jobData.exchangePlatform, jobData.symbol).then(cu
         done(error_converting);
       });
     }else if(data.convertedYet==="started"){
-      txnCont.verifyConvertion(jobData.lctxid,jobData.exchangePlatform,curMar.symbol).then(verified=>{
+      txnCont.verifyConvertion(jobData.lctxid,jobData.exchangePlatform,curMar.symbol,jobData.exchFromCurrencyAmt).then(verified=>{
         if(!verified.verified && verified.canceled){
           job.remove();
           done();
