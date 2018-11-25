@@ -24,8 +24,8 @@ return crypto.getCurrentMarket(jobData.exchangePlatform, jobData.symbol).then(cu
   return txnCont
   .verifyTxn(jobData.eraswapSendAddress, jobData.lctxid, jobData.tiMeFrom, jobData.exchangePlatform, jobData.exchFromCurrency, jobData.exchFromCurrencyAmt)
   .then(data => {
-    // after 8*2 =10 minutes delete the job 
-    if(failCount > 7 && !data.txIdExist){
+    // after 65*2 =130 minutes delete the job 
+    if(failCount > 65 && !data.txIdExist){
       job.remove();
       done();
     }
