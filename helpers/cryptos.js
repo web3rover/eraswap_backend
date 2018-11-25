@@ -336,19 +336,21 @@ const convertCurrency = async (symbol, platForm, fromSymbol, toSymbol, amount) =
                     return Promise.reject({message:"unable to transfer to the spot account"})
                   }
            }
-           console.log(await name.fetchBalance('DOGE'));
            let toSymbolAmount;
+           let side ;
         if (curMar.symbol === fromSymbol + '/' + toSymbol) {
+          side ="sell";
            toSymbolAmount = Number(amount);
-            data = await name.createOrder(curMar.symbol, 'limit', 'sell', toSymbolAmount, curMar.data.ask);
+            data = await name.createOrder(curMar.symbol, 'limit', side, toSymbolAmount, curMar.data.ask);
           
           console.log('sell order placed', symbol, fromSymbol, toSymbol);
         } else if (curMar.symbol === toSymbol + '/' + fromSymbol) {
+              side='buy';
              toSymbolAmount = Number(amount)/Number(curMar.data.bid)
-            data = await name.createOrder(curMar.symbol, 'limit', 'buy',toSymbolAmount, curMar.data.bid);
+            data = await name.createOrder(curMar.symbol, 'limit', side,toSymbolAmount, curMar.data.bid);
             console.log('buy order placed', symbol, fromSymbol, toSymbol);
         }
-        return {orderplacingAmt:toSymbolAmount,...data};
+        return {orderplacingAmt:toSymbolAmount,side:side,...data};
       } catch (error) {
         console.log(name.iso8601(Date.now()), error.constructor.name, error.message);
         console.log(error.constructor.name);
@@ -405,8 +407,11 @@ const verifyOrder = async (timeFrom, platForm, symbol, orderId,fromAmount,side) 
 
     if (name.name.toLowerCase() == platForm.toLowerCase()) {
       try {
-        
-        const data = await name.fetchOrder(orderId,symbol,{type:side.toUpperCase()});
+        let params={}
+        if(name.name.toLowerCase() == 'kucoin'){
+          params= {type:side.toUpperCase()}
+        }
+        const data = await name.fetchOrder(orderId,symbol,params);
         // if(data.length){
         //     const a =data.filter(i=>{
         //         if(i.cost==amount){
@@ -423,7 +428,7 @@ const verifyOrder = async (timeFrom, platForm, symbol, orderId,fromAmount,side) 
          };
         }
         console.log(JSON.stringify(data))
-        if(data.status=='closed' && data.fee.cost == 0 && name.name.toLowerCase() == 'kucoin'){
+        if(data.status=='closed' && data.fee && data.fee.cost == 0 && name.name.toLowerCase() == 'kucoin'){
             let fee = 0
             data.trades.map(i=>{
               fee = i.fee.cost+fee;
