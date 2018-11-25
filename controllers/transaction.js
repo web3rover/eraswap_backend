@@ -152,7 +152,7 @@ const converTdata = (symbol,id, platForm, fromSymbol, toSymbol, amount) => {
       .convertCurrency(symbol,platForm, fromSymbol, toSymbol, amount)
       .then(data => {
         console.log('currencyConvertion:', data);
-        return Txn.findOneAndUpdate({ _id: id }, { $set: { convertedYet: 'started' ,convertionTime:data.timestamp,orderId:data.id} })
+        return Txn.findOneAndUpdate({ _id: id }, { $set: { convertedYet: 'started' ,convertionTime:data.timestamp,orderId:data.id, orderType:data.side,orderplacingAmt:data.orderplacingAmt} })
           .exec()
           .then(updated_data => {
             return resolve(data);
@@ -166,15 +166,15 @@ const converTdata = (symbol,id, platForm, fromSymbol, toSymbol, amount) => {
       });
   });
 };
-const verifyConvertion =(id,platForm,symbol,fromAmount)=>{
+const verifyConvertion =(id,platForm,symbol)=>{
   return new Promise((resolve,reject)=>{
   Txn.findOne({_id:id}).exec().then(data=>{
-    cryptoHelper.verifyOrder(data.convertionTime,platForm,symbol,data.orderId,fromAmount).then(data_verified=>{
+    cryptoHelper.verifyOrder(data.convertionTime,platForm,symbol,data.orderId,data.orderplacingAmt,data.side).then(data_verified=>{
       if(data_verified && data_verified.status=="closed"){
         if(!data.conversation_fees){
           data.convertionTime=data_verified.timestamp;
           data.conversation_fees = data_verified.fee ? data_verified.fee.cost : 0;
-          data.amtToSend =  data_verified.cost-data.conversation_fees;
+          data.amtToSend = data_verified.side =='sell' ?  data_verified.cost-data.conversation_fees : data_verified.amount-data.conversation_fees;
         }
         data.convertedYet= "finished";
         data.save();

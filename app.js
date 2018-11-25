@@ -37,7 +37,9 @@ Currency.estimatedDocumentCount({}).exec().then(async(isUpdated)=>{
   }else{
     
     // await require('./test').bc("ETH/USDT","USDT","ETH",9.93945744)
-    // await require('./test').gh()
+    // const ab= await require('./test').kucoinTrade()
+    // console.log(ab,">>>>>>>>>")
+    // await require('./test').testCryptopiav1()
     // do some testing stuffs here, if needed
     // await require('./controllers/p2p.cont').getCount();
   }

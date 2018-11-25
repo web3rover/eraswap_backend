@@ -24,6 +24,12 @@ depositNotFpund:{
     type:Boolean,
     default:true
 },
+orderplacingAmt:{
+    type:String,
+},
+side:{
+    type:String,
+},
 conversation_fees:{
     type:Number
 },

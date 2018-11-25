@@ -6,15 +6,48 @@ var rp =require('request-promise');
 
 const config = require('../configs/config');
 
-let Cryptopia = new ccxt.cryptopia({verbose:false,...config.keys.CRYPTOPIA});
-// let Kukoin = new ccxt.kucoin(config.keys.KUKOIN);
+// let Cryptopia = new ccxt.cryptopia({verbose:true,...config.keys.CRYPTOPIA});
+let Kukoin = new ccxt.kucoin(config.keys.KUKOIN);
 let Bittrex = new ccxt.bittrex({verbose:false,...config.keys.BITTREX});
 let Polonix = new ccxt.poloniex({verbose:false,...config.keys.POLONIEX});
 let Binance = new ccxt.binance({verbose:false,...config.keys.BINANCE});
 let Okex = new ccxt.okex({verbose:false,...config.keys.OKEX_V1});
 
-const Exchanges = [Bittrex, Binance,Cryptopia, Polonix, Okex];
+const Exchanges = [Bittrex, Binance,Kukoin, Polonix, Okex];
 // const Exchanges = [Binance];
+
+const Kucoin = require('kucoin-api');
+
+let kc = new Kucoin(config.keys.KUKOIN.apiKey, config.keys.KUKOIN.secret);
+
+const kuCoinMineWithdrawals = async (coin, page = 0) => {
+  return kc.getDepositAndWithdrawalRecords({
+    symbol:coin,
+    type:'deposit',
+    page:page
+  });
+  
+};
+
+let kuCoinGetWithdrawals = (coin) => {
+  return kuCoinMineWithdrawals(coin)
+    .then(async(data) => {
+      const totalResults = Number(data.data.total);
+      const promiseNeeded = Math.ceil(totalResults / Number(data.data.limit));
+      let resultData = [];
+      let promiseArr = [];
+        for (i = 0; i < promiseNeeded; i++) {
+          const minedData = await kuCoinMineWithdrawals(coin, i + 1);
+          resultData = resultData.concat(minedData.data.datas);
+        }
+      console.log(JSON.stringify(resultData));
+      return resultData
+    })
+    .catch(error => {
+      console.log(error);
+    });
+};
+
 
 const getAllCurrency = async () => {
   let allCurs = [];
@@ -173,14 +206,16 @@ const verifyTxn = async (dipositTxnId, tiMeFrom, platForm, symbol, amount) => {
         return rp(options)
           .then(function(reports) {
                 const a =reports.map(i => {
-                    //check time also here && (new Date(i.timestamp) < new Date(tiMeFrom))
-                    if ((dipositTxnId ? i.txid == dipositTxnId : true) && i.currency == symbol && i.amount == amount ) {
                       return {
                           txid:i.txid,
                           currency:i.currency,
                           amount:i.amount,
                           status: i.status == 2 ? 'ok' :'pending'
                       };
+                  }).filter(i=>{
+                      //check time also here && (new Date(i.timestamp) < new Date(tiMeFrom))
+                    if ((dipositTxnId ? i.txid == dipositTxnId : true) && i.currency == symbol && i.amount == amount) {
+                      return i;
                     }
                   });
                   return a;
@@ -190,11 +225,52 @@ const verifyTxn = async (dipositTxnId, tiMeFrom, platForm, symbol, amount) => {
             // API call failed...
             console.log(err);
           });
-      } else if (name.name.toLowerCase() == platForm.toLowerCase()) {
+      }
+      else if(name.name.toLowerCase() == platForm.toLowerCase() && name.name.toLowerCase() == 'kucoin'){
+          try{
+            const kucoinDeposits = await kuCoinGetWithdrawals(symbol);
+            const a = kucoinDeposits.map(i=>{
+              // i={
+              //   address:"0xe4717d694c78bf8c76a52388c969eeebee384ea0"
+              //   amount:0.03504
+              //   coinType:"ETH"
+              //   confirmation:17
+              //   createdAt:1542972397000
+              //   fee:0
+              //   oid:"5bf7e3edb95e0273d50e7fd3"
+              //   outerWalletTxid:"0x36ec3aa8505d668df9ec8c8591ef08ddf16d8592f79da96887f8017890a100d2@0xe4717d694c78bf8c76a52388c969eeebee384ea0@eth"
+              //   remark:null
+              //   status:"SUCCESS"
+              //   type:"DEPOSIT"
+              //   updatedAt:1542972397000
+              // }
+              // add here :  && i.createdAt > tiMeFrom
+              if ( i.type=="DEPOSIT") {
+                return {
+                  txid:i.outerWalletTxid,
+                  currency:i.coinType,
+                  amount:i.amount,
+                  status: i.status == 'SUCCESS' ? 'ok' :'pending'
+                }
+              }
+            }).filter(i=>{
+              if ((dipositTxnId ? i.txid == dipositTxnId : true) && i.currency == symbol && i.amount == amount) {
+                return i;
+              }
+            });
+            return a;
+          } catch(error_mapping){
+            console.log(error_mapping);
+            return Promise.reject({
+            status: 400,
+            message: error_mapping.message || 'No Txn Found',
+            error: error_mapping,
+          });}
+      }else if (name.name.toLowerCase() == platForm.toLowerCase()) {
       // await name.loadMarkets();
       let txnData;
       try {
-        txnData = await name.fetchDeposits((currencies = symbol), (since = tiMeFrom), (limit = 50), (params = {})); //change since=timeFrom
+        txnData = await name.fetchDeposits(symbol,tiMeFrom,50,{}); //change since=timeFrom
         console.log(JSON.stringify(txnData));
         // txnData=[
         //     {
@@ -261,27 +337,18 @@ const convertCurrency = async (symbol, platForm, fromSymbol, toSymbol, amount) =
                   }
            }
            console.log(await name.fetchBalance('DOGE'));
-
+           let toSymbolAmount;
         if (curMar.symbol === fromSymbol + '/' + toSymbol) {
-          try {
-            data = await name.createOrder(curMar.symbol, 'limit', 'sell', Number(amount), curMar.data.ask);
-          } catch (error) {
-            console.log(error);
-            // data = await name.createOrder(curMar.symbol, 'limit', 'buy', Number(amount), curMar.data.bid);
-          }
-
+           toSymbolAmount = Number(amount);
+            data = await name.createOrder(curMar.symbol, 'limit', 'sell', toSymbolAmount, curMar.data.ask);
+          
           console.log('sell order placed', symbol, fromSymbol, toSymbol);
         } else if (curMar.symbol === toSymbol + '/' + fromSymbol) {
-          try {
-            data = await name.createOrder(curMar.symbol, 'limit', 'buy', Number(amount), curMar.data.bid);
-          } catch (error) {
-            console.log(error);
-            // data = await name.createOrder(curMar.symbol, 'limit', 'sell', Number(amount), curMar.data.ask);
-          }
-
-          console.log('buy order placed', symbol, fromSymbol, toSymbol);
+             toSymbolAmount = Number(amount)/Number(curMar.data.bid)
+            data = await name.createOrder(curMar.symbol, 'limit', 'buy',toSymbolAmount, curMar.data.bid);
+            console.log('buy order placed', symbol, fromSymbol, toSymbol);
         }
-        return data;
+        return {orderplacingAmt:toSymbolAmount,...data};
       } catch (error) {
         console.log(name.iso8601(Date.now()), error.constructor.name, error.message);
         console.log(error.constructor.name);
@@ -332,13 +399,14 @@ const sendCurrency = async (platForm, address, amount, symbol) => {
   }
 };
 
-const verifyOrder = async (timeFrom, platForm, symbol, orderId,fromAmount) => {
+const verifyOrder = async (timeFrom, platForm, symbol, orderId,fromAmount,side) => {
   for (let x in Exchanges) {
     let name = Exchanges[x];
 
     if (name.name.toLowerCase() == platForm.toLowerCase()) {
       try {
-        const data = await name.fetchOrder(orderId,symbol);
+        
+        const data = await name.fetchOrder(orderId,symbol,{type:side.toUpperCase()});
         // if(data.length){
         //     const a =data.filter(i=>{
         //         if(i.cost==amount){
@@ -354,6 +422,14 @@ const verifyOrder = async (timeFrom, platForm, symbol, orderId,fromAmount) => {
            currency:symbol
          };
         }
+        console.log(JSON.stringify(data))
+        if(data.status=='closed' && data.fee.cost == 0 && name.name.toLowerCase() == 'kucoin'){
+            let fee = 0
+            data.trades.map(i=>{
+              fee = i.fee.cost+fee;
+            });
+            data.fee.cost = fee;
+        } 
         if(data.status=='closed' && name.name.toLowerCase() == 'cryptopia'){
           const MyTrades = await name.fetchMyTrades(symbol,timeFrom);
           console.log(MyTrades);
