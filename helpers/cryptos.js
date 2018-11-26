@@ -442,9 +442,9 @@ const verifyOrder = async (timeFrom, platForm, symbol, orderId,fromAmount,side) 
             const decimalPlace = i.amount.toString().split('.')[1].length+1;
             const fromAmtDecmialLength =decimalPlace - fromAmount.split('.')[1].length;
             const ab = fromAmount.split('.')[1].split('')
-            ab.split('').splice(decimalPlace,fromAmtDecmialLength);
+            ab.splice(decimalPlace,fromAmtDecmialLength);
             const cd =fromAmount.split('.')[0]+'.'+ab.join('')
-              if(i.side == 'buy'? i.amount : i.cost == cd)
+              if(i.amount == cd)
               {
                 return i;
               }
@@ -464,10 +464,10 @@ const verifyOrder = async (timeFrom, platForm, symbol, orderId,fromAmount,side) 
           
             const decimalPlace = i.amount.toString().split('.')[1].length;
             const fromAmtDecmialLength = fromAmount.split('.')[1].length-decimalPlace;
-            const ab = fromAmount.split('.')[1].split('')
+            const ab = fromAmount.split('.')[1].split('');
             ab.splice(decimalPlace,fromAmtDecmialLength);
             const cd =fromAmount.split('.')[0]+'.'+ab.join('')
-              if(i.side == 'buy'? i.amount : i.cost  == cd)
+              if(i.amount  == cd)
               {
                 return i;
               }
