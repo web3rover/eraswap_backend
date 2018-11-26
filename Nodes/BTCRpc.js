@@ -13,57 +13,6 @@ class BTCRpc {
         }
     }
 
-    async _btcRpcCall(command, params = [], path = "") {
-
-        if (!params instanceof Array) {
-            throw { error: true, message: "params must an array" };
-        }
-        else if (!command) {
-            throw { error: true, message: "Command can not be null" };
-        }
-
-        let options = {
-            url: "http://" + this.host + ":" + this.port + path,
-            method: "post",
-            headers:
-                {
-                    "content-type": "text/plain"
-                },
-            auth: {
-                user: this.username,
-                pass: this.password
-            },
-            body: JSON.stringify({ "jsonrpc": "1.0", "id": "curltest", "method": command, "params": params })
-        };
-
-        return new Promise((resolve, reject) => {
-            request(options, (error, response, body) => {
-                if (error) {
-                    reject(error);
-                } else {
-                    let result = body;
-                    let resJSON = null;
-
-                    try {
-                        let resJSON = JSON.parse(result);
-                        if (resJSON.error) {
-                            reject(resJSON.error);
-                        }
-                        else {
-                            resolve(resJSON);
-                        }
-                    } catch (ex) {
-                        reject({
-                            error: true,
-                            result: result,
-                            message: ex
-                        });
-                    }
-                }
-            });
-        });
-    }
-
     async createWallet(email) {
         return new Promise((resolve, reject) => {
             this._btcRpcCall("createwallet", [email]).then((res) => {
@@ -76,26 +25,6 @@ class BTCRpc {
                         reject(err));
                 }).catch(err =>
                     reject(err));
-            }).catch(err => {
-                reject(err);
-            });
-        });
-    }
-
-    async _unloadWallet(email) {
-        return new Promise((resolve, reject) => {
-            this._btcRpcCall("unloadwallet", [email], '/wallet/' + email).then(result => {
-                resolve(result);
-            }).catch(err => {
-                reject(err);
-            });
-        });
-    }
-
-    async _getNewAddressForWallet(email) {
-        return new Promise((resolve, reject) => {
-            this._btcRpcCall("getnewaddress", [email], '/wallet/' + email).then(result => {
-                resolve(result);
             }).catch(err => {
                 reject(err);
             });
@@ -156,6 +85,77 @@ class BTCRpc {
             this._btcRpcCall("dumpprivkey", [publicKey], '/wallet/' + email).
                 then(res => resolve(res))
                 .catch(err => reject(err));
+        });
+    }
+
+    async _btcRpcCall(command, params = [], path = "") {
+
+        if (!params instanceof Array) {
+            throw { error: true, message: "params must an array" };
+        }
+        else if (!command) {
+            throw { error: true, message: "Command can not be null" };
+        }
+
+        let options = {
+            url: "http://" + this.host + ":" + this.port + path,
+            method: "post",
+            headers:
+                {
+                    "content-type": "text/plain"
+                },
+            auth: {
+                user: this.username,
+                pass: this.password
+            },
+            body: JSON.stringify({ "jsonrpc": "1.0", "id": "curltest", "method": command, "params": params })
+        };
+
+        return new Promise((resolve, reject) => {
+            request(options, (error, response, body) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    let result = body;
+                    let resJSON = null;
+
+                    try {
+                        let resJSON = JSON.parse(result);
+                        if (resJSON.error) {
+                            reject(resJSON.error);
+                        }
+                        else {
+                            resolve(resJSON);
+                        }
+                    } catch (ex) {
+                        reject({
+                            error: true,
+                            result: result,
+                            message: ex
+                        });
+                    }
+                }
+            });
+        });
+    }
+
+    async _unloadWallet(email) {
+        return new Promise((resolve, reject) => {
+            this._btcRpcCall("unloadwallet", [email], '/wallet/' + email).then(result => {
+                resolve(result);
+            }).catch(err => {
+                reject(err);
+            });
+        });
+    }
+
+    async _getNewAddressForWallet(email) {
+        return new Promise((resolve, reject) => {
+            this._btcRpcCall("getnewaddress", [email], '/wallet/' + email).then(result => {
+                resolve(result);
+            }).catch(err => {
+                reject(err);
+            });
         });
     }
 

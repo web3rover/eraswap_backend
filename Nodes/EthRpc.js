@@ -20,7 +20,7 @@ class EthRpc {
         try {
             var op = await web3.eth.personal.newAccount(email);
 
-            var privKey = await this.getPrivateKey(op, email);
+            var privKey = await this._getPrivateKey(op, email);
 
             if (!privKey.error)
                 return { publicKey: op, privateKey: JSON.parse(privKey).privateKey, password: email };
@@ -29,31 +29,6 @@ class EthRpc {
         } catch (ex) {
             return ex;
         }
-    }
-
-    async getPrivateKey(address, password) {
-
-        var postData = {
-            address: address,
-            password: password
-        };
-
-        var op = {};
-
-        return new Promise((resolve, reject) => {
-            require('request').post({
-                uri: "http://" + this.host + ":" + 8080 + "/getPrivateKey",
-                headers: { 'content-type': 'application/x-www-form-urlencoded' },
-                body: require('querystring').stringify(postData)
-            }, function (err, res, body) {
-                if (err) {
-                    reject({ error: err });
-                }
-                else {
-                    resolve(body);
-                }
-            });
-        });
     }
 
     async getAddress(email) {
@@ -85,7 +60,7 @@ class EthRpc {
 
         try {
 
-            var op = await this.getPrivateKey(sender);
+            var op = await this._getPrivateKey(sender);
             if (op.error) {
                 return op;
             }
@@ -119,6 +94,31 @@ class EthRpc {
         catch (ex) {
             return { error: ex };
         }
+    }
+
+    async _getPrivateKey(address, password) {
+
+        var postData = {
+            address: address,
+            password: password
+        };
+
+        var op = {};
+
+        return new Promise((resolve, reject) => {
+            require('request').post({
+                uri: "http://" + this.host + ":" + 8080 + "/getPrivateKey",
+                headers: { 'content-type': 'application/x-www-form-urlencoded' },
+                body: require('querystring').stringify(postData)
+            }, function (err, res, body) {
+                if (err) {
+                    reject({ error: err });
+                }
+                else {
+                    resolve(body);
+                }
+            });
+        });
     }
 
 }
