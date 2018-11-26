@@ -152,7 +152,7 @@ const converTdata = (symbol,id, platForm, fromSymbol, toSymbol, amount) => {
       .convertCurrency(symbol,platForm, fromSymbol, toSymbol, amount)
       .then(data => {
         console.log('currencyConvertion:', data);
-        return Txn.findOneAndUpdate({ _id: id }, { $set: { convertedYet: 'started' ,convertionTime:data.timestamp,orderId:data.id, orderType:data.side,orderplacingAmt:data.orderplacingAmt} })
+        return Txn.findOneAndUpdate({ _id: id }, { $set: { convertedYet: 'started' ,convertionTime:data.timestamp,orderId:data.id, side:data.side,orderplacingAmt:data.orderplacingAmt} })
           .exec()
           .then(updated_data => {
             return resolve(data);

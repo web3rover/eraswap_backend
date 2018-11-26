@@ -428,18 +428,23 @@ const verifyOrder = async (timeFrom, platForm, symbol, orderId,fromAmount,side) 
          };
         }
         console.log(JSON.stringify(data))
-        if(data.status=='closed' && data.fee && data.fee.cost == 0 && name.name.toLowerCase() == 'kucoin'){
+        if(data.status=='closed' &&  data.trades.length && (data.fee || data.fee.cost == 0) && (name.name.toLowerCase() == 'kucoin' || name.name.toLowerCase() == 'poloniex')){
             let fee = 0
             data.trades.map(i=>{
               fee = i.fee.cost+fee;
             });
             data.fee.cost = fee;
         } 
-        if(data.status=='closed' && name.name.toLowerCase() == 'cryptopia'){
+        if(data.status=='closed' && (name.name.toLowerCase() == 'cryptopia' || name.name.toLowerCase() == 'poloniex')){
           const MyTrades = await name.fetchMyTrades(symbol,timeFrom);
           console.log(MyTrades);
           const a = MyTrades.filter(i=>{
-              if(i.amount == fromAmount)
+            const decimalPlace = i.amount.toString().split('.')[1].length+1;
+            const fromAmtDecmialLength =decimalPlace - fromAmount.split('.')[1].length;
+            const ab = fromAmount.split('.')[1].split('')
+            ab.split('').splice(decimalPlace,fromAmtDecmialLength);
+            const cd =fromAmount.split('.')[0]+'.'+ab.join('')
+              if(i.side == 'buy'? i.amount : i.cost == cd)
               {
                 return i;
               }
@@ -454,8 +459,15 @@ const verifyOrder = async (timeFrom, platForm, symbol, orderId,fromAmount,side) 
         try{
           const data = await name.fetchMyTrades(symbol,timeFrom);
           console.log(data);
+          
           const a = data.filter(i=>{
-              if(i.amount == fromAmount)
+          
+            const decimalPlace = i.amount.toString().split('.')[1].length;
+            const fromAmtDecmialLength = fromAmount.split('.')[1].length-decimalPlace;
+            const ab = fromAmount.split('.')[1].split('')
+            ab.splice(decimalPlace,fromAmtDecmialLength);
+            const cd =fromAmount.split('.')[0]+'.'+ab.join('')
+              if(i.side == 'buy'? i.amount : i.cost  == cd)
               {
                 return i;
               }
