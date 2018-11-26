@@ -55,20 +55,25 @@ class ESTRpc {
 
     async send(sender, receiver, amount) {
         try {
-            var superUser = await this._getSuperUserWallet();
-            if (!superUser.error) {
-                var pwd = await this._getPassword(superUser.data);
-                await web3.eth.personal.unlockAccount(superUser.data, pwd, 0);
-                var op = await this.tokenContract.methods.transfer(receiver, amount).send({ from: superUser.data });
+            var pwd = await this._getPassword(sender);
+            await web3.eth.personal.unlockAccount(sender, pwd, 0);
+            var op = await this.tokenContract.methods.transfer(receiver, amount).send({ from: sender });
 
-                return op;
-            }
-            else {
-                return superUser;
-            }
+            return op;
         }
         catch (ex) {
             return ex;
+        }
+    }
+
+    async sendTokenToEscrow(sender, amount) {
+        var superUser = await this._getSuperUserWallet("est");
+        if (!superUser.error) {
+            var op = await this.send(sender, superUser.data, amount);
+            return op;
+        }
+        else {
+            return superUser;
         }
     }
 
@@ -85,26 +90,24 @@ class ESTRpc {
         }
     }
 
-    async _getSuperUserWallet() {
-        return new Promise((resolve, reject) => {
-            var user = await Users.findOne({ superUser: true }).populate('wallet');
-            var address = "";
-            if (user) {
-                for (var i = 0; i < user.wallet.length; i++) {
-                    if (user.wallet[i].type == 'eth') {
-                        address = user.wallet[i].publicKey;
-                        break;
-                    }
+    async _getSuperUserWallet(type) {
+        var user = await Users.findOne({ superUser: true }).populate('wallet');
+        var address = "";
+        if (user) {
+            for (var i = 0; i < user.wallet.length; i++) {
+                if (user.wallet[i].type == type) {
+                    address = user.wallet[i].publicKey;
+                    break;
                 }
-                if (address == "") {
-                    return { error: "Super user wallet not found for gas fees!" };
-                }
-                return { data: address };
             }
-            else {
-                return { error: "Super user not found!" };
+            if (address == "") {
+                return { error: "Super user wallet not found for gas fees!" };
             }
-        });
+            return { data: address };
+        }
+        else {
+            return { error: "Super user not found!" };
+        }
     }
 
 }
