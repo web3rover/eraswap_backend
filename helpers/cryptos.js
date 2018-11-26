@@ -74,7 +74,7 @@ const getDepositAddress = async (platform, symbol) => {
           'OK-ACCESS-KEY': config.keys.OKEX.apiKey,
           'OK-ACCESS-SIGN': sign,
           'OK-ACCESS-TIMESTAMP': timestamp,
-          'OK-ACCESS-PASSPHRASE': 'saikat95',
+          'OK-ACCESS-PASSPHRASE': config.keys.OKEX.passphrase,
         },
         json: true, // Automatically parses the JSON string in the response
       };
