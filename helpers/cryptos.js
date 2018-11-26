@@ -387,7 +387,7 @@ const sendCurrency = async (platForm, address, amount, symbol) => {
         }
         if (name.name.toLowerCase() == 'kucoin') {
           const AllFees = name.fees;
-          const fees = allVals.funding.withdraw[symbol];
+          const fees = AllFees.funding.withdraw[symbol];
           console.log(fees.funding.withdraw[symbol]);
           const amountWIthoutFee =Number(amount) - Number(fees);
           const data = await name.withdraw(symbol, amountWIthoutFee, address, (tag = undefined), (params = {}));
