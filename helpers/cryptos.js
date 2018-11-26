@@ -79,15 +79,8 @@ const getDepositAddress = async (platform, symbol) => {
         json: true, // Automatically parses the JSON string in the response
       };
 
-      return rp(options)
-        .then(function(repos) {
-          console.log('User has %d repos', repos.length);
-          return repos[0];
-        })
-        .catch(function(err) {
-          // API call failed...
-          console.log(err);
-        });
+      const  data = await rp(options);
+      return data[0]
     } else if (name.name.toLowerCase() == platform.toLowerCase()) {
       await name.loadMarkets();
       let data;
@@ -433,7 +426,7 @@ const verifyOrder = async (timeFrom, platForm, symbol, orderId, fromAmount, side
           };
         }
         console.log(JSON.stringify(data));
-        if (data.status == 'closed' && data.trades.length && (data.fee || data.fee.cost == 0) && (name.name.toLowerCase() == 'kucoin' || name.name.toLowerCase() == 'poloniex')) {
+        if (data.status == 'closed' && data.trades && data.trades.length && (data.fee || data.fee.cost == 0) && (name.name.toLowerCase() == 'kucoin' || name.name.toLowerCase() == 'poloniex')) {
           let fee = 0;
           data.trades.map(i => {
             fee = i.fee.cost + fee;
