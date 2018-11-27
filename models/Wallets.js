@@ -7,7 +7,8 @@ var WalletSchema = new mongoose.Schema(
     publicKey: {type: String, required: true},
     privateKey: String,
     password: {type: String, required: true},
-    owner: { type: Schema.Types.ObjectId, ref: 'Users' },
+    owner: { type: Schema.Types.ObjectId, ref: 'Users', required: false },
+    gasTank: { type: Boolean, require: false },
   }
 );
 
