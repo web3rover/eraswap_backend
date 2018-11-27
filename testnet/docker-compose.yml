@@ -3,6 +3,7 @@ version: '3.0'
 services:
 
   eth_node:
+    image: 652913482229.dkr.ecr.us-west-2.amazonaws.com/eth_node
     build: eth
     ports:
       - "8545:8545"
@@ -12,6 +13,7 @@ services:
       - EthData_test:/root/.ethereum
 
   eth_server:
+    image: 652913482229.dkr.ecr.us-west-2.amazonaws.com/eth_server
     build: server
     ports:
       - 8080:8080
