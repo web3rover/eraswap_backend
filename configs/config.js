@@ -1,6 +1,6 @@
 module.exports = {
   mongo: {
-    url: 'mongodb://abcd:saikat95@ds129720.mlab.com:29720/test2',
+    url: 'mongodb://saikatharryc:saikat95@ds129720.mlab.com:29720/test2',
   },
   BLOCKCLUSTER:{
     host:"app-ap-south-1b.blockcluster.io",
@@ -27,7 +27,8 @@ module.exports = {
     OKEX:{
       apiKey:"21aa6369-e743-4278-a86e-9a281893a9c7",
       secret:"2096DEC29C5875235826B84100A95EF2",
-      passphrase:'saikat95'
+      passphrase:'saikat95',
+      password:'Saikat@95'
       // apiKey:"bea39634-a54c-47b3-8d6e-7dc6c030eebb",
       // secret:"EBA812E08ADCFFB1E3D19BC6E1A685CF",
       // passphrase:'callofduty'
@@ -38,7 +39,8 @@ module.exports = {
     }, 
     OKEX_V1:{
       apiKey:"fc217c23-5887-4fc1-bb7a-63c8e649185e",
-      secret:"D35802E871C8676199084B7236BF9D2A"
+      secret:"D35802E871C8676199084B7236BF9D2A",
+      password:'Saikat@95'
     }
   },
   JWT: {
