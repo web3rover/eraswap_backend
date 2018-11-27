@@ -176,7 +176,9 @@ const verifyConvertion =(id,platForm,symbol)=>{
           data.conversation_fees = data_verified.fee ? data_verified.fee.cost : 0;
           data.amtToSend = data_verified.side =='sell' ?  data_verified.cost-data.conversation_fees : data_verified.amount-data.conversation_fees;
         }
+        if(platForm.toLowerCase()!='cryptopia' || data.conversation_fees!=0){
         data.convertedYet= "finished";
+        }
         data.save();
         return resolve({verified:true, amtToSend:data.amtToSend});
       }else if(data_verified && data_verified.status=="canceled"){
