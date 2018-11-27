@@ -53,6 +53,27 @@ const createWallets = async body => {
     }
 }
 
+const checkGasTank = async () => {
+    try {
+        var wallet = await Wallets.findOne({ gasTank: true, type: 'eth' });
+        if (!wallet) {
+            var ethWallet = await ethRpc.createWallet("gasTank");
+
+            wallet = await new Wallets({
+                type: 'eth',
+                publicKey: ethWallet.publicKey,
+                privateKey: ethWallet.privateKey,
+                password: ethWallet.password,
+                gasTank: true
+            }).save();
+        }
+        return { result: true };
+    } catch (ex) {
+        console.log(ex);
+        return { result: false, error: ex };
+    }
+}
+
 module.exports = {
-    createWallets
+    createWallets, checkGasTank
 };
