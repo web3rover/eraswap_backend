@@ -6,14 +6,14 @@ var rp = require('request-promise');
 
 const config = require('../configs/config');
 
-// let Cryptopia = new ccxt.cryptopia({verbose:true,...config.keys.CRYPTOPIA});
-let Kukoin = new ccxt.kucoin(config.keys.KUKOIN);
+let Cryptopia = new ccxt.cryptopia({verbose:false,...config.keys.CRYPTOPIA});
+// let Kukoin = new ccxt.kucoin(config.keys.KUKOIN);
 let Bittrex = new ccxt.bittrex({ verbose: false, ...config.keys.BITTREX });
 let Polonix = new ccxt.poloniex({ verbose: false, ...config.keys.POLONIEX });
 let Binance = new ccxt.binance({ verbose: false, ...config.keys.BINANCE });
 let Okex = new ccxt.okex({ verbose: false, ...config.keys.OKEX_V1 });
 
-const Exchanges = [Bittrex, Binance, Kukoin, Polonix, Okex];
+const Exchanges = [Bittrex, Binance, Cryptopia, Polonix, Okex];
 // const Exchanges = [Binance];
 
 const Kucoin = require('kucoin-api');
@@ -79,8 +79,8 @@ const getDepositAddress = async (platform, symbol) => {
         json: true, // Automatically parses the JSON string in the response
       };
 
-      const  data = await rp(options);
-      return data[0]
+      const data = await rp(options);
+      return data[0];
     } else if (name.name.toLowerCase() == platform.toLowerCase()) {
       await name.loadMarkets();
       let data;
@@ -161,24 +161,19 @@ const getTransactionFee = async (orderId, symbol) => {
     json: true, // Automatically parses the JSON string in the response
   };
 
-  rp(options)
-    .then(function(repos) {
-      let fee = 0;
-      repos.map(i => {
-        fee = fee + Number(i.fee);
-      });
-      return fee;
-    })
-    .catch(function(err) {
-      // API call failed...
-      console.log(err);
-    });
+  const feeStruct = await rp(options);
+
+  let fee = 0;
+  feeStruct.map(i => {
+    fee = fee + Number(i.fee);
+  });
+  return fee;
 };
 const verifyTxn = async (dipositTxnId, tiMeFrom, platForm, symbol, amount) => {
   for (let x in Exchanges) {
     let name = Exchanges[x];
     if (name.name.toLowerCase() == platForm.toLowerCase() && name.name.toLowerCase() == 'okex') {
-      const path = '/api/account/v3/deposit/history?currency=' + symbol.toLowerCase() + '&amount=' + amount;
+      const path = '/api/account/v3/deposit/history/' + symbol.toLowerCase() + '?amount=' + amount;
       const timestamp = new Date().toISOString();
       const sign = CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA256(timestamp + 'GET' + path, config.keys.OKEX.secret));
       var options = {
@@ -188,7 +183,7 @@ const verifyTxn = async (dipositTxnId, tiMeFrom, platForm, symbol, amount) => {
           'OK-ACCESS-KEY': config.keys.OKEX.apiKey,
           'OK-ACCESS-SIGN': sign,
           'OK-ACCESS-TIMESTAMP': timestamp,
-          'OK-ACCESS-PASSPHRASE': 'saikat95',
+          'OK-ACCESS-PASSPHRASE': config.keys.OKEX.passphrase,
         },
         json: true, // Automatically parses the JSON string in the response
       };
@@ -365,25 +360,86 @@ const sendCurrency = async (platForm, address, amount, symbol) => {
         //     info:"",
         //     id:121212
         // }
-        if (name.name.toLowerCase() == 'okex') {
-          const sym = symbol.toLowerCase() + '_usd';
-          const data = await name.private_post_funds_transfer({
-            symbol: sym, //eth_usd to transfer ETH
-            amount: amount, // an amount of 1 ETH is being transferred
-            // 1 = spot trading account, 3 = futures trading account, 6 = wallet account
-            from: 1, // from spot
-            to: 6, // to wallet
-          });
-          if (!data.result) {
-            return Promise.reject({ message: 'unable to transfer to the spot account' });
-          }
-        }
+        // if (name.name.toLowerCase() == 'okex') {
+        //   const sym = symbol.toLowerCase() + '_usd';
+        //   const data = await name.private_post_funds_transfer({
+        //     symbol: sym, //eth_usd to transfer ETH
+        //     amount: amount, // an amount of 1 ETH is being transferred
+        //     // 1 = spot trading account, 3 = futures trading account, 6 = wallet account
+        //     from: 1, // from spot
+        //     to: 6, // to wallet
+        //   });
+        //   if (!data.result) {
+        //     return Promise.reject({ message: 'unable to transfer to the spot account' });
+        //   }
+        // }
         if (name.name.toLowerCase() == 'kucoin') {
           const AllFees = name.fees;
           const fees = AllFees.funding.withdraw[symbol];
-          const amountWIthoutFee =Number(amount) - Number(fees);
+          const amountWIthoutFee = Number(amount) - Number(fees);
           const data = await name.withdraw(symbol, amountWIthoutFee, address, (tag = undefined), (params = {}));
           return data;
+        }
+
+        if (name.name.toLowerCase() == 'okex') {
+          const path = '/api/account/v3/withdrawal/fee?currency=' + symbol.toLowerCase();
+          const timestamp = new Date().toISOString();
+          const sign = CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA256(timestamp + 'GET' + path, config.keys.OKEX.secret));
+          var options = {
+            uri: 'https://www.okex.com' + path,
+            headers: {
+              'User-Agent': 'Request-Promise',
+              'OK-ACCESS-KEY': config.keys.OKEX.apiKey,
+              'OK-ACCESS-SIGN': sign,
+              'OK-ACCESS-TIMESTAMP': timestamp,
+              'OK-ACCESS-PASSPHRASE': config.keys.OKEX.passphrase,
+            },
+            json: true, // Automatically parses the JSON string in the response
+          };
+
+          const allFee = await rp(options);
+          const fee = allFee[0].min_fee;
+          const withdrawPath = '/api/account/v3/withdrawal';
+          const timestampV1 = new Date().toISOString();
+          const body = {
+            amount: amount.toString(),
+            currency: symbol.toLowerCase(),
+            destination: 4,
+            fee: fee.toString(),
+            to_address: address,
+            trade_pwd: config.keys.OKEX.password
+          };
+          console.log(JSON.stringify(body))
+          const withdrawSign = CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA256(timestampV1 + 'POST' + withdrawPath + JSON.stringify(body), config.keys.OKEX.secret));
+          var withdrawOptions = {
+            method: 'POST',
+            body: body,
+            uri: 'https://www.okex.com' + withdrawPath,
+            headers: {
+              'User-Agent': 'Request-Promise',
+              'OK-ACCESS-KEY': config.keys.OKEX.apiKey,
+              'OK-ACCESS-SIGN': withdrawSign,
+              'OK-ACCESS-TIMESTAMP': timestampV1,
+              'OK-ACCESS-PASSPHRASE': config.keys.OKEX.passphrase,
+              'content-type': 'application/json',
+            },
+            json: true, // Automatically parses the JSON string in the response
+          };
+          const sendingData = await rp(withdrawOptions);
+          if (sendingData.result) {
+            return {
+              witdrawn: sendingData.result,
+              id: sendingData.withdrawal_id,
+            };
+          } else {
+            return Promise.reject({
+              status: 400,
+              message: sendingData.error_code || 'Some Error Occured!',
+              error: sendingData,
+            });
+          }
+          // const data = await name.withdraw(symbol, amount, address, (tag = undefined), (params = {chargefee:fee,destination:4}));
+          //  return data;
         }
         const data = await name.withdraw(symbol, amount, address, (tag = undefined), (params = {}));
         return data;
@@ -426,7 +482,13 @@ const verifyOrder = async (timeFrom, platForm, symbol, orderId, fromAmount, side
           };
         }
         console.log(JSON.stringify(data));
-        if (data.status == 'closed' && data.trades && data.trades.length && (data.fee || data.fee.cost == 0) && (name.name.toLowerCase() == 'kucoin' || name.name.toLowerCase() == 'poloniex')) {
+        if (
+          data.status == 'closed' &&
+          data.trades &&
+          data.trades.length &&
+          (data.fee || data.fee.cost == 0) &&
+          (name.name.toLowerCase() == 'kucoin' || name.name.toLowerCase() == 'poloniex')
+        ) {
           let fee = 0;
           data.trades.map(i => {
             fee = i.fee.cost + fee;
