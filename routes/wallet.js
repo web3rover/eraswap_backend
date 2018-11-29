@@ -25,7 +25,7 @@ getAddress = async (email, crypto) => {
     }
 }
 
-router.get('/balance', async (req, res, next) => {
+router.get('/getBalance', async (req, res, next) => {
     console.log(req.user);
     console.log(req.query);
     var crypto = req.query.crypto;

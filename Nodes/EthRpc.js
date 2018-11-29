@@ -53,7 +53,7 @@ class EthRpc {
     async getBalance(address) {
         var balance = await web3.eth.getBalance(address);
 
-        return balance;
+        return web3.utils.fromWei(balance, 'ether');
     }
 
     async send(sender, receiver, amount) {
