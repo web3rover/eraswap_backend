@@ -35,13 +35,7 @@ Currency.estimatedDocumentCount({}).exec().then(async(isUpdated)=>{
     const allCur =await require('./helpers/cryptos').getAllCurrency();
     return Currency.insertMany(allCur);
   }else{
-    
-    // await require('./test').bc("ETH/USDT","USDT","ETH",9.93945744)
-    // const ab= await require('./test').kucoinTrade()
-    // console.log(ab,">>>>>>>>>")
-    // await require('./test').testCryptopiav1()
-    // do some testing stuffs here, if needed
-    // await require('./controllers/p2p.cont').getCount();
+    //do testings here
   }
 });
 var agenda = require('./agenda')

@@ -18,8 +18,8 @@ const agenda = new Agenda({
 
 agenda.define('CheckForTxn and Send',(job,done)=>{
     // console.log(job.data);
-    const jobData = job.attrs.data;
-    const failCount = job.attrs.failCount || 0;
+const jobData = job.attrs.data;
+const failCount = job.attrs.failCount || 0;
 return crypto.getCurrentMarket(jobData.exchangePlatform, jobData.symbol).then(curMar=>{
   return txnCont
   .verifyTxn(jobData.eraswapSendAddress, jobData.lctxid, jobData.tiMeFrom, jobData.exchangePlatform, jobData.exchFromCurrency, jobData.exchFromCurrencyAmt)
