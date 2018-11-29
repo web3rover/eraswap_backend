@@ -5,10 +5,6 @@ const config = require('../configs/config');
 
 const register = body => {
     return new Promise(async (resolve, reject) => {
-        //First User will be super user
-        const count = await Users.find({}).count();
-        if (count == 0)
-            body["superUser"] = true;
         const savable = new Users(body);
         savable.save((error, saved) => {
             if (error) {

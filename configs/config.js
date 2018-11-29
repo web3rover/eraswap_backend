@@ -49,13 +49,13 @@ module.exports = {
   },
   NODES: {
       btc: {
-          host: '52.172.135.196',
+          host: '13.233.168.86',
           port: '8555',
           username: 'foo',
           password: 'bar'
       },
       eth: {
-          host: '52.172.135.196',
+          host: '13.233.168.86',
           port: '8545'
       }
   }
