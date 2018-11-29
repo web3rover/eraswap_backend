@@ -15,7 +15,7 @@ getAddress = async (email, crypto) => {
     if (rpc) {
         try {
             var address = await rpc.getAddress(email);
-            return address.data;
+            return address.error ? address : address.data;
         } catch (ex) {
             return ex;
         }
@@ -42,7 +42,6 @@ getPrivateKey = async (email, crypto) => {
 
 router.get('/getBalance', async (req, res, next) => {
     console.log(req.user);
-    console.log(req.query);
     var crypto = req.query.crypto;
     var rpcModule = getRpcModule(crypto);
     try {
@@ -107,6 +106,8 @@ router.post('/send', async (req, res, next) => {
     if (rpcModule) {
         var op = "";
         try {
+            if (!req.body.receiver || !req.body.amount)
+                throw "All parameters required!";
             if (req.body.crypto === "Btc") {
                 op = await rpcModule.send(req.user.email, req.body.receiver, req.body.amount);
             }
@@ -114,11 +115,11 @@ router.post('/send', async (req, res, next) => {
                 var sender = await getAddress(req.user.email, req.body.crypto);
                 op = await rpcModule.send(sender, req.body.receiver, req.body.amount);
             }
-            if (op.success) {
+            if (!op.error && op.success) {
                 return res.json(op);
             }
             else {
-                return next({ message: op.message ? op.message : op });
+                return next({ message: op.message ? op.message : op.error ? op.error : op });
             }
 
         }
@@ -126,7 +127,7 @@ router.post('/send', async (req, res, next) => {
             if (ex.code === "ENETUNREACH") {
                 return next({ message: "connection to bitcoin node failed!" });
             }
-            return next(ex);
+            return next({ message: ex.message });
         }
     } else {
         return next({ message: "RPC module not found!" });
