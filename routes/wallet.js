@@ -50,7 +50,7 @@ router.get('/getBalance', async (req, res, next) => {
             var balance = "";
             if (crypto === "Btc") {
                 balance = await rpcModule.getBalance(req.user.email);
-                balance = balance.error ? balance : balance.result;
+                balance = balance.error ? balance : "" + balance.result;
             }
             else {
                 var address = await getAddress(req.user.email, crypto);

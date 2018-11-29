@@ -57,7 +57,7 @@ class EthRpc {
             return web3.utils.fromWei(balance, 'ether');
         }
         catch (ex) {
-            return ex;
+            return { error: ex.message };
         }
     }
 

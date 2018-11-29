@@ -49,7 +49,7 @@ class ESTRpc {
             var bal = await this.tokenContract.methods.balanceOf(address).call();
             return bal;
         } catch (ex) {
-            return ex;
+            return { error: ex.message };
         }
     }
 
