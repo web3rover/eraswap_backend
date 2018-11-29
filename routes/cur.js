@@ -24,6 +24,20 @@ router.get('/get_exchange_values', (req, res, next) => {
     return next(error);
   });
 });
+router.get('/checkVal',(req,res,next)=>{
+  if(!req.query.currency){
+    return next({
+      message:"No Currency Found",
+      status:400
+    });
+  }
+  return request("https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=USD&CMC_PRO_API_KEY=1c2d23ed-bdca-4714-b39b-8e33bffe5053&symbol="+req.query.currency).then(data=>{
+      console.log(data);
+      return res.json(data);
+  }).catch(error=>{
+    return next(error);
+  })
+});
 router.get('/get_epositAddress',(req,res,next)=>{
   if(!req.query.platform || !req.query.symbol){
     return next({
