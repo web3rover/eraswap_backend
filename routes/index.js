@@ -36,6 +36,7 @@ api.includeRoutes = app => {
   var currency = require('./cur');
   var txn = require('./txn');
   var p2p = require('./p2p');
+  var wallet = require('./wallet');
 
   app.use('/auth', userAuth);
   app.use('/apis/*',isAuth);
@@ -46,6 +47,7 @@ api.includeRoutes = app => {
   app.use('/apis/cur',currency);
   app.use('/apis/txn', txn);
   app.use('/apis/p2p',p2p);
+  app.use('/apis/wallet', wallet);
 };
 
 module.exports = api;

@@ -23,7 +23,7 @@ class EthRpc {
             var privKey = await this._getPrivateKey(op, email);
 
             if (!privKey.error)
-                return { publicKey: op, privateKey: JSON.parse(privKey).privateKey, password: email };
+                return { publicKey: op, privateKey: "0x" + JSON.parse(privKey).privateKey, password: email };
             else
                 return privKey;
         } catch (ex) {
@@ -46,14 +46,19 @@ class EthRpc {
             }
             return { data: address };
         } catch (ex) {
-            return { error: ex };
+            return { ex };
         }
     }
 
     async getBalance(address) {
-        var balance = await web3.eth.getBalance(address);
+        try {
+            var balance = await web3.eth.getBalance(address);
 
-        return balance;
+            return web3.utils.fromWei(balance, 'ether');
+        }
+        catch (ex) {
+            return { error: ex.message };
+        }
     }
 
     async send(sender, receiver, amount) {
@@ -61,7 +66,8 @@ class EthRpc {
         try {
 
             var op = await this._getPrivateKey(sender);
-            if (op.error) {
+            op = JSON.parse(op);
+            if (op.error || !op.privateKey) {
                 return op;
             }
             else {
@@ -82,21 +88,30 @@ class EthRpc {
                 var txResult = {};
                 var txInfo = await web3.eth.sendSignedTransaction(signed.rawTransaction, function (err, transactionHash) {
                     if (!err) {
-                        txResult = { error: false, txHash: transactionHash };
+                        txResult = { txHash: transactionHash };
                     }
                     else {
                         txResult = { error: err };
                     }
                 });
-                return txResult.error ? txResult : { txHash: txResult.txHash, blockInfo: txInfo };
+                return txResult.error ? txResult : { success: true, txHash: txResult.txHash, blockInfo: txInfo };
             }
         }
         catch (ex) {
-            return { error: ex };
+            return { ex };
         }
     }
 
-    async _getPrivateKey(address, password) {
+    async _getPrivateKey(address) {
+        var password = "";
+        try {
+            var wallet = await Wallets.findOne({ publicKey: address }).populate('owner');
+            if (wallet) {
+                password = wallet.owner.email;
+            }
+        } catch (ex) {
+            return ex;
+        }
 
         var postData = {
             address: address,
@@ -119,6 +134,25 @@ class EthRpc {
                 }
             });
         });
+    }
+
+    async getPrivateKey(email) {
+        try {
+            var user = await Users.findOne({ email: email }).populate('wallet');
+            var address = "";
+            for (var i = 0; i < user.wallet.length; i++) {
+                if (user.wallet[i].type == 'eth') {
+                    address = user.wallet[i].privateKey;
+                    break;
+                }
+            }
+            if (!address) {
+                return { error: "EST token wallet not found!" };
+            }
+            return { data: address };
+        } catch (ex) {
+            return { ex };
+        }
     }
 
 }

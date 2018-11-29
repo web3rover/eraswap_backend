@@ -1,4 +1,4 @@
-const interface = require('../../Abi');
+const interface = require('../../tokenAbi/ESTAbi');
 const ESTRpc = require('../../ESTRpc');
 var config = require('../../../configs/config');
 var mongoose = require('mongoose');
