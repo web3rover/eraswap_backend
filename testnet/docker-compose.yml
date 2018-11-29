@@ -5,6 +5,7 @@ services:
   eth_node:
     image: 652913482229.dkr.ecr.us-west-2.amazonaws.com/eth_node
     build: eth
+    restart: always
     ports:
       - "8545:8545"
       - "8546:8546"
@@ -15,6 +16,7 @@ services:
   eth_server:
     image: 652913482229.dkr.ecr.us-west-2.amazonaws.com/eth_server
     build: server
+    restart: always
     ports:
       - 8080:8080
     volumes:
@@ -22,6 +24,7 @@ services:
 
   btc_node:
     image: ruimarinho/bitcoin-core:0.17-alpine
+    restart: always
     ports:
       - "8555:8555"
     command: -rpcport=8555 -printtoconsole -rpcuser=foo -rpcpassword=bar -rpcallowip='0.0.0.0/0' -rpcbind='0.0.0.0' -wallet -testnet=1
