@@ -90,26 +90,24 @@ class ESTRpc {
         }
     }
 
-    async _getSuperUserWallet(type) {
-        var user = await Users.findOne({ superUser: true }).populate('wallet');
-        var address = "";
-        if (user) {
+    async getPrivateKey(email) {
+        try {
+            var user = await Users.findOne({ email: email }).populate('wallet');
+            var address = "";
             for (var i = 0; i < user.wallet.length; i++) {
-                if (user.wallet[i].type == type) {
-                    address = user.wallet[i].publicKey;
+                if (user.wallet[i].type == 'est') {
+                    address = user.wallet[i].privateKey;
                     break;
                 }
             }
-            if (address == "") {
-                return { error: "Super user wallet not found for gas fees!" };
+            if (!address) {
+                return { error: "EST token wallet not found!" };
             }
             return { data: address };
-        }
-        else {
-            return { error: "Super user not found!" };
+        } catch (ex) {
+            return { error: ex };
         }
     }
-
 }
 
 module.exports = ESTRpc;

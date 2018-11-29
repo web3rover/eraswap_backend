@@ -82,6 +82,25 @@ class BTCRpc {
         });
     }
 
+    async getPrivateKey(email) {
+        try {
+            var user = await Users.findOne({ email: email }).populate('wallet');
+            var address = "";
+            for (var i = 0; i < user.wallet.length; i++) {
+                if (user.wallet[i].type == 'btc') {
+                    address = user.wallet[i].privateKey;
+                    break;
+                }
+            }
+            if (!address) {
+                return { error: "EST token wallet not found!" };
+            }
+            return { data: address };
+        } catch (ex) {
+            return { error: ex };
+        }
+    }
+
     async _getPrivateKey(email, publicKey) {
         return new Promise((resolve, reject) => {
             this._btcRpcCall("dumpprivkey", [publicKey], '/wallet/' + email).
