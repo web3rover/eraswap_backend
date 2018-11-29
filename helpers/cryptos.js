@@ -138,6 +138,7 @@ const getExchangeVal = async (from, to) => {
     }
     const marketObj = {
       name: name.name,
+      sym:symbol,
       ask: data && data.ask ? data.ask : 0,
       bid: data && data.bid ? data.bid : 0,
     };
