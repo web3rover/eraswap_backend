@@ -59,7 +59,7 @@ class ESTRpc {
             await web3.eth.personal.unlockAccount(sender, pwd, 0);
             var op = await this.tokenContract.methods.transfer(receiver, amount).send({ from: sender });
 
-            return op;
+            return { success: op };
         }
         catch (ex) {
             return ex;

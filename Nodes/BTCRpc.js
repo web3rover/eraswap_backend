@@ -1,4 +1,5 @@
 const request = require('request');
+const Users = require('../models/Users');
 
 class BTCRpc {
     constructor(host, port, username, password) {
@@ -41,9 +42,10 @@ class BTCRpc {
         });
     }
 
-    async send(address, sendingWallet, amount) {
+    async send(sendingWallet, address, amount) {
         return new Promise((resolve, reject) => {
             this._btcRpcCall("sendtoaddress", [address, amount], "/wallet/" + sendingWallet).then(result => {
+                result["success"] = true;
                 resolve(result);
             }).catch(err => {
                 reject(err);

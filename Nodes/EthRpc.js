@@ -61,7 +61,8 @@ class EthRpc {
         try {
 
             var op = await this._getPrivateKey(sender);
-            if (op.error) {
+            op = JSON.parse(op);
+            if (op.error || !op.privateKey) {
                 return op;
             }
             else {
@@ -82,21 +83,30 @@ class EthRpc {
                 var txResult = {};
                 var txInfo = await web3.eth.sendSignedTransaction(signed.rawTransaction, function (err, transactionHash) {
                     if (!err) {
-                        txResult = { error: false, txHash: transactionHash };
+                        txResult = { txHash: transactionHash };
                     }
                     else {
                         txResult = { error: err };
                     }
                 });
-                return txResult.error ? txResult : { txHash: txResult.txHash, blockInfo: txInfo };
+                return txResult.error ? txResult : { success: true, txHash: txResult.txHash, blockInfo: txInfo };
             }
         }
         catch (ex) {
-            return { error: ex };
+            return { ex };
         }
     }
 
-    async _getPrivateKey(address, password) {
+    async _getPrivateKey(address) {
+        var password = "";
+        try {
+            var wallet = await Wallets.findOne({ publicKey: address }).populate('owner');
+            if (wallet) {
+                password = wallet.owner.email;
+            }
+        } catch (ex) {
+            return ex;
+        }
 
         var postData = {
             address: address,
