@@ -46,7 +46,7 @@ class EthRpc {
             }
             return { data: address };
         } catch (ex) {
-            return { ex };
+            return { error: ex.message };
         }
     }
 
@@ -91,14 +91,14 @@ class EthRpc {
                         txResult = { txHash: transactionHash };
                     }
                     else {
-                        txResult = { error: err };
+                        txResult = { message : err.message };
                     }
                 });
                 return txResult.error ? txResult : { success: true, txHash: txResult.txHash, blockInfo: txInfo };
             }
         }
         catch (ex) {
-            return { ex };
+            return { error: ex.message };
         }
     }
 
@@ -151,7 +151,7 @@ class EthRpc {
             }
             return { data: address };
         } catch (ex) {
-            return { ex };
+            return { error: ex.message };
         }
     }
 

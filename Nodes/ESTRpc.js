@@ -40,7 +40,7 @@ class ESTRpc {
             }
             return { data: address };
         } catch (ex) {
-            return { error: ex };
+            return { error: ex.message };
         }
     }
 
@@ -62,7 +62,7 @@ class ESTRpc {
             return { success: op };
         }
         catch (ex) {
-            return ex;
+            return { error: ex.message };
         }
     }
 
@@ -105,7 +105,7 @@ class ESTRpc {
             }
             return { data: address };
         } catch (ex) {
-            return { error: ex };
+            return { error: ex.message };
         }
     }
 }

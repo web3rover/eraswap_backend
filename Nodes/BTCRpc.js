@@ -68,7 +68,7 @@ class BTCRpc {
             }
             return { data: address };
         } catch (ex) {
-            return { error: ex };
+            return { error: ex.message };
         }
     }
 
@@ -97,7 +97,7 @@ class BTCRpc {
             }
             return { data: address };
         } catch (ex) {
-            return { error: ex };
+            return { error: ex.message };
         }
     }
 
