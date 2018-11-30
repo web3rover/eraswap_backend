@@ -7,13 +7,13 @@ var rp = require('request-promise');
 const config = require('../configs/config');
 
 let Cryptopia = new ccxt.cryptopia({verbose:false,...config.keys.CRYPTOPIA});
-// let Kukoin = new ccxt.kucoin(config.keys.KUKOIN);
+let Kukoin = new ccxt.kucoin(config.keys.KUKOIN);
 let Bittrex = new ccxt.bittrex({ verbose: false, ...config.keys.BITTREX });
 let Polonix = new ccxt.poloniex({ verbose: false, ...config.keys.POLONIEX });
 let Binance = new ccxt.binance({ verbose: false, ...config.keys.BINANCE });
-let Okex = new ccxt.okex({ verbose: false, ...config.keys.OKEX_V1 });
+// let Okex = new ccxt.okex({ verbose: false, ...config.keys.OKEX_V1 });
 
-const Exchanges = [Bittrex, Binance, Cryptopia, Polonix, Okex];
+const Exchanges = [Bittrex, Binance, Cryptopia, Polonix, Kukoin];
 // const Exchanges = [Binance];
 
 const Kucoin = require('kucoin-api');

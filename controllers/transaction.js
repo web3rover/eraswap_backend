@@ -148,6 +148,7 @@ const getMytxn = user => {
 };
 const converTdata = (symbol,id, platForm, fromSymbol, toSymbol, amount) => {
   return new Promise((resolve, reject) => {
+    //deduct 0.5% from amount 
     return cryptoHelper
       .convertCurrency(symbol,platForm, fromSymbol, toSymbol, amount)
       .then(data => {
