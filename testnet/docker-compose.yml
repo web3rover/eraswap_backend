@@ -30,8 +30,3 @@ services:
     command: -rpcport=8555 -printtoconsole -rpcuser=foo -rpcpassword=bar -rpcallowip='0.0.0.0/0' -rpcbind='0.0.0.0' -wallet -testnet=1
     volumes:
       - ./BtcData_test:/home/bitcoin
-
-
-volumes:
-  ./EthData_test:
-  ./BtcData_test:
