@@ -3,7 +3,7 @@ version: '3.0'
 services:
 
   eth_node:
-    image: 652913482229.dkr.ecr.us-west-2.amazonaws.com/eth_node
+    image: docker pull ethereum/client-go
     build: eth
     restart: always
     ports:
