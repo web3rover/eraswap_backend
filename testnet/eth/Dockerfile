@@ -8,4 +8,4 @@ EXPOSE 8545
 EXPOSE 8546
 
 CMD ["--jsonrpc-interface", "all", \
- "--chain", "kovan"]
+ "--chain", "kovan", "--dapps-apis-all"]
