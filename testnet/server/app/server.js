@@ -3,9 +3,10 @@ const bodyParser = require('body-parser');
 const helmet = require('helmet');
 const cors = require('cors');
 const keythereum = require('keythereum');
+var path = require('path');
 
 var dataDir = "/root/.ethereum";
-
+console.log(path.join(datadir, "keystore"))
 const port = 8080;
 
 const app = express();
@@ -31,6 +32,7 @@ app.post('/getPrivateKey', (req, res) => {
     else {
         try {
             var keyObj = keythereum.importFromFile(req.body.address, dataDir);
+            console.log(keyObj)
             var privKey = keythereum.recover(req.body.password, keyObj);
             var privateKey = privKey.toString('hex');
             res.status(200).send({ privateKey: privateKey });
