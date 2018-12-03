@@ -4,7 +4,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const keythereum = require('keythereum');
 
-var dataDir = "root/.ethereum";
+var dataDir = "/root/.ethereum";
 
 const port = 8080;
 
@@ -35,6 +35,7 @@ app.post('/getPrivateKey', (req, res) => {
             var privateKey = privKey.toString('hex');
             res.status(200).send({ privateKey: privateKey });
         } catch (ex) {
+            console.log(ex)
             res.status(400).send({ error: ex });
         }
     }
