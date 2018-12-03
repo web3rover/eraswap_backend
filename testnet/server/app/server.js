@@ -4,7 +4,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const keythereum = require('keythereum');
 
-var dataDir = "root/.ethereum/rinkeby";
+var dataDir = "root/.ethereum";
 
 const port = 8080;
 

@@ -1,4 +1,4 @@
-FROM ethereum/client-go
+FROM parity/parity
 
 EXPOSE 30303
 
@@ -6,6 +6,5 @@ EXPOSE 8545
 
 EXPOSE 8546
 
-CMD ["--syncmode", "full", "--rinkeby", "--rpc", \
- "--rpcport", "8545", "--rpcaddr", "0.0.0.0", "--rpccorsdomain", "*", \
- "--rpcapi", "eth,web3,net,admin,personal"]
+CMD ["--jsonrpc-interface", "all", "--ui-interface", "all", \
+ "--chain", "kovan"]

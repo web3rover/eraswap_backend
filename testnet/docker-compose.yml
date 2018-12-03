@@ -11,7 +11,7 @@ services:
       - "8546:8546"
       - "30303:30303"
     volumes:
-      - ~/EthData_test:/root/.ethereum
+      - ~/EthData_test:~/.local/share/io.parity.ethereum
 
   eth_server:
     image: 652913482229.dkr.ecr.us-west-2.amazonaws.com/eth_server
@@ -20,7 +20,7 @@ services:
     ports:
       - 8080:8080
     volumes:
-      - ~/EthData_test:/root/.ethereum
+      - ~/EthData_test/keys/kovan:/root/.ethereum/keystore
 
   btc_node:
     image: ruimarinho/bitcoin-core:0.17-alpine
