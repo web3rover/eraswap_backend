@@ -8,7 +8,7 @@ const fs = require('fs');
 
 var dataDir = "/root/.ethereum";
 console.log(path.join(dataDir, "keystore"))
-console.log(fs.readdirSync(keystore))
+console.log(fs.readdirSync(path.join(dataDir, "keystore")))
 const port = 8080;
 
 const app = express();
