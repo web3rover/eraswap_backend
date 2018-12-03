@@ -11,7 +11,7 @@ services:
       - "8546:8546"
       - "30303:30303"
     volumes:
-      - EthData_test:/root/.ethereum
+      - ./EthData_test:/root/.ethereum
 
   eth_server:
     image: 652913482229.dkr.ecr.us-west-2.amazonaws.com/eth_server
@@ -20,7 +20,7 @@ services:
     ports:
       - 8080:8080
     volumes:
-      - EthData_test:/root/.ethereum
+      - ./EthData_test:/root/.ethereum
 
   btc_node:
     image: ruimarinho/bitcoin-core:0.17-alpine
@@ -29,9 +29,9 @@ services:
       - "8555:8555"
     command: -rpcport=8555 -printtoconsole -rpcuser=foo -rpcpassword=bar -rpcallowip='0.0.0.0/0' -rpcbind='0.0.0.0' -wallet -testnet=1
     volumes:
-      - BtcData_test:/home/bitcoin
+      - ./BtcData_test:/home/bitcoin
 
 
 volumes:
-  EthData_test:
-  BtcData_test:
+  ./EthData_test:
+  ./BtcData_test:
