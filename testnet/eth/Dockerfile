@@ -1,4 +1,5 @@
-FROM parity/parity
+FROM parity/parity:v2.2.3
+
 
 EXPOSE 30303
 
