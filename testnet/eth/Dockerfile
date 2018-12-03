@@ -7,5 +7,5 @@ EXPOSE 8545
 
 EXPOSE 8546
 
-CMD ["--jsonrpc-interface", "all", "--no-warp" \
+CMD ["--jsonrpc-interface", "all", \
  "--chain", "kovan", "--dapps-apis-all", "--jsonrpc-apis", "all"]
