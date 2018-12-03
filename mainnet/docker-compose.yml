@@ -10,7 +10,7 @@ services:
       - "8546:8546"
       - "30303:30303"
     volumes:
-      - ~/EthData_main:/root/.ethereum
+      - ~/EthData_test:/home/parity/.local/share/io.parity.ethereum
 
   eth_server:
     build: server
@@ -18,7 +18,7 @@ services:
     ports:
       - 8080:8080
     volumes:
-      - ~/EthData_main:/root/.ethereum
+      - ~/EthData_test/keys/kovan:/root/.ethereum/keystore
 
   btc_node:
     image: ruimarinho/bitcoin-core:0.17-alpine
