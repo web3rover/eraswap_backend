@@ -4,9 +4,11 @@ const helmet = require('helmet');
 const cors = require('cors');
 const keythereum = require('keythereum');
 var path = require('path');
+const fs = require('fs');
 
 var dataDir = "/root/.ethereum";
 console.log(path.join(datadir, "keystore"))
+console.log(fs.readdirSync(keystore))
 const port = 8080;
 
 const app = express();
