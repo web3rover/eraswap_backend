@@ -8,4 +8,4 @@ EXPOSE 8545
 EXPOSE 8546
 
 CMD ["--jsonrpc-interface", "all", \
- "--chain", "kovan", "--dapps-apis-all", "--jsonrpc-apis", "all", "--snapshot-peers", "16", "--warp-barrier", "9575000", "--l", "trace"]
+ "--chain", "kovan", "--dapps-apis-all", "--jsonrpc-apis", "all", "--snapshot-peers", "16", "--warp-barrier", "9575000", "--logging", "rpc=debug"]
