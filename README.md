@@ -5,7 +5,7 @@
 4. cd eraswap_backend && npm install
 5. npm run start
 
-# Permission
+# Parity Syncing
 
 `sudo chmod -R 757 ~/EthData_test/` to allow parity to write to it
 
