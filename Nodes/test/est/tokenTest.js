@@ -1,18 +1,39 @@
 const interface = require('../../tokenAbi/ESTAbi');
 const ESTRpc = require('../../ESTRpc');
-var config = require('../../../configs/config');
+var config = require('../../../configs/config').NODES;
 var mongoose = require('mongoose');
+var Web3 = require('web3');
 
-mongoose.connect(
-    config.mongo.url,
-    { useNewUrlParser: true }
-);
+// mongoose.connect(
+//     config.mongo.url,
+//     { useNewUrlParser: true }
+// );
 
-var est = new ESTRpc("52.172.135.196", "8545",
-    "0xDdF85a0498D8cCe6A6a6d71B6EBFBdC07BA147a1", interface);
+var tokenContract = {};
+var web3 = new Web3();
+var est = new ESTRpc(config.est.host, config.est.port,
+    config.est.contractAddress, interface);
 
-est.sendTokenToEscrow("0x970683f35197f3860aAFC6226d66039EB2a546e1", 1).
-    then(console.log).catch(console.log);
+var path = "http://" + config.est.host + ":" + config.est.port
+web3.setProvider(new web3.providers.HttpProvider(path));
+try {
+    tokenContract = new web3.eth.Contract(interface, config.est.contractAddress);
+}
+catch (ex) {
+    console.log(ex);
+}
+
+var balance = async () => {
+    var bal = await tokenContract.methods.balanceOf("0x980dd5AED50174cB07D7F33AB5Ce55c984e81678").call();
+    console.log(bal);
+}
+
+tokenContract.methods.balanceOf("0x980dd5AED50174cB07D7F33AB5Ce55c984e81678").call().then(console.log).catch(err => {
+    console.log(err);
+    process.exit();
+});
+
+balance();
 
 // est.getBalance("0x970683f35197f3860aAFC6226d66039EB2a546e1")
 //     .then(op => { console.log("0x970683f35197f3860aAFC6226d66039EB2a546e1 => " + op); })

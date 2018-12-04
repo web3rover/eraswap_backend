@@ -57,7 +57,7 @@ const checkGasTank = async () => {
     try {
         var wallet = await Wallets.findOne({ gasTank: true, type: 'eth' });
         if (!wallet) {
-            var ethWallet = await ethRpc.createWallet("gasTank");
+            var ethWallet = await ethRpc._createGasTank();
 
             wallet = await new Wallets({
                 type: 'eth',

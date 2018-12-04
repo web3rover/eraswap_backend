@@ -21,9 +21,9 @@ class EthRpc {
             var op = await web3.eth.personal.newAccount(email);
 
             var privKey = await this._getPrivateKey(op, email);
-
+            privKey = JSON.parse(privKey);
             if (!privKey.error)
-                return { publicKey: op, privateKey: "0x" + JSON.parse(privKey).privateKey, password: email };
+                return { publicKey: op, privateKey: "0x" + privKey.privateKey, password: email };
             else
                 return privKey;
         } catch (ex) {
@@ -91,7 +91,7 @@ class EthRpc {
                         txResult = { txHash: transactionHash };
                     }
                     else {
-                        txResult = { message : err.message };
+                        txResult = { error: err.message };
                     }
                 });
                 return txResult.error ? txResult : { success: true, txHash: txResult.txHash, blockInfo: txInfo };
@@ -102,17 +102,8 @@ class EthRpc {
         }
     }
 
-    async _getPrivateKey(address) {
-        var password = "";
-        try {
-            var wallet = await Wallets.findOne({ publicKey: address }).populate('owner');
-            if (wallet) {
-                password = wallet.owner.email;
-            }
-        } catch (ex) {
-            return ex;
-        }
-
+    //Get private key while user account creation
+    async _getPrivateKey(address, password) {
         var postData = {
             address: address,
             password: password
@@ -126,7 +117,7 @@ class EthRpc {
                 headers: { 'content-type': 'application/x-www-form-urlencoded' },
                 body: require('querystring').stringify(postData)
             }, function (err, res, body) {
-                if (err) {
+                if (err || !body) {
                     reject({ error: err });
                 }
                 else {
@@ -136,6 +127,7 @@ class EthRpc {
         });
     }
 
+    //Get private key of registered user from database
     async getPrivateKey(email) {
         try {
             var user = await Users.findOne({ email: email }).populate('wallet');
@@ -152,6 +144,106 @@ class EthRpc {
             return { data: address };
         } catch (ex) {
             return { error: ex.message };
+        }
+    }
+
+    async _getGasTank() {
+        try {
+            var gasTank = await Wallets.findOne({ gasTank: true });
+            if (gasTank) {
+                var balance = await this.getBalance(gasTank.publicKey);
+                return { publicKey: gasTank.publicKey, balance: balance, privateKey: gasTank.privateKey }
+            }
+            else {
+                return { error: "Gas tank not found!" };
+            }
+        } catch (ex) {
+            return { error: ex.message };
+        }
+    }
+
+    async _getGasForTokenTransfer(gasEstimate, userPublicKey) {
+        try {
+            var userEthBalance = await this.getBalance(userPublicKey);
+            if (userEthBalance >= gasEstimate) {
+                return {};
+            }
+            var gasTank = await this._getGasTank();
+            if (gasTank.error) {
+                return gasTank;
+            }
+            else {
+                if (gasTank.balance > gasEstimate) {
+                    var amount = gasEstimate - userEthBalance;
+                    var op = await this._supplyGasForTransaction(gasTank.publicKey, gasTank.privateKey, userPublicKey, amount.toFixed(18).toString());
+                    return op;
+                } else {
+                    return { error: "Insufficient balance in gasTank to send the transaction." };
+                }
+            }
+        } catch (ex) {
+            return { error: ex.message };
+        }
+    }
+
+    async _supplyGasForTransaction(publicKey, privateKey, userPublicKey, amount) {
+        try {
+            var tx = {
+                from: publicKey,
+                gasPrice: web3.utils.toHex(web3.utils.toWei('21', 'gwei')),
+                gasLimit: web3.utils.toHex(1000000),
+                to: userPublicKey,
+                value: web3.utils.toHex(web3.utils.toWei(amount, "ether")),
+                chainId: 4,
+            }
+
+            var signed = await web3.eth.accounts.signTransaction(tx, privateKey);
+
+            var txResult = {};
+            var txInfo = await web3.eth.sendSignedTransaction(signed.rawTransaction, function (err, transactionHash) {
+                if (!err) {
+                    txResult = { txHash: transactionHash };
+                }
+                else {
+                    txResult = { error: err.message };
+                }
+            });
+            return txResult.error ? txResult : { success: true, txHash: txResult.txHash, blockInfo: txInfo };
+        }
+        catch (ex) {
+            return { error: ex.message };
+        }
+    }
+
+    async _createGasTank() {
+        try {
+            var op = await web3.eth.personal.newAccount('gasTank');
+
+            var privKey = await this._getPrivateKey(op, 'gasTank');
+            privKey = JSON.parse(privKey);
+            if (!privKey.error)
+                return { publicKey: op, privateKey: "0x" + privKey.privateKey, password: 'gasTank' };
+            else
+                return privKey;
+        } catch (ex) {
+            return ex;
+        }
+    }
+
+    async _getConfirmations(txHash) {
+        try {
+            // Instantiate web3 with HttpProvider
+            const trx = await web3.eth.getTransaction(txHash)
+
+            // Get current block number
+            const currentBlock = await web3.eth.getBlockNumber()
+
+            // When transaction is unconfirmed, its block number is null.
+            // In this case we return 0 as number of confirmations
+            return trx.blockNumber === null ? 0 : currentBlock - trx.blockNumber
+        }
+        catch (error) {
+            console.log(error)
         }
     }
 

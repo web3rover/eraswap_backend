@@ -2,6 +2,10 @@ const Web3 = require('web3');
 const web3 = new Web3();
 const Users = require('../models/Users');
 const Wallets = require('../models/Wallets');
+const EthRpc = require('./EthRpc');
+const BigNumber = require('bignumber.js');
+const agenda = require('../agenda');
+var ethRpc = {};
 
 class ESTRpc {
     constructor(host, port, tokenContractAddress, Abi) {
@@ -17,6 +21,7 @@ class ESTRpc {
             var path = "http://" + this.host + ":" + this.port;
             web3.setProvider(new web3.providers.HttpProvider(path));
             try {
+                ethRpc = new EthRpc(this.host, this.port);
                 this.tokenContract = new web3.eth.Contract(this.Abi, this.tokenContractAddress);
             }
             catch (ex) {
@@ -49,19 +54,49 @@ class ESTRpc {
             var bal = await this.tokenContract.methods.balanceOf(address).call();
             return bal;
         } catch (ex) {
-            return { error: ex.message };
+            //Returned error: no suitable peers available
+            //Couldn't decode uint256 from ABI: 0x
+            if (ex.message == "Couldn't decode uint256 from ABI: 0x") {
+                return "0";
+            }
+            else if (ex.message == "Returned error: no suitable peers available") {
+                return { error: "Ethereum node is down!" }
+            }
+            else
+                return { error: ex.message };
         }
     }
 
     async send(sender, receiver, amount) {
+        try {
+            var gasEstimate = await this.tokenContract.methods.transfer(receiver, amount).estimateGas();
+            var gasPrice = await web3.eth.getGasPrice();
+            var price = new BigNumber(gasPrice).mul(gasEstimate).mul(11);
+            var gas = web3.utils.fromWei(price.toString(), 'ether');
+
+            await agenda.now('supply eth for gas', {
+                crypto: 'Est',
+                userPublicKey: sender,
+                gasEstimate: gas,
+                receiver: receiver,
+                amount: amount
+            });
+
+            return { success: true };
+        }
+        catch (ex) {
+            return { error: ex.message };
+        }
+    }
+
+    async _initiateTransfer(sender, receiver, amount) {
         try {
             var pwd = await this._getPassword(sender);
             await web3.eth.personal.unlockAccount(sender, pwd, 0);
             var op = await this.tokenContract.methods.transfer(receiver, amount).send({ from: sender });
 
             return { success: op };
-        }
-        catch (ex) {
+        } catch (ex) {
             return { error: ex.message };
         }
     }

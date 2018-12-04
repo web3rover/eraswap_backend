@@ -61,7 +61,7 @@ module.exports = {
         est: {
             host: '13.233.168.86',
             port: '8545',
-            contractAddress: '0xDdF85a0498D8cCe6A6a6d71B6EBFBdC07BA147a1'
+            contractAddress: '0x0fff93a556a91a907165BfB6a6C6cAC695FC33F5'
         }
     }
 };
