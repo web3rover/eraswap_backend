@@ -8,3 +8,5 @@
 # Permission
 
 `sudo chmod -R 757 ~/EthData_test/` to allow parity to write to it
+
+`--warp-barrier` is `--warp-barrier` because highestBlock (9578178) rounded down to the nearest 5k, so 9575000
