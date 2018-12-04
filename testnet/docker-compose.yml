@@ -13,15 +13,6 @@ services:
     volumes:
       - ~/EthData_test:/home/parity/.local/share/io.parity.ethereum
 
-  eth_server:
-    image: 652913482229.dkr.ecr.us-west-2.amazonaws.com/eth_server
-    build: server
-    restart: always
-    ports:
-      - 8080:8080
-    volumes:
-      - ~/EthData_test/keys/kovan:/root/.ethereum/keystore
-
   btc_node:
     image: ruimarinho/bitcoin-core:0.17-alpine
     restart: always
