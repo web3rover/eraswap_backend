@@ -8,4 +8,4 @@ EXPOSE 8545
 EXPOSE 8546
 
 CMD ["--jsonrpc-interface", "all", \
- "--chain", "kovan", "--dapps-apis-all", "--jsonrpc-apis", "all", "--warp-barrier", "5650000"]
+ "--chain", "kovan", "--dapps-apis-all", "--jsonrpc-apis", "all", "--mode", "active", "--tracing", "off", "--pruning", "fast", "--db-compaction", "ssd", "--cache-size", "2048"]
