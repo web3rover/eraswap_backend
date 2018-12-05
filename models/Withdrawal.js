@@ -9,6 +9,7 @@ var WithdrawalSchema = new mongoose.Schema(
         txn: Object,
         txnHash: String,
         error: String,
+        gasDetails: Object,
     }
 );
 

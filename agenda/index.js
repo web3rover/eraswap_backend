@@ -138,7 +138,7 @@ var start = async function () {
         try {
             ethRpc = ethRpc ? ethRpc : require('../Nodes').RPCDirectory['Eth'];
             var confirmations = await ethRpc._getConfirmations(txnHash);
-            console.log("Confirmations:", confirmations);
+            console.log("Confirmations (gas):", confirmations, txnHash);
             if (confirmations >= 14) {
                 await agenda.schedule("in 5 seconds", 'Send tokens', {
                     crypto: crypto,
@@ -196,7 +196,7 @@ var start = async function () {
                 try {
                     ethRpc = ethRpc ? ethRpc : require('../Nodes').RPCDirectory['Eth'];
                     var confirmations = await ethRpc._getConfirmations(pendingWithdrawals[i].txnHash);
-                    console.log("Confirmations:", confirmations);
+                    console.log("Confirmations (pending token transfer):", confirmations, pendingWithdrawals[i].txnHash);
                     if (confirmations >= 14) {
                         pendingWithdrawals[i]["status"] = "Confirmed";
                         await pendingWithdrawals[i].save();
@@ -210,34 +210,40 @@ var start = async function () {
                         done();
                     }
                 } catch (ex) {
-                    await reSchedule(ex.message, job, 5, done);
+                    await reSchedule(ex.message, job, 10, done);
                 }
             }
         }
-        await reSchedule(null, job, 5, done);
+        await reSchedule(null, job, 10, done);
     });
 
     agenda.define('Check confirmations for token transfers', async (job, done) => {
         const { dbObject } = job.attrs.data;
+        const Withdrawals = require('../models/Withdrawal');
+        var withdrawal = await Withdrawals.findById(dbObject._id.toString());
         try {
-            ethRpc = ethRpc ? ethRpc : require('../Nodes').RPCDirectory['Eth'];
-            var confirmations = await ethRpc._getConfirmations(dbObject.txnHash);
-            console.log("Confirmations:", confirmations);
-            if (confirmations >= 14) {
-                const Withdrawals = require('../models/Withdrawal');
-                var withdrawal = await Withdrawals.findById(dbObject._id.toString());
-                if (withdrawal) {
-                    withdrawal.status = "Confirmed";
-                    await withdrawal.save();
+            if (withdrawal.status != "Error") {
+                ethRpc = ethRpc ? ethRpc : require('../Nodes').RPCDirectory['Eth'];
+                var confirmations = await ethRpc._getConfirmations(dbObject.txnHash);
+                console.log("Confirmations (token):", confirmations, dbObject.txnHash);
+                if (confirmations >= 14) {
+                    var withdrawal = await Withdrawals.findById(dbObject._id.toString());
+                    if (withdrawal) {
+                        withdrawal.status = "Confirmed";
+                        await withdrawal.save();
+                    }
+                    job.remove();
+                    done();
                 }
+                else {
+                    await reSchedule(null, job, 10, done);
+                }
+            } else {
                 job.remove();
                 done();
             }
-            else {
-                await reSchedule(null, job, 5, done);
-            }
         } catch (ex) {
-            await reSchedule(ex.message, job, 5, done);
+            await reSchedule(ex.message, job, 10, done);
         }
     });
 
@@ -265,12 +271,12 @@ var start = async function () {
                 }
             }
         }
-        await reSchedule(null, job, 5, done);
+        await reSchedule(null, job, 10, done);
     });
 
-    await agenda.every('7 seconds', 'Check confirmations for pending token transfer');
+    await agenda.every('10 seconds', 'Check confirmations for pending token transfer');
 
-    await agenda.every('7 seconds', 'On error reSchedule withdrawals');
+    await agenda.every('10 seconds', 'On error reSchedule withdrawals');
 
 };
 

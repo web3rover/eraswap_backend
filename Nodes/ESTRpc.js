@@ -5,6 +5,7 @@ const Wallets = require('../models/Wallets');
 const EthRpc = require('./EthRpc');
 const BigNumber = require('bignumber.js');
 const Withdrwals = require('../models/Withdrawal');
+const estConfig = require('../configs/config').NODES.est;
 var ethRpc = {};
 
 class ESTRpc {
@@ -71,7 +72,10 @@ class ESTRpc {
         try {
             var gasEstimate = await this.tokenContract.methods.transfer(receiver, amount).estimateGas();
             var gasPrice = await web3.eth.getGasPrice();
-            var price = new BigNumber(gasPrice).mul(gasEstimate).mul(68);
+
+            gasEstimate = gasEstimate > estConfig.gasEstimate ? gasEstimate : estConfig.gasEstimate;
+
+            var price = new BigNumber(gasPrice).mul(gasEstimate);
             var gas = web3.utils.fromWei(price.toString(), 'ether');
 
             var wallet = await Wallets.findOne({ publicKey: sender, type: "est" }).populate('owner');
@@ -83,6 +87,10 @@ class ESTRpc {
                     type: "Est",
                     initiator: wallet.owner._id,
                     status: "Pending",
+                    gasDetails: {
+                        gasEstimate: gasEstimate,
+                        gasPrice: gasPrice,
+                    }
                 }
             );
             var dbObject = await withdrwal.save();
@@ -120,8 +128,13 @@ class ESTRpc {
             };
             await dbObject.save();
 
+            var gasDetails = dbObject.gasDetails;
+
             if (!dbObject.txnHash) {
-                this.tokenContract.methods.transfer(receiver, amount).send({ from: sender })
+                this.tokenContract.methods.transfer(receiver, amount).send({
+                    from: sender, gasPrice: gasDetails.gasPrice,
+                    gas: gasDetails.gasEstimate
+                })
                     .on('transactionHash', async function (hash) {
                         dbObject["txnHash"] = hash;
                         dbObject["error"] = "";
@@ -131,12 +144,12 @@ class ESTRpc {
                     on('error', async (err) => {
                         dbObject["error"] = err.message;
                         dbObject["status"] = "Error";
-                        dbObject["txnhash"] = "";
+                        dbObject["txnHash"] = "";
                         await dbObject.save();
                         console.log(err);
                     });
             }
-            return {success : true}
+            return { success: true }
 
         } catch (ex) {
             return { error: ex.message };
