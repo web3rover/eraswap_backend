@@ -31,6 +31,16 @@ class ESTRpc {
         }
     }
 
+    async createEscrow() {
+        try {
+            var escrow = await ethRpc.createEscrow();
+            escrow["type"] = "est";
+            return escrow;
+        } catch (ex) {
+            return ex;
+        }
+    }
+
     async getAddress(email) {
         try {
             var user = await Users.findOne({ email: email }).populate('wallet');
@@ -70,10 +80,9 @@ class ESTRpc {
 
     async send(sender, receiver, amount) {
         try {
-            var gasEstimate = await this.tokenContract.methods.transfer(receiver, amount).estimateGas();
+            var data = await this.tokenContract.methods.transfer(receiver, amount).encodeABI();
+            var gasEstimate = await web3.eth.estimateGas({ from: sender, to: this.tokenContractAddress, data: data });
             var gasPrice = await web3.eth.getGasPrice();
-
-            gasEstimate = gasEstimate > estConfig.gasEstimate ? gasEstimate : estConfig.gasEstimate;
 
             var price = new BigNumber(gasPrice).mul(gasEstimate);
             var gas = web3.utils.fromWei(price.toString(), 'ether');
@@ -85,7 +94,6 @@ class ESTRpc {
             var withdrwal = new Withdrwals(
                 {
                     type: "Est",
-                    initiator: wallet.owner._id,
                     status: "Pending",
                     gasDetails: {
                         gasEstimate: gasEstimate,
@@ -197,6 +205,23 @@ class ESTRpc {
             return { data: address };
         } catch (ex) {
             return { error: ex.message };
+        }
+    }
+
+    async _getConfirmations(txHash) {
+        try {
+            // Instantiate web3 with HttpProvider
+            const trx = await web3.eth.getTransaction(txHash)
+
+            // Get current block number
+            const currentBlock = await web3.eth.getBlockNumber()
+
+            // When transaction is unconfirmed, its block number is null.
+            // In this case we return 0 as number of confirmations
+            return trx.blockNumber === null ? 0 : currentBlock - trx.blockNumber
+        }
+        catch (error) {
+            console.log(error)
         }
     }
 }

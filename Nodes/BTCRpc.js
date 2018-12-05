@@ -32,6 +32,19 @@ class BTCRpc {
         });
     }
 
+    async createEscrow() {
+        try {
+            var date = new Date();
+            var timestamp = date.getTime();
+            var escrow = await this.createWallet("escrow_" + timestamp);
+            escrow["escrow"] = true;
+            escrow["type"] = "btc";
+            return escrow;
+        } catch (ex) {
+            return ex;
+        }
+    }
+
     async getBalance(email) {
         return new Promise((resolve, reject) => {
             this._btcRpcCall("getbalance", ["*", 1], "/wallet/" + email).then(result => {

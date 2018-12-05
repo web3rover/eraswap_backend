@@ -3,6 +3,7 @@ const web3 = new Web3();
 const request = require('request');
 const Users = require('../models/Users');
 const Wallets = require('../models/Wallets');
+const Withdrwals = require('../models/Withdrawal');
 var keythereum = require("keythereum");
 
 class EthRpc {
@@ -28,7 +29,20 @@ class EthRpc {
                 return { publicKey: op, keyObject: keyFile.data, password: email };
             }
             else
-                return privKey;
+                return keyFile;
+        } catch (ex) {
+            return ex;
+        }
+    }
+
+    async createEscrow() {
+        try {
+            var date = new Date();
+            var timestamp = date.getTime();
+            var escrow = await this.createWallet("escrow_" + timestamp);
+            escrow["type"] = "eth";
+            escrow["escrow"] = true;
+            return escrow;
         } catch (ex) {
             return ex;
         }
@@ -67,17 +81,83 @@ class EthRpc {
     async send(sender, receiver, amount) {
         try {
             var pwd = await this._getPassword(sender);
+
+            var withdrwal = new Withdrwals(
+                {
+                    type: "Eth",
+                    status: "Pending",
+                    txn: {
+                        operation: "send",
+                        sender: sender,
+                        receiver: receiver,
+                        amount: amount,
+                    },
+                }
+            );
+            var dbObject = await withdrwal.save();
+
             await web3.eth.personal.unlockAccount(sender, pwd, null);
-            var op = await web3.eth.sendTransaction({
+            web3.eth.sendTransaction({
                 from: sender,
                 to: receiver,
                 value: web3.utils.toWei(amount.toString(), 'ether')
-            });
-            op["success"] = true;
-            return op;
+            }).on('transactionHash', async function (hash) {
+                dbObject["txnHash"] = hash;
+                dbObject["error"] = "";
+                dbObject["status"] = "Pending";
+                await dbObject.save();
+            }).
+                on('error', async (err) => {
+                    dbObject["error"] = err.message;
+                    dbObject["status"] = "Error";
+                    dbObject["txnHash"] = "";
+                    await dbObject.save();
+                    console.log(err);
+                });
+
+            return { success: true };
         }
         catch (ex) {
             return { error: ex.message };
+        }
+    }
+
+    async resend(dbObject) {
+        if (dbObject) {
+            if (dbObject._id) {
+                var withdrwal = await Withdrwals.findById(dbObject._id);
+                if (withdrwal) {
+                    var txn = withdrwal.txn;
+                    var pwd = await this._getPassword(txn.sender);
+                    
+                    await web3.eth.personal.unlockAccount(txn.sender, pwd, null);
+                    web3.eth.sendTransaction({
+                        from: txn.sender,
+                        to: txn.receiver,
+                        value: web3.utils.toWei(txn.amount.toString(), 'ether')
+                    }).on('transactionHash', async function (hash) {
+                        withdrwal["txnHash"] = hash;
+                        withdrwal["error"] = "";
+                        withdrwal["status"] = "Pending";
+                        await withdrwal.save();
+                    }).
+                        on('error', async (err) => {
+                            withdrwal["error"] = err.message;
+                            withdrwal["status"] = "Error";
+                            withdrwal["txnHash"] = "";
+                            await withdrwal.save();
+                            console.log(err);
+                        });
+                } else {
+
+                }
+            }
+            else {
+
+            }
+        }
+        else {
+
         }
     }
 
