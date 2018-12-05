@@ -9,6 +9,7 @@ var WithdrawalSchema = new mongoose.Schema(
         txnHash: String,
         error: String,
         gasDetails: Object,
+        waitFor: { type: mongoose.Schema.Types.ObjectId, ref: 'Withdrawal' },
     }
 );
 

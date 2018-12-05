@@ -117,11 +117,10 @@ var start = async function () {
         try {
             ethRpc = ethRpc ? ethRpc : require('../Nodes').RPCDirectory['Eth'];
             var result = await ethRpc._getGasForTokenTransfer(gasEstimate, userPublicKey);
-            if (!result.error && result.transactionHash) {
-                await agenda.schedule("in 10 seconds", 'Check confirmations', {
-                    crypto: crypto, txnHash: result.transactionHash,
-                    sender: userPublicKey, receiver: receiver, amount: amount, dbObject: dbObject,
-                });
+            if (!result.error && result.dbObject) {
+                var txn = await require('../models/Withdrawal').findById(dbObject._id);
+                txn["waitFor"] = result.dbObject._id;
+                await txn.save();
                 job.remove();
                 done();
             }
@@ -133,7 +132,7 @@ var start = async function () {
         }
     });
 
-    agenda.define('Check confirmations', async (job, done) => {
+    agenda.define('Check gas txn before token transfer', async (job, done) => {
         const { crypto, txnHash, sender, receiver, amount, dbObject } = job.attrs.data;
         try {
             var RPC = require('../Nodes').RPCDirectory[crypto];
@@ -196,10 +195,23 @@ var start = async function () {
                 try {
                     var RPC = require('../Nodes').RPCDirectory[pendingWithdrawals[i].type];
                     var confirmations = await RPC._getConfirmations(pendingWithdrawals[i].txnHash);
-                    console.log("Confirmations (pending token transfer):", confirmations, pendingWithdrawals[i].txnHash);
+                    console.log("Confirmations (pending " + pendingWithdrawals[i].type + " transfer):", confirmations, pendingWithdrawals[i].txnHash);
                     if (confirmations >= 14) {
                         pendingWithdrawals[i]["status"] = "Confirmed";
                         await pendingWithdrawals[i].save();
+
+                        var dependentTxn = await checkDependancy(withdrawal);
+                        //crypto, txnHash, sender, receiver, amount, dbObject
+                        if (dependentTxn) {
+                            await agenda.schedule("in 5 seconds", "Check gas txn before token transfer", {
+                                crypto: dependentTxn.type,
+                                txnHash: withdrawal.txnHash,
+                                sender: dependentTxn.txn.sender,
+                                receiver: dependentTxn.txn.receiver,
+                                amount: dependentTxn.txn.amount,
+                                dbObject: dependentTxn
+                            });
+                        }
                     }
                     else {
                         pendingWithdrawals[i].status = "Checking Confirmation"
@@ -231,6 +243,18 @@ var start = async function () {
                     if (withdrawal) {
                         withdrawal.status = "Confirmed";
                         await withdrawal.save();
+                    }
+                    var dependentTxn = await checkDependancy(withdrawal);
+                    //crypto, txnHash, sender, receiver, amount, dbObject
+                    if (dependentTxn) {
+                        await agenda.schedule("in 5 seconds", "Check gas txn before token transfer", {
+                            crypto: dependentTxn.type,
+                            txnHash: withdrawal.txnHash,
+                            sender: dependentTxn.txn.sender,
+                            receiver: dependentTxn.txn.receiver,
+                            amount: dependentTxn.txn.amount,
+                            dbObject: dependentTxn
+                        });
                     }
                     job.remove();
                     done();
@@ -290,6 +314,18 @@ var start = async function () {
 };
 
 start();
+
+async function checkDependancy(txn) {
+    try {
+        var withdrawal = await require('../models/Withdrawal').findOne({ waitFor: txn._id, status: { "$exists": true, "$ne": "Confirmed" } });
+        if (withdrawal) {
+            return withdrawal;
+        }
+    } catch (ex) {
+        console.log(ex);
+        return ex;
+    }
+}
 
 
 async function reSchedule(error, job, seconds, done) {

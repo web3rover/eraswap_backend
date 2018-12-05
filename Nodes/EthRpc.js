@@ -115,7 +115,7 @@ class EthRpc {
                     console.log(err);
                 });
 
-            return { success: true };
+            return { success: true, dbObject: dbObject };
         }
         catch (ex) {
             return { error: ex.message };

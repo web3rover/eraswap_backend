@@ -98,6 +98,12 @@ class ESTRpc {
                     gasDetails: {
                         gasEstimate: gasEstimate,
                         gasPrice: gasPrice,
+                    },
+                    txn : {
+                        operation: "_initiateTransfer",
+                        sender: sender,
+                        receiver: receiver,
+                        amount: amount,
                     }
                 }
             );
@@ -106,7 +112,7 @@ class ESTRpc {
 
             var agenda = require('../agenda');
             await agenda._ready;
-            await agenda.every('7 seconds', 'supply eth for gas', {
+            await agenda.schedule('in 7 seconds', 'supply eth for gas', {
                 crypto: 'Est',
                 userPublicKey: sender,
                 gasEstimate: gas,
