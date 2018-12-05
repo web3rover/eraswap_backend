@@ -9,6 +9,7 @@ var WalletSchema = new mongoose.Schema(
     password: {type: String, required: true},
     owner: { type: Schema.Types.ObjectId, ref: 'Users', required: false },
     gasTank: { type: Boolean, require: false },
+    keyObject: Object,
   }
 );
 

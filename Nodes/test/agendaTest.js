@@ -42,18 +42,18 @@ agenda.define('send eth from gas tank', async (job, done) => {
     console.log("Send eth to receiver address and get the transaction hash");
     var txnHash = "123";
     if (txnHash) {
-        agenda.schedule(new Date(Date.now() + 5000), 'Check confirmations', { txnHash: txnHash });
+        agenda.schedule(new Date(Date.now() + 5000), 'Check confirmations1', { txnHash: txnHash });
         job.remove();
         done();
     }
 });
 
-agenda.define('Check confirmations', async (job, done) => {
+agenda.define('Check confirmations1', async (job, done) => {
     const { txnHash } = job.attrs.data;
     var confs = await getConfirmations();
     console.log("Confirmations: " + confs);
     if (confirmations >= 14) {
-        agenda.schedule(new Date(Date.now() + 5000), 'Send tokens', {
+        agenda.schedule(new Date(Date.now() + 5000), 'Send tokens1', {
             sender: "sender",
             receiver: "receiver",
             amount: "amount"
@@ -63,13 +63,13 @@ agenda.define('Check confirmations', async (job, done) => {
     }
     else {
         console.log("Rescheduling!!");
-        agenda.schedule(new Date(Date.now() + 5000), 'Check confirmations', { txnHash: txnHash });
+        agenda.schedule(new Date(Date.now() + 5000), 'Check confirmations1', { txnHash: txnHash });
         job.remove();
         done();
     }
 });
 
-agenda.define('Send tokens', async (job, done) => {
+agenda.define('Send tokens1', async (job, done) => {
     const { sender, receiver, amount } = job.attrs.data;
     //Send tokens and remove job
     console.log("Send tokens and remove job");

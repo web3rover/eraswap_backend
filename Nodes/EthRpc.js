@@ -3,6 +3,7 @@ const web3 = new Web3();
 const request = require('request');
 const Users = require('../models/Users');
 const Wallets = require('../models/Wallets');
+var keythereum = require("keythereum");
 
 class EthRpc {
     constructor(host, port) {
@@ -20,10 +21,12 @@ class EthRpc {
         try {
             var op = await web3.eth.personal.newAccount(email);
 
-            var privKey = await this._getPrivateKey(op, email);
-            privKey = JSON.parse(privKey);
-            if (!privKey.error)
-                return { publicKey: op, privateKey: "0x" + privKey.privateKey, password: email };
+            var keyFile = await this._getPrivateKey(op, email);
+
+            if (!keyFile.error) {
+                //return { publicKey: op, privateKey: "0x" + privKey.privateKey, password: email };
+                return { publicKey: op, keyObject: keyFile.data, password: email };
+            }
             else
                 return privKey;
         } catch (ex) {
@@ -62,40 +65,16 @@ class EthRpc {
     }
 
     async send(sender, receiver, amount) {
-
         try {
-
-            var op = await this._getPrivateKey(sender);
-            op = JSON.parse(op);
-            if (op.error || !op.privateKey) {
-                return op;
-            }
-            else {
-
-                var privateKey = "0x" + op.privateKey;
-
-                var tx = {
-                    from: sender,
-                    gasPrice: web3.utils.toHex(web3.utils.toWei('21', 'gwei')),
-                    gasLimit: web3.utils.toHex(1000000),
-                    to: receiver,
-                    value: web3.utils.toHex(web3.utils.toWei(amount, "ether")),
-                    chainId: 4,
-                }
-
-                var signed = await web3.eth.accounts.signTransaction(tx, privateKey);
-
-                var txResult = {};
-                var txInfo = await web3.eth.sendSignedTransaction(signed.rawTransaction, function (err, transactionHash) {
-                    if (!err) {
-                        txResult = { txHash: transactionHash };
-                    }
-                    else {
-                        txResult = { error: err.message };
-                    }
-                });
-                return txResult.error ? txResult : { success: true, txHash: txResult.txHash, blockInfo: txInfo };
-            }
+            var pwd = await this._getPassword(sender);
+            await web3.eth.personal.unlockAccount(sender, pwd, null);
+            var op = await web3.eth.sendTransaction({
+                from: sender,
+                to: receiver,
+                value: web3.utils.toWei(amount.toString(), 'ether')
+            });
+            op["success"] = true;
+            return op;
         }
         catch (ex) {
             return { error: ex.message };
@@ -104,27 +83,16 @@ class EthRpc {
 
     //Get private key while user account creation
     async _getPrivateKey(address, password) {
-        var postData = {
-            address: address,
-            password: password
-        };
+        try {
+            var keyObject = await this._parityRpcCall("parity_exportAccount", [address, password]);
+            console.log(keyObject);
+            return { data: keyObject };
+        } catch (ex) {
+            return { error: ex.message };
+        }
 
-        var op = {};
-
-        return new Promise((resolve, reject) => {
-            require('request').post({
-                uri: "http://" + this.host + ":" + 8080 + "/getPrivateKey",
-                headers: { 'content-type': 'application/x-www-form-urlencoded' },
-                body: require('querystring').stringify(postData)
-            }, function (err, res, body) {
-                if (err || !body) {
-                    reject({ error: err });
-                }
-                else {
-                    resolve(body);
-                }
-            });
-        });
+        // var privateKey = keythereum.recover(password, keyObject);
+        // console.log(privateKey);
     }
 
     //Get private key of registered user from database
@@ -139,7 +107,7 @@ class EthRpc {
                 }
             }
             if (!address) {
-                return { error: "EST token wallet not found!" };
+                return { error: "Eth wallet not found!" };
             }
             return { data: address };
         } catch (ex) {
@@ -164,18 +132,15 @@ class EthRpc {
 
     async _getGasForTokenTransfer(gasEstimate, userPublicKey) {
         try {
-            var userEthBalance = await this.getBalance(userPublicKey);
-            if (userEthBalance >= gasEstimate) {
-                return {};
-            }
             var gasTank = await this._getGasTank();
             if (gasTank.error) {
                 return gasTank;
             }
             else {
                 if (gasTank.balance > gasEstimate) {
-                    var amount = gasEstimate - userEthBalance;
-                    var op = await this._supplyGasForTransaction(gasTank.publicKey, gasTank.privateKey, userPublicKey, amount.toFixed(18).toString());
+                    var op = await this._supplyGasForTransaction(gasTank.publicKey,
+                        gasTank.privateKey, userPublicKey, gasEstimate);
+
                     return op;
                 } else {
                     return { error: "Insufficient balance in gasTank to send the transaction." };
@@ -188,27 +153,8 @@ class EthRpc {
 
     async _supplyGasForTransaction(publicKey, privateKey, userPublicKey, amount) {
         try {
-            var tx = {
-                from: publicKey,
-                gasPrice: web3.utils.toHex(web3.utils.toWei('21', 'gwei')),
-                gasLimit: web3.utils.toHex(1000000),
-                to: userPublicKey,
-                value: web3.utils.toHex(web3.utils.toWei(amount, "ether")),
-                chainId: 4,
-            }
-
-            var signed = await web3.eth.accounts.signTransaction(tx, privateKey);
-
-            var txResult = {};
-            var txInfo = await web3.eth.sendSignedTransaction(signed.rawTransaction, function (err, transactionHash) {
-                if (!err) {
-                    txResult = { txHash: transactionHash };
-                }
-                else {
-                    txResult = { error: err.message };
-                }
-            });
-            return txResult.error ? txResult : { success: true, txHash: txResult.txHash, blockInfo: txInfo };
+            var op = await this.send(publicKey, userPublicKey, amount);
+            return op;
         }
         catch (ex) {
             return { error: ex.message };
@@ -220,9 +166,8 @@ class EthRpc {
             var op = await web3.eth.personal.newAccount('gasTank');
 
             var privKey = await this._getPrivateKey(op, 'gasTank');
-            privKey = JSON.parse(privKey);
             if (!privKey.error)
-                return { publicKey: op, privateKey: "0x" + privKey.privateKey, password: 'gasTank' };
+                return { publicKey: op, privateKey: privKey.privateKey ? privKey.privateKey : "", keyObject: privKey.data, password: 'gasTank' };
             else
                 return privKey;
         } catch (ex) {
@@ -244,6 +189,66 @@ class EthRpc {
         }
         catch (error) {
             console.log(error)
+        }
+    }
+
+    async _parityRpcCall(command, params = [], path = "") {
+
+        if (!params instanceof Array) {
+            throw { error: true, message: "params must an array" };
+        }
+        else if (!command) {
+            throw { error: true, message: "Command can not be null" };
+        }
+
+        let options = {
+            url: "http://" + this.host + ":" + this.port + path,
+            method: "post",
+            headers:
+                {
+                    "content-type": "application/json"
+                },
+            body: JSON.stringify({ "jsonrpc": "2.0", "id": "curltest", "method": command, "params": params })
+        };
+
+        return new Promise((resolve, reject) => {
+            request(options, (error, response, body) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    let result = body;
+                    let resJSON = null;
+
+                    try {
+                        let resJSON = JSON.parse(result).result;
+                        if (resJSON.error) {
+                            reject(resJSON.error);
+                        }
+                        else {
+                            resolve(resJSON);
+                        }
+                    } catch (ex) {
+                        reject({
+                            error: true,
+                            result: result,
+                            message: ex
+                        });
+                    }
+                }
+            });
+        });
+    }
+
+    async _getPassword(address) {
+        try {
+            var wallet = await Wallets.find({ publicKey: address, type: 'eth' });
+            if (wallet.length >= 1) {
+                return wallet[0].password
+            }
+            return null;
+        }
+        catch (ex) {
+            return ex;
         }
     }
 

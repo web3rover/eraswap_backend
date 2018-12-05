@@ -4,7 +4,7 @@ const Users = require('../models/Users');
 const Wallets = require('../models/Wallets');
 const EthRpc = require('./EthRpc');
 const BigNumber = require('bignumber.js');
-const agenda = require('../agenda');
+const Withdrwals = require('../models/Withdrawal');
 var ethRpc = {};
 
 class ESTRpc {
@@ -71,15 +71,32 @@ class ESTRpc {
         try {
             var gasEstimate = await this.tokenContract.methods.transfer(receiver, amount).estimateGas();
             var gasPrice = await web3.eth.getGasPrice();
-            var price = new BigNumber(gasPrice).mul(gasEstimate).mul(11);
+            var price = new BigNumber(gasPrice).mul(gasEstimate).mul(68);
             var gas = web3.utils.fromWei(price.toString(), 'ether');
 
-            await agenda.now('supply eth for gas', {
+            var wallet = await Wallets.findOne({ publicKey: sender, type: "est" }).populate('owner');
+            if (!wallet) {
+                throw "User not found!";
+            }
+            var withdrwal = new Withdrwals(
+                {
+                    type: "Est",
+                    initiator: wallet.owner._id,
+                    status: "Pending",
+                }
+            );
+            var dbObject = await withdrwal.save();
+
+
+            var agenda = require('../agenda');
+            await agenda._ready;
+            await agenda.every('7 seconds', 'supply eth for gas', {
                 crypto: 'Est',
                 userPublicKey: sender,
                 gasEstimate: gas,
                 receiver: receiver,
-                amount: amount
+                amount: amount,
+                dbObject: dbObject,
             });
 
             return { success: true };
@@ -89,13 +106,38 @@ class ESTRpc {
         }
     }
 
-    async _initiateTransfer(sender, receiver, amount) {
+    async _initiateTransfer(sender, receiver, amount, dbObject) {
         try {
             var pwd = await this._getPassword(sender);
-            await web3.eth.personal.unlockAccount(sender, pwd, 0);
-            var op = await this.tokenContract.methods.transfer(receiver, amount).send({ from: sender });
+            await web3.eth.personal.unlockAccount(sender, pwd, null);
 
-            return { success: op };
+            dbObject = await Withdrwals.findById(dbObject._id.toString());
+            dbObject["txn"] = {
+                operation: "_initiateTransfer",
+                sender: sender,
+                receiver: receiver,
+                amount: amount,
+            };
+            await dbObject.save();
+
+            if (!dbObject.txnHash) {
+                this.tokenContract.methods.transfer(receiver, amount).send({ from: sender })
+                    .on('transactionHash', async function (hash) {
+                        dbObject["txnHash"] = hash;
+                        dbObject["error"] = "";
+                        dbObject["status"] = "Pending";
+                        await dbObject.save();
+                    }).
+                    on('error', async (err) => {
+                        dbObject["error"] = err.message;
+                        dbObject["status"] = "Error";
+                        dbObject["txnhash"] = "";
+                        await dbObject.save();
+                        console.log(err);
+                    });
+            }
+            return {success : true}
+
         } catch (ex) {
             return { error: ex.message };
         }
@@ -128,6 +170,7 @@ class ESTRpc {
     async getPrivateKey(email) {
         try {
             var user = await Users.findOne({ email: email }).populate('wallet');
+
             var address = "";
             for (var i = 0; i < user.wallet.length; i++) {
                 if (user.wallet[i].type == 'est') {

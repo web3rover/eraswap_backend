@@ -24,7 +24,8 @@ const createWallets = async body => {
         var ethWalletDoc = await new Wallets({
             type: 'eth',
             publicKey: ethWallet.publicKey,
-            privateKey: ethWallet.privateKey,
+            privateKey: ethWallet.privateKey ? ethWallet.privateKey : "",
+            keyObject: ethWallet.keyObject,
             password: ethWallet.password,
             owner: body._id
         }).save();
@@ -34,7 +35,8 @@ const createWallets = async body => {
         var estWalletDoc = await new Wallets({
             type: 'est',
             publicKey: estWallet.publicKey,
-            privateKey: estWallet.privateKey,
+            privateKey: estWallet.privateKey ? estWallet.privateKey : "",
+            keyObject: estWallet.keyObject,
             password: estWallet.password,
             owner: body._id
         }).save();
@@ -62,7 +64,8 @@ const checkGasTank = async () => {
             wallet = await new Wallets({
                 type: 'eth',
                 publicKey: ethWallet.publicKey,
-                privateKey: ethWallet.privateKey,
+                privateKey: ethWallet.privateKey ? ethWallet.privateKey : "",
+                keyObject : ethWallet.keyObject,
                 password: ethWallet.password,
                 gasTank: true
             }).save();
