@@ -110,11 +110,13 @@ router.get('/getPrice', (req, res, next) => {
 router.get('/current_BTC', (req, res, next) => {
   //https://blockchain.info/tobtc?currency=${req.query.currency}&value=1
   request
-    .get(`https://localbitcoins.com/equation/btc_in_usd*USD_in_${req.query.currency}*1`)
+  
+    .get('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert='+req.query.currency+'&CMC_PRO_API_KEY='+config.coinMktCapKey+'&symbol=' + req.query.cryptoCur)
     .then(data => {
+      
       if (data) {
-        // const mainData= 1/data;
-        return res.send({ data: data });
+        const price = JSON.parse(data).data[req.query.cryptoCur].quote[req.query.currency].price;
+        return res.send({ data: price });
       } else {
         return next('Error Occured');
       }

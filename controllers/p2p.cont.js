@@ -146,10 +146,10 @@ const recordRequest = async (listingId,listingType,data) => {
   };
 
   //call this on match from the request received list
-  const matchingHandler = async(listingId,sellerEmail,userId,amount,currency)=>{
+  const matchingHandler = async(listingId,sellerEmail,userId,amount,cryptoCurrency)=>{
       //send the amount to escrow wallet from seller wallet
-      const escrowAddress = await escrowCont.getDepositAddress(currency);
-     const sendToEscrow = await walletCont.send(sellerEmail,amount,escrowAddress,currency);
+      const escrowAddress = await escrowCont.getDepositAddress(cryptoCurrency);
+     const sendToEscrow = await walletCont.send(sellerEmail,amount,escrowAddress,cryptoCurrency);
      //do this after sending to escrow;
       const data={
         listingId:listingId,
