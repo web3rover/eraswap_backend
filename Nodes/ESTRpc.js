@@ -78,6 +78,28 @@ class ESTRpc {
         }
     }
 
+    async getHistory(email) {
+        try {
+            var address = await this.getAddress(email);
+            if (address.error) {
+                throw "Address not found for email " + email;
+            }
+            var history = await Withdrwals.find({ 'txn.sender': address.data, type: "Est" });
+            var list = [];
+            for (var i = 0; i < history.length; i++) {
+                list.push({
+                    receiver: history[i].txn ? history[i].txn.receiver : "",
+                    amount: history[i].txn ? history[i].txn.amount : "",
+                    status: history[i].status,
+                    txnHash: history[i].txnHash ? history[i].txnHash : "",
+                });
+            }
+            return list;
+        } catch (ex) {
+            return ex;
+        }
+    }
+
     async send(sender, receiver, amount) {
         try {
             var data = await this.tokenContract.methods.transfer(receiver, amount).encodeABI();
@@ -99,7 +121,7 @@ class ESTRpc {
                         gasEstimate: gasEstimate,
                         gasPrice: gasPrice,
                     },
-                    txn : {
+                    txn: {
                         operation: "_initiateTransfer",
                         sender: sender,
                         receiver: receiver,

@@ -314,9 +314,9 @@ var start = async function () {
         await reSchedule(null, job, 10, done);
     });
 
-    await agenda.every('10 seconds', 'Check pending withdrawals');
+    await agenda.every('15 seconds', 'Check pending withdrawals');
 
-    await agenda.every('10 seconds', 'On error reSchedule withdrawals');
+    await agenda.every('15 seconds', 'On error reSchedule withdrawals');
 
 };
 

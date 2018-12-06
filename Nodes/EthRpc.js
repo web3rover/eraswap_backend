@@ -269,6 +269,28 @@ class EthRpc {
         }
     }
 
+    async getHistory(email) {
+        try {
+            var address = await this.getAddress(email);
+            if (address.error) {
+                throw "Address not found for email " + email;
+            }
+            var history = await Withdrwals.find({ 'txn.sender': address.data, type: "Eth" });
+            var list = [];
+            for (var i = 0; i < history.length; i++) {
+                list.push({
+                    receiver: history[i].txn ? history[i].txn.receiver : "",
+                    amount: history[i].txn ? history[i].txn.amount : "",
+                    status: history[i].status,
+                    txnHash: history[i].txnHash ? history[i].txnHash : "",
+                });
+            }
+            return list;
+        } catch (ex) {
+            return ex;
+        }
+    }
+
     async _parityRpcCall(command, params = [], path = '') {
         if (!params instanceof Array) {
             throw { error: true, message: 'params must an array' };
