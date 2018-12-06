@@ -6,7 +6,7 @@ const ETHRpc = require('../Nodes/EthRpc');
 
 
 const Nodes = require('../Nodes');
-
+const rpcDirectory= Nodes.RPCDirectory;
 const getRpcModule = (crypto) => {
     return rpcDirectory[crypto];
 }

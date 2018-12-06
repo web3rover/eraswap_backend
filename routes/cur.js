@@ -34,7 +34,7 @@ router.get('/checkVal',(req,res,next)=>{
     });
   }
   if(req.query.platform==='EST'){
-    walletCont.getBalance(req.user.email,req.query.platform).then(data=>{
+    walletCont.getBalance(req.user.email,'Est').then(data=>{
       const deductableAmount = Number(req.query.amount) * (config.PLATFORM_FEE/2) /100;  //usually for EST it will be half.
 
       if(data && Number(data.balance) >= deductableAmount ){
@@ -51,6 +51,13 @@ router.get('/checkVal',(req,res,next)=>{
     }).catch(error=>{
       return next(error)
     })
+  }else{
+  return request("https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=USD&CMC_PRO_API_KEY=1c2d23ed-bdca-4714-b39b-8e33bffe5053&symbol="+req.query.currency).then(data=>{
+    console.log(data);
+    return res.json(data);
+      }).catch(error=>{
+        return next(error);
+      })
   }
   
   
