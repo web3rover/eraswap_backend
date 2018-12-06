@@ -101,12 +101,12 @@ router.post('/showInterest', (req, res, next) => {
   };
   const savableData = {
     userId: req.user._id,
-    amount: req.body.amountAsked,
+    amount: req.body.askAmount,
     message: req.body.specialMessage,
   };
 
   currencyCont
-    .recordRequest(req.body.listingId, req.body.wantsToBuy ? 'Sell' : 'Buy', savableData)
+    .recordRequest(req.body._id, req.body.wantsToBuy ? 'Sell' : 'Buy', savableData)
     .then(loggedData => {
       return currencyCont
         .showInterestMailSender(req.body, message)
@@ -119,6 +119,15 @@ router.post('/showInterest', (req, res, next) => {
     })
     .catch(errorLogging => {
       return next(errorLogging);
+    });
+});
+
+
+router.get('/getInterests',(req,res,next)=>{
+    currencyCont.getUserListInterests(req.query.listingId).then(data=>{
+        return res.json(data);
+    }).catch(error=>{
+        return next(error)
     });
 });
 module.exports = router;

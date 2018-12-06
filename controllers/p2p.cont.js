@@ -126,7 +126,7 @@ const showInterestMailSender =async(record,message)=>{
 const recordRequest = async (listingId,listingType,data) => {
   
     const listingDocExist = await RequestLog.findOne({listingId:listingId}).exec();
-    if(listingDocExist){
+    if(!listingDocExist){
         const savableObj = new RequestLog({
             listingId:listingId,
             listingType:listingType,
@@ -175,6 +175,13 @@ const recordRequest = async (listingId,listingType,data) => {
       });
       return true;
   }
+
+const getUserListInterests = async(listingId)=>{
+   return  await RequestLog.findOne({listingId:listingId}).populate({
+        path:'userRequests.userId',
+        select:'username',
+    }).exec();
+}
 module.exports={
     addListing,
     searchListing,
@@ -184,5 +191,6 @@ module.exports={
     getAllListings,
     updateListing,
     recordRequest,
-    matchingHandler
+    matchingHandler,
+    getUserListInterests
 }
