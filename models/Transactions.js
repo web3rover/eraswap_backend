@@ -85,6 +85,11 @@ totalExchangeAmout:{
     type:String,
     required:true
 },
+platformFeePayOpt:{
+    type:String,
+    default:'EST',
+    enum:['EST','source']
+},
 ersToCastTxid:{
     type:String
 }
