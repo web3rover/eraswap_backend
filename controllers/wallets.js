@@ -84,7 +84,7 @@ const checkGasTank = async () => {
     }
 }
 
-const getBalance = async(crypto)=>{
+const getBalance = async(email,crypto)=>{
   
     var rpcModule = getRpcModule(crypto);
     try {

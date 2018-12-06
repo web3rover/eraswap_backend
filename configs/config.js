@@ -47,6 +47,7 @@ module.exports = {
         secret: 'HelloBlcko',
         expire: 604800,
     },
+    PLATFORM_FEE: 0.5,
     NODES: {
         btc: {
             host: '13.233.168.86',

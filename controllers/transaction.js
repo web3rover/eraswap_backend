@@ -1,6 +1,8 @@
 const Txn = require('../models/Transactions');
 const cryptoHelper = require('../helpers/cryptos');
-
+const config = require('../configs/config');
+const escrrows = require('./escrow.cont');
+const wallets = require('./wallets');
 const verifyTxn = (eraswapSendAddress, lctxid, timeFrom, platForm, symbol, amount) => {
   return new Promise((resolve, reject) => {
     return Txn.findOne({ _id: lctxid })
@@ -8,7 +10,7 @@ const verifyTxn = (eraswapSendAddress, lctxid, timeFrom, platForm, symbol, amoun
       .then(data => {
         return cryptoHelper
           .verifyTxn(data.dipositTxnId, timeFrom, platForm, symbol, amount)
-          .then((verified_data) => {
+          .then(verified_data => {
             if (data.witdrawn) {
               return reject({
                 status: 400,
@@ -17,35 +19,36 @@ const verifyTxn = (eraswapSendAddress, lctxid, timeFrom, platForm, symbol, amoun
             }
             data.eraswapSendAddress = eraswapSendAddress;
             if (verified_data.length && !data.dipositTxnId) {
-               verified_data.some( i => {
-               Txn.countDocuments({ dipositTxnId: i.txid }).exec().then(count=>{
-                if (!count) {
-                  //change and iterate this thing after
-                  data.depositNotFpund =false,
-                  data.dipositTxnStatus = verified_data[0].status;
-                  data.dipositTxnId = verified_data[0].txid;
-                }
-                data.save((error)=>{
-                  if(error){
-                    console.log(error);
-                  }
-                });
-                return resolve({
-                  _id: data._id,
-                  status: data.dipositTxnStatus,
-                  txIdExist: data.dipositTxnId ? data.dipositTxnId : null,
-                  convertedYet: data.convertedYet,
-                  amtToSend: data.amtToSend,
-                });
-
-              }).catch(error_count=>{
-                return reject(error_count);
+              verified_data.some(i => {
+                Txn.countDocuments({ dipositTxnId: i.txid })
+                  .exec()
+                  .then(count => {
+                    if (!count) {
+                      //change and iterate this thing after
+                      (data.depositNotFpund = false), (data.dipositTxnStatus = verified_data[0].status);
+                      data.dipositTxnId = verified_data[0].txid;
+                    }
+                    data.save(error => {
+                      if (error) {
+                        console.log(error);
+                      }
+                    });
+                    return resolve({
+                      _id: data._id,
+                      status: data.dipositTxnStatus,
+                      txIdExist: data.dipositTxnId ? data.dipositTxnId : null,
+                      convertedYet: data.convertedYet,
+                      amtToSend: data.amtToSend,
+                    });
+                  })
+                  .catch(error_count => {
+                    return reject(error_count);
+                  });
               });
-            });
             } else if (verified_data.length) {
               data.dipositTxnStatus = verified_data[0].status;
-              data.save((error)=>{
-                if(error){
+              data.save(error => {
+                if (error) {
                   console.log(error);
                 }
               });
@@ -56,21 +59,20 @@ const verifyTxn = (eraswapSendAddress, lctxid, timeFrom, platForm, symbol, amoun
                 convertedYet: data.convertedYet,
                 amtToSend: data.amtToSend,
               });
-            }else{
-              data.save((error)=>{
-                if(error){
+            } else {
+              data.save(error => {
+                if (error) {
                   console.log(error);
                 }
               });
               return resolve({
                 _id: data._id,
-                status: verified_data.length ? verified_data[0].status : "not received yet",
+                status: verified_data.length ? verified_data[0].status : 'not received yet',
                 txIdExist: data.dipositTxnId ? data.dipositTxnId : null,
                 convertedYet: data.convertedYet,
                 amtToSend: data.amtToSend,
               });
             }
-           
           })
           .catch(error => {
             return reject({
@@ -146,80 +148,94 @@ const getMytxn = user => {
     .sort({ createdAt: -1 })
     .exec();
 };
-const converTdata = (symbol,id, platForm, fromSymbol, toSymbol, amount) => {
+const converTdata = async (symbol, id, platForm, fromSymbol, toSymbol, amount, platFormFeeCoin, userEmail) => {
+  let placableAmt;
+  //deduct 0.5% from amount  or 0.25 if its EST
+  if (platFormFeeCoin == 'EST') {
+    const feeAmt = (amount * (config.PLATFORM_FEE / 2)) / 100;
+    const depositAdd = await escrrows.getDepositAddress('EST');
+    const sendStatus = await wallets.send(userEmail, feeAmt, depositAdd, 'EST');
+    console.log(sendStatus); //maybe log this or something
+    placableAmt = amount;
+    //deduct 25% from user wallet and send to escrow
+  } else {
+    // 50% deduct and place order
+    placableAmt = amount - (amount * config.PLATFORM_FEE) / 100;
+  }
+  const data = await cryptoHelper.convertCurrency(symbol, platForm, fromSymbol, toSymbol, placableAmt);
+  await Txn.findOneAndUpdate(
+    { _id: id },
+    { $set: { convertedYet: 'started', convertionTime: data.timestamp, orderId: data.id, side: data.side, orderplacingAmt: data.orderplacingAmt } }
+  ).exec();
+
+  return data;
+};
+const verifyConvertion = (id, platForm, symbol) => {
   return new Promise((resolve, reject) => {
-    //deduct 0.5% from amount 
-    return cryptoHelper
-      .convertCurrency(symbol,platForm, fromSymbol, toSymbol, amount)
+    Txn.findOne({ _id: id })
+      .exec()
       .then(data => {
-        console.log('currencyConvertion:', data);
-        return Txn.findOneAndUpdate({ _id: id }, { $set: { convertedYet: 'started' ,convertionTime:data.timestamp,orderId:data.id, side:data.side,orderplacingAmt:data.orderplacingAmt} })
-          .exec()
-          .then(updated_data => {
-            return resolve(data);
+        cryptoHelper
+          .verifyOrder(data.convertionTime, platForm, symbol, data.orderId, data.orderplacingAmt, data.side)
+          .then(data_verified => {
+            if (data_verified && data_verified.status == 'closed') {
+              if (!data.conversation_fees) {
+                data.convertionTime = data_verified.timestamp;
+                data.conversation_fees = data_verified.fee ? data_verified.fee.cost : 0;
+                data.amtToSend = data_verified.side == 'sell' ? data_verified.cost - data.conversation_fees : data_verified.amount - data.conversation_fees;
+              }
+              if (platForm.toLowerCase() != 'cryptopia' || data.conversation_fees != 0) {
+                data.convertedYet = 'finished';
+              }
+              data.save();
+              return resolve({ verified: true, amtToSend: data.amtToSend });
+            } else if (data_verified && data_verified.status == 'canceled') {
+              //save to db , this order cancelled manually
+              return reject({ canceled: true, verified: false });
+            } else {
+              return reject({ verified: false });
+            }
           })
-          .catch(error_update => {
-            return reject(error_update);
+          .catch(error_verification => {
+            return reject(error_verification);
           });
       })
-      .catch(error => {
-        return reject(error);
+      .catch(error_finding => {
+        return reject(error_finding);
       });
   });
 };
-const verifyConvertion =(id,platForm,symbol)=>{
-  return new Promise((resolve,reject)=>{
-  Txn.findOne({_id:id}).exec().then(data=>{
-    cryptoHelper.verifyOrder(data.convertionTime,platForm,symbol,data.orderId,data.orderplacingAmt,data.side).then(data_verified=>{
-      if(data_verified && data_verified.status=="closed"){
-        if(!data.conversation_fees){
-          data.convertionTime=data_verified.timestamp;
-          data.conversation_fees = data_verified.fee ? data_verified.fee.cost : 0;
-          data.amtToSend = data_verified.side =='sell' ?  data_verified.cost-data.conversation_fees : data_verified.amount-data.conversation_fees;
-        }
-        if(platForm.toLowerCase()!='cryptopia' || data.conversation_fees!=0){
-        data.convertedYet= "finished";
-        }
-        data.save();
-        return resolve({verified:true, amtToSend:data.amtToSend});
-      }else if(data_verified && data_verified.status=="canceled"){
-        //save to db , this order cancelled manually
-        return reject({canceled:true,verified:false}); 
-      }
-      else{
-        return reject({verified:false});
-      }
-    }).catch(error_verification=>{
-      return reject(error_verification);
-    });
-  }).catch(error_finding=>{
-    return reject(error_finding);
-  })
-});
-  
-};
 //call it for cancel order and refund
-const cancelAndRefundExistingOrder =(id,platForm,fromSymbol,symbol)=>{
-  return new Promise((resolve,reject)=>{
-    Txn.findOne({_id:id}).exec().then(data=>{
-        cryptoHelper.cancelOrder(platForm,symbol,data.orderId).then(data=>{
-          data.cancelledConvertion =true;
+const cancelAndRefundExistingOrder = (id, platForm, fromSymbol, symbol) => {
+  return new Promise((resolve, reject) => {
+    Txn.findOne({ _id: id })
+      .exec()
+      .then(data => {
+        cryptoHelper
+          .cancelOrder(platForm, symbol, data.orderId)
+          .then(data => {
+            data.cancelledConvertion = true;
             //data.refundAddress is not there, save it somehow. or tress the depositor address
-          cryptoHelper.sendCurrency(platForm,data.refundAddress,data.exchFromCurrencyAmt,fromSymbol).then(data=>{
-            data.refunded = true;
-          }).catch(error=>{
+            cryptoHelper
+              .sendCurrency(platForm, data.refundAddress, data.exchFromCurrencyAmt, fromSymbol)
+              .then(data => {
+                data.refunded = true;
+              })
+              .catch(error => {
+                data.save();
+                return reject(error);
+              });
             data.save();
-            return reject(error);
+          })
+          .catch(unable_to_cancel => {
+            return reject(unable_to_cancel);
           });
-          data.save();
-        }).catch(unable_to_cancel=>{
-          return reject(unable_to_cancel);
-        })
-    }).catch(error_finding=>{
-      return reject(error_finding);
-    })
+      })
+      .catch(error_finding => {
+        return reject(error_finding);
+      });
   });
-}
+};
 module.exports = {
   saveTxn,
   verifyTxn,
@@ -227,5 +243,5 @@ module.exports = {
   sendToCustomer,
   converTdata,
   verifyConvertion,
-  cancelAndRefundExistingOrder
+  cancelAndRefundExistingOrder,
 };

@@ -31,7 +31,7 @@ var start = async function () {
                         done();
                     }
                     if (data.txIdExist && data.status == "ok" && !data.convertedYet) {
-                        txnCont.converTdata(curMar.symbol, jobData.lctxid, jobData.exchangePlatform, jobData.exchFromCurrency, jobData.exchToCurrency, jobData.exchFromCurrencyAmt)
+                        txnCont.converTdata(curMar.symbol, jobData.lctxid, jobData.exchangePlatform, jobData.exchFromCurrency, jobData.exchToCurrency, jobData.exchFromCurrencyAmt,jobData.platformFeePayOpt)
                             .then(conversation_data => {
                                 // if(conversation_data.status=="closed"&& conversation_data.cost ==jobData.exchFromCurrencyAmt){
                                 //   txnCont
