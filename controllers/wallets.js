@@ -6,7 +6,7 @@ const ETHRpc = require('../Nodes/EthRpc');
 
 
 const Nodes = require('../Nodes');
-const rpcDirectory= Nodes.RPCDirectory;
+const rpcDirectory = Nodes.RPCDirectory;
 const getRpcModule = (crypto) => {
     return rpcDirectory[crypto];
 }
@@ -62,6 +62,24 @@ const createWallets = async body => {
     }
 }
 
+const getHistory = async (email, crypto) => {
+    var rpcModule = getRpcModule(crypto);
+    try {
+        if (rpcModule) {
+            var history = await rpcModule.getHistory(email);
+            if (history.message) {
+                throw history.message;
+            }
+            return ({ history: history });
+        }
+        else {
+            return Promise.reject({ message: "RPC module not found!" });
+        }
+    } catch (ex) {
+        return Promise.reject({ message: ex.message });
+    }
+}
+
 const checkGasTank = async () => {
     try {
         var wallet = await Wallets.findOne({ gasTank: true, type: 'eth' });
@@ -72,7 +90,7 @@ const checkGasTank = async () => {
                 type: 'eth',
                 publicKey: ethWallet.publicKey,
                 privateKey: ethWallet.privateKey ? ethWallet.privateKey : "",
-                keyObject : ethWallet.keyObject,
+                keyObject: ethWallet.keyObject,
                 password: ethWallet.password,
                 gasTank: true
             }).save();
@@ -84,8 +102,8 @@ const checkGasTank = async () => {
     }
 }
 
-const getBalance = async(email,crypto)=>{
-  
+const getBalance = async (email, crypto) => {
+
     var rpcModule = getRpcModule(crypto);
     try {
         if (rpcModule) {
@@ -141,8 +159,8 @@ const getPrivateKey = async (email, crypto) => {
         return { error: "RPC module not found!" };
     }
 }
-const send = async(email,amount,receiver,crypto,)=>{
-   
+const send = async (email, amount, receiver, crypto, ) => {
+
     var rpcModule = getRpcModule(crypto);
     if (rpcModule) {
         var op = "";
@@ -153,7 +171,7 @@ const send = async(email,amount,receiver,crypto,)=>{
                 op = await rpcModule.send(email, receiver, amount);
             }
             else {
-                var sender = await getAddress(email,crypto);
+                var sender = await getAddress(email, crypto);
                 op = await rpcModule.send(sender, receiver, amount);
             }
             if (!op.error && op.success) {
@@ -175,9 +193,11 @@ const send = async(email,amount,receiver,crypto,)=>{
     }
 }
 module.exports = {
-    createWallets, 
+    createWallets,
     checkGasTank,
     getBalance,
     getAddress,
-    getPrivateKey,send
+    getPrivateKey,
+    send,
+    getHistory
 };

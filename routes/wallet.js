@@ -2,7 +2,13 @@ const express = require('express');
 const router = express.Router();
 const walletController = require('../controllers/wallets');
 
-
+router.get('/getHistory', async (req, res, next) => {
+    walletController.getHistory(req.user.email,req.query.crypto).then(data=>{
+        return res.json(data);
+    }).catch(error=>{
+        return next(error);
+    });
+});
 
 router.get('/getBalance', async (req, res, next) => {
     walletController.getBalance(req.user.email,req.query.crypto).then(data=>{

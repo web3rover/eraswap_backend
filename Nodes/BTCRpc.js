@@ -36,6 +36,24 @@ class BTCRpc {
         });
     }
 
+    async getHistory(email) {
+        try {
+            var history = await Withdrwals.find({ 'txn.sender': email, type: "Btc" });
+            var list = [];
+            for (var i = 0; i < history.length; i++) {
+                list.push({
+                    receiver: history[i].txn ? history[i].txn.receiver : "",
+                    amount: history[i].txn ? history[i].txn.amount : "",
+                    status: history[i].status,
+                    txnHash: history[i].txnHash ? history[i].txnHash : "",
+                });
+            }
+            return list;
+        } catch (ex) {
+            return ex;
+        }
+    }
+
     async createEscrow() {
         try {
             var date = new Date();
