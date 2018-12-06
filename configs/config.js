@@ -48,6 +48,8 @@ module.exports = {
         expire: 604800,
     },
     PLATFORM_FEE: 0.5,
+    EST_VAL:1, //in USD,
+    coinMktCapKey:'1c2d23ed-bdca-4714-b39b-8e33bffe5053',
     NODES: {
         btc: {
             host: '13.233.168.86',

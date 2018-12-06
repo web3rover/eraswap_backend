@@ -3,6 +3,8 @@ const cryptoHelper = require('../helpers/cryptos');
 const config = require('../configs/config');
 const escrrows = require('./escrow.cont');
 const wallets = require('./wallets');
+const rp = require('request-promise');
+
 const verifyTxn = (eraswapSendAddress, lctxid, timeFrom, platForm, symbol, amount) => {
   return new Promise((resolve, reject) => {
     return Txn.findOne({ _id: lctxid })
@@ -152,7 +154,11 @@ const converTdata = async (symbol, id, platForm, fromSymbol, toSymbol, amount, p
   let placableAmt;
   //deduct 0.5% from amount  or 0.25 if its EST
   if (platFormFeeCoin == 'EST') {
-    const feeAmt = (amount * (config.PLATFORM_FEE / 2)) / 100;
+    const fromCurMarketVal = await rp('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=USD&CMC_PRO_API_KEY='+config.coinMktCapKey+'&symbol=' + fromSymbol);
+    const fromCurVal = amount*JSON.parse(fromCurMarketVal).data[fromSymbol].quote.USD.price;
+    const eqvEstVal = fromCurVal/config.EST_VAL;
+
+    const feeAmt = (eqvEstVal * (config.PLATFORM_FEE / 2)) / 100;
     const depositAdd = await escrrows.getDepositAddress('Est');
     const sendStatus = await wallets.send(userEmail, feeAmt, depositAdd, 'Est');
     console.log(sendStatus); //maybe log this or something
