@@ -5,6 +5,8 @@ const mailHelper = require('../helpers/mailHelper');
 const RequestLog = require('../models/RequestLog');
 const Users = require('../models/Users');
 const config = require('../configs/config');
+const escrowCont = require('./escrow.cont');
+const walletCont = require('./wallets');
 
 const node = new Blockcluster.Dynamo({
     locationDomain: config.BLOCKCLUSTER.host,
@@ -120,7 +122,7 @@ const showInterestMailSender =async(record,message)=>{
     return await mailHelper.SendMail(message);
 }
 
-
+//call this when someone requests
 const recordRequest = async (listingId,listingType,data) => {
   
     const listingDocExist = await RequestLog.findOne({listingId:listingId}).exec();
@@ -143,6 +145,36 @@ const recordRequest = async (listingId,listingType,data) => {
     }
   };
 
+  //call this on match from the request received list
+  const matchingHandler = async(listingId,sellerEmail,userId,amount,currency)=>{
+      //send the amount to escrow wallet from seller wallet
+      const escrowAddress = await escrowCont.getDepositAddress(currency);
+     const sendToEscrow = await walletCont.send(sellerEmail,amount,escrowAddress,currency);
+     //do this after sending to escrow;
+      const data={
+        listingId:listingId,
+        userId:userId,
+        amount:amount,
+        showIpaid:true,
+        finished:false
+      };
+    var identifier = shortid.generate();
+    await node.callAPI('assets/issueSoloAsset', {
+        assetName: 'MatchData',
+        fromAccount: node.getWeb3().eth.accounts[0],
+        toAccount: node.getWeb3().eth.accounts[0],
+        identifier: identifier
+      });
+
+      //update agreement meta data
+      await node.callAPI('assets/updateAssetInfo', {
+        assetName: 'MatchData',
+        fromAccount: node.getWeb3().eth.accounts[0],
+        identifier: identifier,
+        "public": data
+      });
+      return true;
+  }
 module.exports={
     addListing,
     searchListing,
@@ -151,5 +183,6 @@ module.exports={
     getListingCount,
     getAllListings,
     updateListing,
-    recordRequest
+    recordRequest,
+    matchingHandler
 }
