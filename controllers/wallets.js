@@ -108,7 +108,7 @@ const getBalance = async (email, crypto) => {
     try {
         if (rpcModule) {
             var balance = "";
-            if (crypto === "Btc") {
+            if (crypto === "BTC") {
                 balance = await rpcModule.getBalance(email);
                 balance = balance.error ? balance : "" + balance.result;
             }
@@ -167,7 +167,7 @@ const send = async (email, amount, receiver, crypto, ) => {
         try {
             if (!receiver || !amount)
                 throw "All parameters required!";
-            if (crypto === "Btc") {
+            if (crypto === "BTC") {
                 op = await rpcModule.send(email, receiver, amount);
             }
             else {

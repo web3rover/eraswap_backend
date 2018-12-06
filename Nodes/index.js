@@ -10,9 +10,9 @@ var ethRpc = new EthRpc(nodeConfig.eth.host, nodeConfig.eth.port);
 var estRpc = new ESTRpc(nodeConfig.est.host, nodeConfig.est.port, nodeConfig.est.contractAddress, interface);
 
 var RPCDirectory = {
-    "Btc" : btcRpc,
-    "Eth" : ethRpc,
-    "Est" : estRpc,
+    "BTC" : btcRpc,
+    "ETH" : ethRpc,
+    "EST" : estRpc,
 };
 
 module.exports = {

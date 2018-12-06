@@ -41,7 +41,7 @@ router.get('/checkVal', (req, res, next) => {
       console.log(data);
       if (req.query.platform === 'EST') {
         walletCont
-          .getBalance(req.user.email, 'Est')
+          .getBalance(req.user.email, 'EST')
           .then(balanceData => {
             const fromCurVal = Number(req.query.amount)*JSON.parse(data).data[req.query.currency].quote.USD.price;
             const eqvEstVal = fromCurVal/config.EST_VAL;

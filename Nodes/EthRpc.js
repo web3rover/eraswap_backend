@@ -56,7 +56,7 @@ class EthRpc {
                 }
             }
             if (address == '') {
-                return { error: 'Eth wallet not found!' };
+                return { error: 'ETH wallet not found!' };
             }
             return { data: address };
         } catch (ex) {
@@ -79,7 +79,7 @@ class EthRpc {
             var pwd = await this._getPassword(sender);
 
             var withdrwal = new Withdrwals({
-                type: 'Eth',
+                type: 'ETH',
                 status: 'Pending',
                 txn: {
                     operation: 'send',
@@ -185,7 +185,7 @@ class EthRpc {
                 }
             }
             if (!address) {
-                return { error: 'Eth wallet not found!' };
+                return { error: 'ETH wallet not found!' };
             }
             return { data: address };
         } catch (ex) {
@@ -275,7 +275,7 @@ class EthRpc {
             if (address.error) {
                 throw "Address not found for email " + email;
             }
-            var history = await Withdrwals.find({ 'txn.sender': address.data, type: "Eth" });
+            var history = await Withdrwals.find({ 'txn.sender': address.data, type: "ETH" });
             var list = [];
             for (var i = 0; i < history.length; i++) {
                 list.push({

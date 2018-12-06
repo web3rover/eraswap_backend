@@ -2,6 +2,7 @@ var Blockcluster = require('blockcluster');
 const shortid = require("shortid");
 
 const mailHelper = require('../helpers/mailHelper');
+const RequestLog = require('../models/RequestLog');
 const Users = require('../models/Users');
 const config = require('../configs/config');
 
@@ -114,11 +115,33 @@ const updateListing =async(userId,id,active)=>{
 }
 
 const showInterestMailSender =async(record,message)=>{
-    
    const userData = await Users.findOne({_id:record.userId}).select({"email":1}).exec();
    message["to"] =userData.email
     return await mailHelper.SendMail(message);
 }
+
+
+const recordRequest = async (listingId,listingType,data) => {
+  
+    const listingDocExist = await RequestLog.findOne({listingId:listingId}).exec();
+    if(listingDocExist){
+        const savableObj = new RequestLog({
+            listingId:listingId,
+            listingType:listingType,
+            userRequests:data
+        });
+        savableObj.save((error, saved) => {
+            if (error) {
+              throw error;
+            }
+            return saved;
+          });
+    }else{
+        return RequestLog.updateOne({listingId:listingId},{$push:{
+          $push:{ userRequests:data}
+        }}).exec();
+    }
+  };
 
 module.exports={
     addListing,
@@ -127,5 +150,6 @@ module.exports={
     showInterestMailSender,
     getListingCount,
     getAllListings,
-    updateListing
+    updateListing,
+    recordRequest
 }

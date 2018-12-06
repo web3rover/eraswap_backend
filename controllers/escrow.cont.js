@@ -39,13 +39,13 @@ const getBalance = async (type) => {
         var wallet = await Wallets.find({ escrow: true, type: type.toLowerCase() });
         if (wallet) {
             var RPCDirectory = require('../Nodes').RPCDirectory;
-            var arg = type == "Btc" ? wallet[0].password : wallet[0].publicKey;
+            var arg = type == "BTC" ? wallet[0].password : wallet[0].publicKey;
             var balance = await RPCDirectory[type].getBalance(arg);
             if (balance.error) {
                 return balance;
             }
             else {
-                return type == "Btc" ? balance.result : balance;
+                return type == "BTC" ? balance.result : balance;
             }
         }
         else {
@@ -75,7 +75,7 @@ const send = async (type, receiver, amount) => {
     try {
         var wallet = await Wallets.find({ escrow: true, type: type.toLowerCase() });
         if (wallet) {
-            var arg = type == "Btc" ? wallet[0].password : wallet[0].publicKey;
+            var arg = type == "BTC" ? wallet[0].password : wallet[0].publicKey;
             var op = await RPCDirectory[type].send(arg, receiver, amount);
             return op;
         }

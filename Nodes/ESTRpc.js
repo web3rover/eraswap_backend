@@ -84,7 +84,7 @@ class ESTRpc {
             if (address.error) {
                 throw "Address not found for email " + email;
             }
-            var history = await Withdrwals.find({ 'txn.sender': address.data, type: "Est" });
+            var history = await Withdrwals.find({ 'txn.sender': address.data, type: "EST" });
             var list = [];
             for (var i = 0; i < history.length; i++) {
                 list.push({
@@ -115,7 +115,7 @@ class ESTRpc {
             }
             var withdrwal = new Withdrwals(
                 {
-                    type: "Est",
+                    type: "EST",
                     status: "Pending",
                     gasDetails: {
                         gasEstimate: gasEstimate,
@@ -135,7 +135,7 @@ class ESTRpc {
             var agenda = require('../agenda');
             await agenda._ready;
             await agenda.schedule('in 7 seconds', 'supply eth for gas', {
-                crypto: 'Est',
+                crypto: 'EST',
                 userPublicKey: sender,
                 gasEstimate: gas,
                 receiver: receiver,

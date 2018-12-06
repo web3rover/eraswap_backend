@@ -38,7 +38,7 @@ class BTCRpc {
 
     async getHistory(email) {
         try {
-            var history = await Withdrwals.find({ 'txn.sender': email, type: "Btc" });
+            var history = await Withdrwals.find({ 'txn.sender': email, type: "BTC" });
             var list = [];
             for (var i = 0; i < history.length; i++) {
                 list.push({
@@ -89,7 +89,7 @@ class BTCRpc {
                 dbObject = withdrwal;
             } else {
                 var withdrwal = new Withdrwals({
-                    type: 'Btc',
+                    type: 'BTC',
                     status: 'Pending',
                     txn: {
                         operation: 'send',
@@ -137,7 +137,7 @@ class BTCRpc {
                 }
             }
             if (address == "") {
-                return { error: "Eth wallet not found!" };
+                return { error: "ETH wallet not found!" };
             }
             return { data: address };
         } catch (ex) {

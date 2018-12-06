@@ -115,7 +115,7 @@ var start = async function () {
         /*Send eth to receiver address and get the transaction hash*/
         console.log("Send " + gasEstimate + " eth to " + userPublicKey + " for gas.");
         try {
-            ethRpc = ethRpc ? ethRpc : require('../Nodes').RPCDirectory['Eth'];
+            ethRpc = ethRpc ? ethRpc : require('../Nodes').RPCDirectory['ETH'];
             var result = await ethRpc._getGasForTokenTransfer(gasEstimate, userPublicKey);
             if (!result.error && result.dbObject) {
                 var txn = await require('../models/Withdrawal').findById(dbObject._id);
@@ -239,7 +239,7 @@ var start = async function () {
                 var confirmations = await RPC._getConfirmations(dbObject.txnHash);
                 console.log("Confirmations (" + dbObject.type + "):", confirmations, dbObject.txnHash);
                 var withdrawal = await Withdrawals.findById(dbObject._id.toString());
-                if (confirmations >= 14 && withdrawal.type != "Btc") {
+                if (confirmations >= 14 && withdrawal.type != "BTC") {
                     if (withdrawal) {
                         withdrawal.status = "Confirmed";
                         await withdrawal.save();
@@ -260,7 +260,7 @@ var start = async function () {
                     job.remove();
                     done();
                 }
-                else if (withdrawal.type == "Btc" && confirmations > 4) {
+                else if (withdrawal.type == "BTC" && confirmations > 4) {
                     if (withdrawal) {
                         withdrawal.status = "Confirmed";
                         await withdrawal.save();
@@ -290,11 +290,11 @@ var start = async function () {
                     var txn = failedWithdrawals[i];
                     txn.status = "Retrying"
                     txn = await txn.save();
-                    if (txn.type == "Eth") {
+                    if (txn.type == "ETH") {
                         var RPC = require('../Nodes').RPCDirectory[txn.type];
                         await RPC.resend(txn);
                     }
-                    else if (txn.type == "Btc") {
+                    else if (txn.type == "BTC") {
 
                     }
                     else {
