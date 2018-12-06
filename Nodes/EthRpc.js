@@ -251,7 +251,7 @@ class EthRpc {
 
       // When transaction is unconfirmed, its block number is null.
       // In this case we return 0 as number of confirmations
-      return trx && trx.blockNumber === null ? 0 : currentBlock - trx.blockNumber;
+      return trx && trx.blockNumber  ? currentBlock - trx.blockNumber : 0;
     } catch (error) {
       console.log(error);
     }
