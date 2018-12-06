@@ -238,26 +238,33 @@ var start = async function () {
                 var RPC = require('../Nodes').RPCDirectory[withdrawal.type];
                 var confirmations = await RPC._getConfirmations(dbObject.txnHash);
                 console.log("Confirmations (" + dbObject.type + "):", confirmations, dbObject.txnHash);
-                if (confirmations >= 14) {
-                    var withdrawal = await Withdrawals.findById(dbObject._id.toString());
+                var withdrawal = await Withdrawals.findById(dbObject._id.toString());
+                if (confirmations >= 14 && withdrawal.type != "Btc") {
+                    if (withdrawal) {
+                        withdrawal.status = "Confirmed";
+                        await withdrawal.save();
+
+                        var dependentTxn = await checkDependancy(withdrawal);
+                        //crypto, txnHash, sender, receiver, amount, dbObject
+                        if (dependentTxn) {
+                            await agenda.schedule("in 5 seconds", "Check gas txn before token transfer", {
+                                crypto: dependentTxn.type,
+                                txnHash: withdrawal.txnHash,
+                                sender: dependentTxn.txn.sender,
+                                receiver: dependentTxn.txn.receiver,
+                                amount: dependentTxn.txn.amount,
+                                dbObject: dependentTxn
+                            });
+                        }
+                    }
+                    job.remove();
+                    done();
+                }
+                else if (withdrawal.type == "Btc" && confirmations > 4) {
                     if (withdrawal) {
                         withdrawal.status = "Confirmed";
                         await withdrawal.save();
                     }
-                    var dependentTxn = await checkDependancy(withdrawal);
-                    //crypto, txnHash, sender, receiver, amount, dbObject
-                    if (dependentTxn) {
-                        await agenda.schedule("in 5 seconds", "Check gas txn before token transfer", {
-                            crypto: dependentTxn.type,
-                            txnHash: withdrawal.txnHash,
-                            sender: dependentTxn.txn.sender,
-                            receiver: dependentTxn.txn.receiver,
-                            amount: dependentTxn.txn.amount,
-                            dbObject: dependentTxn
-                        });
-                    }
-                    job.remove();
-                    done();
                 }
                 else {
                     await reSchedule(null, job, 10, done);
@@ -317,7 +324,8 @@ start();
 
 async function checkDependancy(txn) {
     try {
-        var withdrawal = await require('../models/Withdrawal').findOne({ waitFor: txn._id, status: { "$exists": true, "$ne": "Confirmed" } });
+        var withdrawal = await require('../models/Withdrawal')
+            .findOne({ waitFor: txn._id, status: { "$exists": true, "$ne": "Confirmed" } });
         if (withdrawal) {
             return withdrawal;
         }
