@@ -1,5 +1,6 @@
 const request = require('request');
 const Users = require('../models/Users');
+const Withdrwals = require('../models/Withdrawal');
 
 class BTCRpc {
     constructor(host, port, username, password) {
@@ -15,6 +16,9 @@ class BTCRpc {
     }
 
     async createWallet(email) {
+        var date = new Date();
+        var timestamp = date.getTime();
+        email += timestamp.toString();
         return new Promise((resolve, reject) => {
             this._btcRpcCall("createwallet", [email]).then((res) => {
                 this._getNewAddressForWallet(email).then(res => {
@@ -46,6 +50,11 @@ class BTCRpc {
     }
 
     async getBalance(email) {
+        try {
+            await this._loadWallet(email);
+        } catch (ex) {
+            console.log(ex);
+        }
         return new Promise((resolve, reject) => {
             this._btcRpcCall("getbalance", ["*", 1], "/wallet/" + email).then(result => {
                 resolve(result);
@@ -55,15 +64,48 @@ class BTCRpc {
         });
     }
 
-    async send(sendingWallet, address, amount) {
-        return new Promise((resolve, reject) => {
-            this._btcRpcCall("sendtoaddress", [address, amount], "/wallet/" + sendingWallet).then(result => {
-                result["success"] = true;
-                resolve(result);
-            }).catch(err => {
-                reject(err);
+    async send(sendingWallet, address, amount, dbObject) {
+        try {
+            if (dbObject) {
+                var withdrwal = await Withdrwals.findById(dbObject._id);
+                dbObject = withdrwal;
+            } else {
+                var withdrwal = new Withdrwals({
+                    type: 'Btc',
+                    status: 'Pending',
+                    txn: {
+                        operation: 'send',
+                        sender: sendingWallet,
+                        receiver: address,
+                        amount: amount,
+                    },
+                });
+                dbObject = await withdrwal.save();
+            }
+
+            return new Promise((resolve, reject) => {
+                this._btcRpcCall("sendtoaddress", [address, amount], "/wallet/" + sendingWallet).then(async result => {
+                    result["success"] = true;
+
+                    dbObject["txnHash"] = result.result;
+                    dbObject['error'] = '';
+                    dbObject['status'] = 'Pending';
+                    await dbObject.save();
+
+                    resolve(result);
+                }).catch(async err => {
+
+                    dbObject['error'] = err.message;
+                    dbObject['status'] = 'Error';
+                    dbObject['txnHash'] = '';
+                    await dbObject.save();
+
+                    reject(err);
+                });
             });
-        });
+        } catch (ex) {
+            return ex;
+        }
     }
 
     async getAddress(email) {
@@ -93,6 +135,38 @@ class BTCRpc {
                 reject(err);
             });
         });
+    }
+
+    async _getConfirmations(txHash) {
+        try {
+            // Instantiate web3 with HttpProvider
+            const trx = await this._getTransaction(txHash);
+
+            return trx ? trx.confirmations : 0;
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    async _getTransaction(txnHash) {
+        try {
+            var withdrwal = await Withdrwals.findOne({ txnHash: txnHash });
+            if (withdrwal) {
+
+                return new Promise((resolve, reject) => {
+                    this._btcRpcCall("gettransaction", [txnHash], "/wallet/" + withdrwal.txn.sender).then((res) => {
+                        resolve(res.result);
+                    }).catch(err => {
+                        reject(err);
+                    });
+                });
+            }
+            else {
+                throw "Database entry for transaction not found.";
+            }
+        } catch (error) {
+            console.log(error);
+        }
     }
 
     async getPrivateKey(email) {
