@@ -4,6 +4,13 @@ const nodes = require('../configs/config').NODES;
 const BTCRpc = require('../Nodes/BTCRpc');
 const ETHRpc = require('../Nodes/EthRpc');
 
+
+const Nodes = require('../Nodes');
+
+const getRpcModule = (crypto) => {
+    return rpcDirectory[crypto];
+}
+
 const btcRpc = new BTCRpc(nodes.btc.host, nodes.btc.port, nodes.btc.username, nodes.btc.password);
 const ethRpc = new ETHRpc(nodes.eth.host, nodes.eth.port);
 
@@ -77,6 +84,100 @@ const checkGasTank = async () => {
     }
 }
 
+const getBalance = async(crypto)=>{
+  
+    var rpcModule = getRpcModule(crypto);
+    try {
+        if (rpcModule) {
+            var balance = "";
+            if (crypto === "Btc") {
+                balance = await rpcModule.getBalance(email);
+                balance = balance.error ? balance : "" + balance.result;
+            }
+            else {
+                var address = await getAddress(email, crypto);
+                balance = await rpcModule.getBalance(address);
+
+            }
+            if (balance.error) {
+                return Promise.reject({ message: balance.error });
+            }
+            return ({ balance: balance });
+        }
+        else {
+            return Promise.reject({ message: "RPC module not found!" });
+        }
+    } catch (ex) {
+        return Promise.reject({ message: ex.message });
+    }
+}
+
+const getAddress = async (email, crypto) => {
+    var rpc = getRpcModule(crypto);
+    if (rpc) {
+        try {
+            var address = await rpc.getAddress(email);
+            return address.error ? address : address.data;
+        } catch (ex) {
+            return ex;
+        }
+    }
+    else {
+        return { error: "RPC module not found!" };
+    }
+}
+
+const getPrivateKey = async (email, crypto) => {
+    var rpc = getRpcModule(crypto);
+    if (rpc) {
+        try {
+            var address = await rpc.getPrivateKey(email);
+            return address.error ? address : address.data;
+        } catch (ex) {
+            return ex;
+        }
+    }
+    else {
+        return { error: "RPC module not found!" };
+    }
+}
+const send = async(email,amount,receiver,crypto,)=>{
+   
+    var rpcModule = getRpcModule(crypto);
+    if (rpcModule) {
+        var op = "";
+        try {
+            if (!receiver || !amount)
+                throw "All parameters required!";
+            if (crypto === "Btc") {
+                op = await rpcModule.send(email, receiver, amount);
+            }
+            else {
+                var sender = await getAddress(email,crypto);
+                op = await rpcModule.send(sender, receiver, amount);
+            }
+            if (!op.error && op.success) {
+                return (op);
+            }
+            else {
+                return Promise.reject({ message: op.message ? op.message : op.error ? op.error : op });
+            }
+
+        }
+        catch (ex) {
+            if (ex.code === "ENETUNREACH") {
+                return Promise.reject({ message: "connection to bitcoin node failed!" });
+            }
+            return Promise.reject({ message: ex.message });
+        }
+    } else {
+        return Promise.reject({ message: "RPC module not found!" });
+    }
+}
 module.exports = {
-    createWallets, checkGasTank
+    createWallets, 
+    checkGasTank,
+    getBalance,
+    getAddress,
+    getPrivateKey,send
 };
