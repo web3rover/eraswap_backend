@@ -4,7 +4,7 @@ const request = require('request');
 const Users = require('../models/Users');
 const Wallets = require('../models/Wallets');
 const Withdrwals = require('../models/Withdrawal');
-var keythereum = require('keythereum');
+const keythereum = require('keythereum');
 
 class EthRpc {
     constructor(host, port) {
@@ -158,8 +158,6 @@ class EthRpc {
         try {
             var keyObject = await this._parityRpcCall('parity_exportAccount', [address, password]);
             console.log(keyObject);
-
-            var keythereum = require("keythereum");
 
             var privateKey = keythereum.recover(password, keyObject); //here password is empty string. put the account password
             console.log(privateKey.toString('hex'));
