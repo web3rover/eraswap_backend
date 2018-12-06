@@ -5,7 +5,7 @@ const walletController = require('../controllers/wallets');
 
 
 router.get('/getBalance', async (req, res, next) => {
-    walletController.getBalance(req.query.crypto,req.user.email).then(data=>{
+    walletController.getBalance(req.user.email,req.query.crypto).then(data=>{
         return res.json(data);
     }).catch(error=>{
         return next(error);
