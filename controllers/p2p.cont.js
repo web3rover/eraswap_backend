@@ -148,14 +148,14 @@ const recordRequest = async (listingId,listingType,data) => {
   //call this on match from the request received list
   const matchingHandler = async(listingId,sellerEmail,ownerUserId,requester,amount,cryptoCurrency)=>{
       //send the amount to escrow wallet from seller wallet
-      const escrowAddress = await escrowCont.getDepositAddress(cryptoCurrency);
+    //   const escrowAddress = await escrowCont.getDepositAddress(cryptoCurrency);
     //  const sendToEscrow = 
-     await walletCont.send(sellerEmail,amount,escrowAddress,cryptoCurrency); //let it transfer or incase error it will exit from here.
+    //  await walletCont.send(sellerEmail,amount,escrowAddress,cryptoCurrency); //let it transfer or incase error it will exit from here.
      //do this after sending to escrow;
       const data={
         cryptoCurrency:cryptoCurrency,
         listingId:listingId,
-        owner:ownerUserId,
+        ownerUserId:ownerUserId,
         requester:requester,
         amount:amount,
         showIpaid:true,
@@ -170,15 +170,26 @@ const recordRequest = async (listingId,listingType,data) => {
       });
 
       //update agreement meta data
-      await node.callAPI('assets/updateAssetInfo', {
+      return await node.callAPI('assets/updateAssetInfo', {
         assetName: 'MatchData',
         fromAccount: node.getWeb3().eth.accounts[0],
         identifier: identifier,
         "public": data
       });
-      return true;
   }
 
+  const getMyListMatches = async(userId)=>{
+        return  await node.callAPI("assets/search", {
+        $query: {
+            "assetName": 'MatchData',
+            ownerUserId:userId
+          },
+          $sort: {
+            timestamp: 1
+          }
+      });
+
+  }
 
   const getMyOwnInterests = async(userId)=>{
     return RequestLog.find({"userRequests.userId":userId}).select({
@@ -202,5 +213,6 @@ module.exports={
     recordRequest,
     matchingHandler,
     getUserListInterests,
-    getMyOwnInterests
+    getMyOwnInterests,
+    getMyListMatches
 }

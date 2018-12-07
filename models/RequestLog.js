@@ -14,6 +14,7 @@ var RequestSchema = new mongoose.Schema(
                 type:mongoose.Schema.Types.ObjectId,
                 ref:'Users'
             },
+            sellerEmail:String,
             amount:Number,
             message:String,
         }
