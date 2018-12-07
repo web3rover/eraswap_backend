@@ -146,14 +146,17 @@ const recordRequest = async (listingId,listingType,data) => {
   };
 
   //call this on match from the request received list
-  const matchingHandler = async(listingId,sellerEmail,userId,amount,cryptoCurrency)=>{
+  const matchingHandler = async(listingId,sellerEmail,ownerUserId,requester,amount,cryptoCurrency)=>{
       //send the amount to escrow wallet from seller wallet
       const escrowAddress = await escrowCont.getDepositAddress(cryptoCurrency);
-     const sendToEscrow = await walletCont.send(sellerEmail,amount,escrowAddress,cryptoCurrency);
+    //  const sendToEscrow = 
+     await walletCont.send(sellerEmail,amount,escrowAddress,cryptoCurrency); //let it transfer or incase error it will exit from here.
      //do this after sending to escrow;
       const data={
+        cryptoCurrency:cryptoCurrency,
         listingId:listingId,
-        userId:userId,
+        owner:ownerUserId,
+        requester:requester,
         amount:amount,
         showIpaid:true,
         finished:false
@@ -176,6 +179,12 @@ const recordRequest = async (listingId,listingType,data) => {
       return true;
   }
 
+
+  const getMyOwnInterests = async(userId)=>{
+    return RequestLog.find({"userRequests.userId":userId}).select({
+        listingId:1
+    }).exec();
+  };
 const getUserListInterests = async(listingId)=>{
    return  await RequestLog.findOne({listingId:listingId}).populate({
         path:'userRequests.userId',
@@ -192,5 +201,6 @@ module.exports={
     updateListing,
     recordRequest,
     matchingHandler,
-    getUserListInterests
+    getUserListInterests,
+    getMyOwnInterests
 }

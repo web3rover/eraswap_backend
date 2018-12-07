@@ -122,12 +122,40 @@ router.post('/showInterest', (req, res, next) => {
     });
 });
 
-
-router.get('/getInterests',(req,res,next)=>{
-    currencyCont.getUserListInterests(req.query.listingId).then(data=>{
-        return res.json(data);
-    }).catch(error=>{
-        return next(error)
+router.get('/getInterests', (req, res, next) => {
+  currencyCont
+    .getUserListInterests(req.query.listingId)
+    .then(data => {
+      return res.json(data);
+    })
+    .catch(error => {
+      return next(error);
     });
 });
+
+
+
+router.post('/makeMatch', (req, res, next) => {
+  /**
+   * req.body:
+   * listingId,
+   * sellerEmail
+   * requester
+   * amount
+   * cryptoCurrency
+   */
+  currencyCont.matchingHandler(req.body.listingId, req.body.sellerEmail, req.user._id, req.body.requester, req.body.amount, req.body.cryptoCurrency).then(data=>{
+    return res.json(data);
+  }).catch(error=>{
+    return next(error);
+  });
+});
+
+router.get('/getMyOwnInterests',(req,res,next)=>{
+  currencyCont.getMyOwnInterests(req.user._id).then(data=>{
+    return res.json(data);
+  }).catch(error=>{
+    return next(error);
+  })
+})
 module.exports = router;
