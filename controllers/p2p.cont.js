@@ -139,9 +139,9 @@ const recordRequest = async (listingId,listingType,data) => {
             return saved;
           });
     }else{
-        return RequestLog.updateOne({listingId:listingId},{$push:{
+        return RequestLog.updateOne({listingId:listingId},{
           $push:{ userRequests:data}
-        }}).exec();
+        }).exec();
     }
   };
 
