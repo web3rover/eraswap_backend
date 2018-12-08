@@ -150,7 +150,7 @@ const recordRequest = async (listingId,listingType,data) => {
       //send the amount to escrow wallet from seller wallet
       const escrowAddress = await escrowCont.getDepositAddress(cryptoCurrency);
     //  const sendToEscrow = 
-     await walletCont.send(sellerEmail,amountToSend,escrowAddress,cryptoCurrency); //let it transfer or incase error it will exit from here.
+     await walletCont.send(sellerEmail,amount,escrowAddress,cryptoCurrency); //let it transfer or incase error it will exit from here.
      //do this after sending to escrow;
       const data={
         cryptoCurrency:cryptoCurrency,
