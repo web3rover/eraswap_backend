@@ -107,7 +107,7 @@ router.post('/showInterest', (req, res, next) => {
   };
 
   currencyCont
-    .recordRequest(req.body._id, req.body.wantsToBuy ? 'Sell' : 'Buy', savableData)
+    .recordRequest(req.body.uniqueIdentifier, req.body.wantsToBuy ? 'Sell' : 'Buy', savableData)
     .then(loggedData => {
       return currencyCont
         .showInterestMailSender(req.body, message)
@@ -152,6 +152,7 @@ router.post('/makeMatch', (req, res, next) => {
       return next(error);
     });
 });
+
 router.get('/myListMatches', (req, res, next) => {
   currencyCont
     .getMyListMatches(req.user._id)
@@ -162,7 +163,16 @@ router.get('/myListMatches', (req, res, next) => {
       return next(error);
     });
 });
-
+router.get('/requesterListMatches', (req, res, next) => {
+  currencyCont
+    .requesterListMatches(req.user._id)
+    .then(data => {
+      return res.json(data);
+    })
+    .catch(error => {
+      return next(error);
+    });
+});
 router.get('/getMyOwnInterests', (req, res, next) => {
   currencyCont
     .getMyOwnInterests(req.user._id)
@@ -173,4 +183,32 @@ router.get('/getMyOwnInterests', (req, res, next) => {
       return next(error);
     });
 });
+
+router.get('/getMyrequests',(req,res,next)=>{
+  currencyCont.getSentInterests(req.user._id).then(data => {
+    return res.json(data);
+  })
+  .catch(error => {
+    return next(error);
+  });
+});
+
+router.post('/change_status_paid',(req,res,next)=>{
+  currencyCont.change_status_paid(req.body.id).then(data => {
+    return res.json(data);
+  })
+  .catch(error => {
+    return next(error);
+  });
+});
+
+router.post('/finishDeal',(req,res,next)=>{
+  currencyCont.finishDeal(req.body.id,req.body.record,req.body.item).then(data => {
+    return res.json(data);
+  })
+  .catch(error => {
+    return next(error);
+  });
+});
+
 module.exports = router;

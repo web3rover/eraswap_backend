@@ -148,9 +148,9 @@ const recordRequest = async (listingId,listingType,data) => {
   //call this on match from the request received list
   const matchingHandler = async(listingId,sellerEmail,ownerUserId,requester,amount,cryptoCurrency)=>{
       //send the amount to escrow wallet from seller wallet
-    //   const escrowAddress = await escrowCont.getDepositAddress(cryptoCurrency);
+      const escrowAddress = await escrowCont.getDepositAddress(cryptoCurrency);
     //  const sendToEscrow = 
-    //  await walletCont.send(sellerEmail,amount,escrowAddress,cryptoCurrency); //let it transfer or incase error it will exit from here.
+     await walletCont.send(sellerEmail,amountToSend,escrowAddress,cryptoCurrency); //let it transfer or incase error it will exit from here.
      //do this after sending to escrow;
       const data={
         cryptoCurrency:cryptoCurrency,
@@ -159,6 +159,7 @@ const recordRequest = async (listingId,listingType,data) => {
         requester:requester,
         amount:amount,
         showIpaid:true,
+        iPaidVal:false,
         finished:false
       };
     var identifier = shortid.generate();
@@ -178,6 +179,34 @@ const recordRequest = async (listingId,listingType,data) => {
       });
   }
 
+  const getSentInterests = async(userId)=>{
+    const requestLogs = await RequestLog.find({'userRequests.userId':userId}).select({
+        listingId:1,
+        'userRequests.$.userId':1
+    }).exec();
+    let allListings=[];
+    for(let i of requestLogs){
+        allListings.push(i.listingId);
+    }
+    console.log(allListings);
+   let data;
+    try{
+         data=  await node.callAPI("assets/search", {
+         $query: {
+             "assetName": config.BLOCKCLUSTER.assetName,
+             uniqueIdentifier:{$in:allListings}
+            
+            },
+           $sort: {
+             timestamp: 1
+           }
+       });
+     }catch(error){
+         console.log(error)
+     }
+       return data;
+  }
+
   const getMyListMatches = async(userId)=>{
         return  await node.callAPI("assets/search", {
         $query: {
@@ -191,6 +220,17 @@ const recordRequest = async (listingId,listingType,data) => {
 
   }
 
+  const requesterListMatches = async(userId)=>{
+    return  await node.callAPI("assets/search", {
+        $query: {
+            "assetName": 'MatchData',
+            requester:userId
+          },
+          $sort: {
+            timestamp: 1
+          }
+      });
+  }
   const getMyOwnInterests = async(userId)=>{
     return RequestLog.find({"userRequests.userId":userId}).select({
         listingId:1
@@ -202,6 +242,55 @@ const getUserListInterests = async(listingId)=>{
         select:'username',
     }).exec();
 }
+const change_status_paid =async(id)=>{
+    const data =await node.callAPI('assets/updateAssetInfo', {
+        assetName: 'MatchData',
+        fromAccount: node.getWeb3().eth.accounts[0],
+        identifier: id,
+        "public": {
+            showIpaid:false,
+            iPaidVal:true,
+        }
+      });
+    
+      return data;
+}
+
+const finishDeal = async(id,record,item)=>{
+    if(record.wantsToSell){
+        //its a sell listing, 
+        //requester should be buyer > 
+      const buyeremail =   await Users.findOne({_id:item.userId}).select('email').exec();
+      const buyeraddress = await walletCont.getAddress(buyeremail.email,record.cryptoCur);
+        await escrowCont.send(record.cryptoCur,buyeraddress,amount); //send it
+        const data =await node.callAPI('assets/updateAssetInfo', {
+            assetName: 'MatchData',
+            fromAccount: node.getWeb3().eth.accounts[0],
+            identifier: id,
+            "public": {
+                finished:true
+            }
+          });
+          return data;
+    }else{
+        //its a buy listing
+        //requester should be seller
+        const buyeraddress = await walletCont.getAddress(record.email,record.cryptoCur);
+        await escrowCont.send(record.cryptoCur,buyeraddress,amount);
+        const data =await node.callAPI('assets/updateAssetInfo', {
+            assetName: 'MatchData',
+            fromAccount: node.getWeb3().eth.accounts[0],
+            identifier: id,
+            "public": {
+                finished:true
+            }
+          });
+          return data;
+        
+    }
+   
+}
+
 module.exports={
     addListing,
     searchListing,
@@ -214,5 +303,9 @@ module.exports={
     matchingHandler,
     getUserListInterests,
     getMyOwnInterests,
-    getMyListMatches
+    getMyListMatches,
+    getSentInterests,
+    requesterListMatches,
+    change_status_paid,
+    finishDeal
 }
