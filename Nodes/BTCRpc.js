@@ -16,9 +16,6 @@ class BTCRpc {
     }
 
     async createWallet(email) {
-        var date = new Date();
-        var timestamp = date.getTime();
-        email += timestamp.toString();
         return new Promise((resolve, reject) => {
             this._btcRpcCall("createwallet", [email]).then((res) => {
                 this._getNewAddressForWallet(email).then(res => {

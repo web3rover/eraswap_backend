@@ -337,7 +337,7 @@ async function checkDependancy(txn) {
 
 
 async function reSchedule(error, job, seconds, done) {
-    console.log("Rescheduling => ", job.attrs.name);
+    //console.log("Rescheduling => ", job.attrs.name);
     await agenda.schedule("in " + seconds + " seconds", job.attrs.name, job.attrs.data);
     job.remove();
     done(error);
