@@ -81,6 +81,12 @@ const TxnSchema = new mongoose.Schema({
     exchangePlatform: {
         type: String,
     },
+    eraswapAcceptTag:{
+        type:String
+    },
+    eraswapSendTag:{
+        type:String
+    },
     totalExchangeAmout: {
         type: String,
         required: true

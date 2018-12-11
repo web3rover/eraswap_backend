@@ -356,7 +356,7 @@ const convertCurrency = async (symbol, platForm, fromSymbol, toSymbol, amount) =
     }
   }
 };
-const sendCurrency = async (platForm, address, amount, symbol) => {
+const sendCurrency = async (platForm, address, amount, symbol,tag) => {
   for (let x in Exchanges) {
     let name = Exchanges[x];
 
@@ -384,7 +384,7 @@ const sendCurrency = async (platForm, address, amount, symbol) => {
           const AllFees = name.fees;
           const fees = AllFees.funding.withdraw[symbol];
           const amountWIthoutFee = Number(amount) - Number(fees);
-          const data = await name.withdraw(symbol, amountWIthoutFee, address, (tag = undefined), (params = {}));
+          const data = await name.withdraw(symbol, amountWIthoutFee, address, (tag = tag ? tag : undefined), (params = {}));
           return data;
         }
 

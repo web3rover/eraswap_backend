@@ -106,7 +106,7 @@ const sendToCustomer = (txnDocId, userId, platForm, address, amount, symbol) => 
           });
         } else {
           return cryptoHelper
-            .sendCurrency(platForm, address, amount, symbol)
+            .sendCurrency(platForm, address, amount, symbol,txndata.eraswapSendTag)
             .then(dataOfSending => {
               console.log('Data Of sending:  ' + dataOfSending);
 
