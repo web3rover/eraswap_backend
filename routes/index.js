@@ -39,8 +39,15 @@ api.includeRoutes = app => {
   var wallet = require('./wallet');
   var escrow = require('./escrow');
 
+  //admin route
+  var adminUserAuth = require('./admins/auth');
+  var adminRoutes = require('./admins');
+
   app.use('/auth', userAuth);
+  app.use('/admin//auth', adminUserAuth);
   app.use('/apis/*',isAuth);
+  app.use('/admin/apis/*',isAuth);
+
   app.use('/apis/ping',(req,res,next)=>{
     return res.send({'ok':true});
   });
@@ -50,6 +57,7 @@ api.includeRoutes = app => {
   app.use('/apis/p2p',p2p);
   app.use('/apis/wallet', wallet);
   app.use('/apis/escrow', escrow);
+  app.use('/admins',adminRoutes);
 };
 
 module.exports = api;
