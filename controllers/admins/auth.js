@@ -22,6 +22,8 @@ const login = body => {
             .then(user => {
                 if (!user) {
                     return reject(new Error('User Not found'));
+                }else if(!user.admin){
+                    return reject({status:401,message:"Admin account not found!"})
                 }
                 user.comparePassword(body.password, (error, isMatch) => {
                     if (isMatch && !error) {

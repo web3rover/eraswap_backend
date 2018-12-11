@@ -25,7 +25,12 @@ var AdminSchema = new mongoose.Schema(
       adminLevel:{
         type:Number,
         default:0 
+      },
+      admin:{
+        type:Boolean,
+        default:true
       }
+
 }
 );
 
