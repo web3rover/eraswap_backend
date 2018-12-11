@@ -164,7 +164,7 @@ const recordRequest = async (listingId,listingType,data) => {
       };
     var identifier = shortid.generate();
     await node.callAPI('assets/issueSoloAsset', {
-        assetName: 'MatchData',
+        assetName:config.BLOCKCLUSTER.matchAssetName ,
         fromAccount: node.getWeb3().eth.accounts[0],
         toAccount: node.getWeb3().eth.accounts[0],
         identifier: identifier
@@ -172,7 +172,7 @@ const recordRequest = async (listingId,listingType,data) => {
 
       //update agreement meta data
       return await node.callAPI('assets/updateAssetInfo', {
-        assetName: 'MatchData',
+        assetName: config.BLOCKCLUSTER.matchAssetName,
         fromAccount: node.getWeb3().eth.accounts[0],
         identifier: identifier,
         "public": data
@@ -210,7 +210,7 @@ const recordRequest = async (listingId,listingType,data) => {
   const getMyListMatches = async(userId)=>{
         return  await node.callAPI("assets/search", {
         $query: {
-            "assetName": 'MatchData',
+            assetName: config.BLOCKCLUSTER.matchAssetName,
             ownerUserId:userId
           },
           $sort: {
@@ -223,7 +223,7 @@ const recordRequest = async (listingId,listingType,data) => {
   const requesterListMatches = async(userId)=>{
     return  await node.callAPI("assets/search", {
         $query: {
-            "assetName": 'MatchData',
+            assetName: config.BLOCKCLUSTER.matchAssetName,
             requester:userId
           },
           $sort: {
@@ -244,7 +244,7 @@ const getUserListInterests = async(listingId)=>{
 }
 const change_status_paid =async(id)=>{
     const data =await node.callAPI('assets/updateAssetInfo', {
-        assetName: 'MatchData',
+        assetName: config.BLOCKCLUSTER.matchAssetName,
         fromAccount: node.getWeb3().eth.accounts[0],
         identifier: id,
         "public": {
@@ -264,7 +264,7 @@ const finishDeal = async(id,record,item)=>{
       const buyeraddress = await walletCont.getAddress(buyeremail.email,record.cryptoCur);
         await escrowCont.send(record.cryptoCur,buyeraddress,amount); //send it
         const data =await node.callAPI('assets/updateAssetInfo', {
-            assetName: 'MatchData',
+            assetName: config.BLOCKCLUSTER.matchAssetName,
             fromAccount: node.getWeb3().eth.accounts[0],
             identifier: id,
             "public": {
@@ -278,7 +278,7 @@ const finishDeal = async(id,record,item)=>{
         const buyeraddress = await walletCont.getAddress(record.email,record.cryptoCur);
         await escrowCont.send(record.cryptoCur,buyeraddress,amount);
         const data =await node.callAPI('assets/updateAssetInfo', {
-            assetName: 'MatchData',
+            assetName: config.BLOCKCLUSTER.matchAssetName,
             fromAccount: node.getWeb3().eth.accounts[0],
             identifier: id,
             "public": {
