@@ -44,9 +44,9 @@ api.includeRoutes = app => {
   var adminRoutes = require('./admins');
 
   app.use('/auth', userAuth);
-  app.use('/admin//auth', adminUserAuth);
+  app.use('/admins//auth', adminUserAuth);
   app.use('/apis/*',isAuth);
-  app.use('/admin/apis/*',isAuth);
+  app.use('/admins/apis/*',isAuth);
 
   app.use('/apis/ping',(req,res,next)=>{
     return res.send({'ok':true});
