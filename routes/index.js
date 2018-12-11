@@ -44,7 +44,7 @@ api.includeRoutes = app => {
   var adminRoutes = require('./admins');
 
   app.use('/auth', userAuth);
-  app.use('/admins//auth', adminUserAuth);
+  app.use('/admins/auth', adminUserAuth);
   app.use('/apis/*',isAuth);
   app.use('/admins/apis/*',isAuth);
 
