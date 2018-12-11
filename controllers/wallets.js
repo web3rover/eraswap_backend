@@ -1,4 +1,5 @@
 const Users = require('../models/Users');
+const Withdrawals = require('../models/Withdrawal');
 const Wallets = require('../models/Wallets');
 const nodes = require('../configs/config').NODES;
 const BTCRpc = require('../Nodes/BTCRpc');
@@ -159,7 +160,8 @@ const getPrivateKey = async (email, crypto) => {
         return { error: "RPC module not found!" };
     }
 }
-const send = async (email, amount, receiver, crypto, ) => {
+
+const send = async (email, amount, receiver, crypto) => {
 
     var rpcModule = getRpcModule(crypto);
     if (rpcModule) {
@@ -192,6 +194,30 @@ const send = async (email, amount, receiver, crypto, ) => {
         return Promise.reject({ message: "RPC module not found!" });
     }
 }
+
+const sendToEscrow = async (email, amount, crypto) => {
+    var coin = "" + crypto;
+    coin = coin.toLowerCase();
+    try {
+        var escrow = await Wallets.findOne({ escrow: true, type: coin });
+        if (escrow) {
+            var op = await send(email, amount, escrow.publicKey, crypto);
+            var withdrawal = await Withdrawals.findById(op.dbObject._id);
+            if (withdrawal) {
+                withdrawal["source"] = "sendToEscrow";
+                op.dbObject = await withdrawal.save();
+                return op;
+            }
+            return Promise.reject({ message: "Database entry for withdrawal not found!" });
+        }
+        else {
+            return Promise.reject({ message: "Escrow wallet for " + crypto + " not found." });
+        }
+    } catch (ex) {
+        return ex;
+    }
+}
+
 module.exports = {
     createWallets,
     checkGasTank,
@@ -199,5 +225,6 @@ module.exports = {
     getAddress,
     getPrivateKey,
     send,
-    getHistory
+    getHistory,
+    sendToEscrow,
 };
