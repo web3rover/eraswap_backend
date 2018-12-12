@@ -47,7 +47,7 @@ const getUserWalletAndBalance = async(email)=>{
 
 const getDash = async()=>{
     const userTotal = await Users.countDocuments({}).exec();
-    const adminTotal = await Users.countDocuments({admin:{$exists:true}}).exec();
+    const adminTotal = await Users.countDocuments({admin:true}).exec();
     const txnsTotal = await Txns.countDocuments({}).exec();
     const txnsFinished = await Txns.countDocuments({witdrawn:true}).exec();
     const totalListings = await node.callAPI('assets/count',{
