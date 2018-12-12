@@ -339,10 +339,10 @@ var start = async function () {
                 await addMissingWallets(incompleteWallets[i]);
             }
         }
-        reSchedule(null, job, 5, done);
+        reSchedule(null, job, 15, done);
     });
 
-    await agenda.every('5 seconds', 'Check missing wallets and add');
+    await agenda.every('15 seconds', 'Check missing wallets and add');
 
     await agenda.every('15 seconds', 'Check pending withdrawals');
 
