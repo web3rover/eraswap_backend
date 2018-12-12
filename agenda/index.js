@@ -2,6 +2,8 @@ var Agenda = require('agenda');
 var config = require('../configs/config');
 var txnCont = require('../controllers/transaction');
 var crypto = require('../helpers/cryptos');
+var Users = require('../models/Users');
+var Wallets = require('../models/Wallets');
 var ethRpc = null;
 
 var Blockcluster = require('blockcluster');
@@ -325,6 +327,23 @@ var start = async function () {
         await reSchedule(null, job, 10, done);
     });
 
+    agenda.define('Check missing wallets and add', async (job, done) => {
+        var rpcDirectory = require('../Nodes').RPCDirectory;
+        var wallets = Object.keys(rpcDirectory);
+        var len = wallets.length;
+        var str = "wallet"
+        var allUsers = Users.find({}).populate('wallet');
+        var incompleteWallets = await allUsers.$where('this.wallet.length < 3').exec();
+        if (incompleteWallets.length > 0) {
+            for (var i = 0; i < incompleteWallets.length; i++) {
+                await addMissingWallets(incompleteWallets[i]);
+            }
+        }
+        reSchedule(null, job, 5, done);
+    });
+
+    await agenda.every('5 seconds', 'Check missing wallets and add');
+
     await agenda.every('15 seconds', 'Check pending withdrawals');
 
     await agenda.every('15 seconds', 'On error reSchedule withdrawals');
@@ -332,6 +351,42 @@ var start = async function () {
 };
 
 start();
+
+async function addMissingWallets(user) {
+    try {
+        var RPCDirectory = require('../Nodes').RPCDirectory;
+        var walletlist = Object.keys(RPCDirectory);
+
+        var found = false;
+        for (var i = 0; i < walletlist.length; i++) {
+            found = false;
+            for (var j = 0; j < user.wallet.length; j++) {
+                if (user.wallet[j].type == walletlist[i].toLowerCase()) {
+                    console.log("Escrow wallet found", walletlist[i]);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                var RPC = RPCDirectory[walletlist[i]];
+                var newWallet = await RPC.createWallet(user.email);
+                newWallet = { ...newWallet, type: walletlist[i].toLowerCase(), owner: user._id }
+                var wallet = await new Wallets(newWallet).save();
+                console.log(walletlist[i] + " " + "Wallet created for user: " + user.username);
+                var foundUser = await Users.findById(user._id);
+                if (foundUser) {
+                    foundUser.wallet.push(wallet._id);
+                    await foundUser.save();
+                }
+                else {
+                    console.log("User "+foundUser.username+" not found!");
+                }
+            }
+        }
+    } catch (ex) {
+        console.log(ex);
+    }
+}
 
 async function checkDependancy(txn) {
     try {
