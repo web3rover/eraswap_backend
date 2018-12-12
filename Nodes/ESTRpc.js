@@ -143,7 +143,7 @@ class ESTRpc {
                 dbObject: dbObject,
             });
 
-            return { success: true };
+            return { success: true, dbObject: dbObject };
         }
         catch (ex) {
             return { error: ex.message };
@@ -189,17 +189,6 @@ class ESTRpc {
 
         } catch (ex) {
             return { error: ex.message };
-        }
-    }
-
-    async sendTokenToEscrow(sender, amount) {
-        var superUser = await this._getSuperUserWallet("est");
-        if (!superUser.error) {
-            var op = await this.send(sender, superUser.data, amount);
-            return op;
-        }
-        else {
-            return superUser;
         }
     }
 

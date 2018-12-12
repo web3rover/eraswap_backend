@@ -1,6 +1,7 @@
 const request = require('request');
 const Users = require('../models/Users');
 const Withdrwals = require('../models/Withdrawal');
+const Wallets = require('../models/Wallets');
 
 class BTCRpc {
     constructor(host, port, username, password) {
@@ -105,8 +106,9 @@ class BTCRpc {
                     dbObject["txnHash"] = result.result;
                     dbObject['error'] = '';
                     dbObject['status'] = 'Pending';
-                    await dbObject.save();
-
+                    dbObject = await dbObject.save();
+                    
+                    result["dbObject"]=dbObject;
                     resolve(result);
                 }).catch(async err => {
 

@@ -4,6 +4,14 @@ var txnCont = require('../controllers/transaction');
 var crypto = require('../helpers/cryptos');
 var ethRpc = null;
 
+var Blockcluster = require('blockcluster');
+const shortid = require("shortid");
+
+const node = new Blockcluster.Dynamo({
+    locationDomain: config.BLOCKCLUSTER.host,
+    instanceId: config.BLOCKCLUSTER.instanceId
+});
+
 const agenda = new Agenda({
     db: {
         address: config.mongo.url
@@ -31,7 +39,7 @@ var start = async function () {
                         done();
                     }
                     if (data.txIdExist && data.status == "ok" && !data.convertedYet) {
-                        txnCont.converTdata(curMar.symbol, jobData.lctxid, jobData.exchangePlatform, jobData.exchFromCurrency, jobData.exchToCurrency, jobData.exchFromCurrencyAmt,jobData.platformFeePayOpt,jobData.userEmail)
+                        txnCont.converTdata(curMar.symbol, jobData.lctxid, jobData.exchangePlatform, jobData.exchFromCurrency, jobData.exchToCurrency, jobData.exchFromCurrencyAmt, jobData.platformFeePayOpt, jobData.userEmail)
                             .then(conversation_data => {
                                 // if(conversation_data.status=="closed"&& conversation_data.cost ==jobData.exchFromCurrencyAmt){
                                 //   txnCont
@@ -198,6 +206,7 @@ var start = async function () {
                     console.log("Confirmations (pending " + pendingWithdrawals[i].type + " transfer):", confirmations, pendingWithdrawals[i].txnHash);
                     if (confirmations >= 14) {
                         pendingWithdrawals[i]["status"] = "Confirmed";
+                        await checkIfOrderAndUpdate(pendingWithdrawals[i]);
                         await pendingWithdrawals[i].save();
 
                         var dependentTxn = await checkDependancy(withdrawal);
@@ -242,6 +251,7 @@ var start = async function () {
                 if (confirmations >= 14 && withdrawal.type != "BTC") {
                     if (withdrawal) {
                         withdrawal.status = "Confirmed";
+                        await checkIfOrderAndUpdate(withdrawal);
                         await withdrawal.save();
 
                         var dependentTxn = await checkDependancy(withdrawal);
@@ -263,6 +273,7 @@ var start = async function () {
                 else if (withdrawal.type == "BTC" && confirmations > 4) {
                     if (withdrawal) {
                         withdrawal.status = "Confirmed";
+                        await checkIfOrderAndUpdate(withdrawal);
                         await withdrawal.save();
                     }
                 }
@@ -333,6 +344,24 @@ async function checkDependancy(txn) {
         console.log(ex);
         return ex;
     }
+}
+
+async function checkIfOrderAndUpdate(withdrawal) {
+    if(withdrawal){
+        if(withdrawal.orderId){
+
+            await node.callAPI('assets/updateAssetInfo', {
+                assetName: config.BLOCKCLUSTER.assetName,
+                fromAccount: node.getWeb3().eth.accounts[0],
+                identifier: withdrawal.orderId,
+                "public": {
+                    show: true,
+                }
+            });
+        }
+        return;
+    }
+    return;
 }
 
 

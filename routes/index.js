@@ -39,6 +39,7 @@ api.includeRoutes = app => {
   var p2p = require('./p2p');
   var wallet = require('./wallet');
   var escrow = require('./escrow');
+  var lendingBorrowing = require('./lendingBorrowing');
 
   //admin route
   var adminRoutes = require('./admins');
@@ -56,6 +57,7 @@ api.includeRoutes = app => {
   app.use('/apis/p2p',p2p);
   app.use('/apis/wallet', wallet);
   app.use('/apis/escrow', escrow);
+  app.use('/apis/lendingBorrowing', lendingBorrowing);
   app.use('/admins/apis',adminRoutes);
 };
 
