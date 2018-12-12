@@ -26,4 +26,14 @@ router.get('/walletDetails',(req,res,next)=>{
     });
 });
 
+router.get('/dash',(req,res,next)=>{
+    if(!req.user.admin){
+        return next({status:401,message:"Unauthorized"});
+    }
+    userCont.getDash().then(data=>{
+        return res.json(data);
+    }).catch(error=>{
+        return next(error);
+    })
+});
 module.exports = router;

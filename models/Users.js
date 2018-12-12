@@ -18,6 +18,14 @@ const UserSchema = new mongoose.Schema({
     unique: 'Email ({VALUE}) Already Exist',
     required: true,
   },
+  adminLevel:{
+    type:Number,
+    default:0 
+  },
+  admin:{
+    type:Boolean,
+    default:false
+  },
   wallet: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Wallet' },],
   //add more user metadata here
 });

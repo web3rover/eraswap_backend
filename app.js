@@ -30,19 +30,6 @@ app.use(
 );
 apiRoutes.includeRoutes(app);
 const Currency = require('./models/Currency');
-const Admins = require('./models/Admins');
-// crete default admin if not exists any
-Admins.countDocuments({}).exec().then(async count=>{
-    if(!count){
-        const adminObj = new Admins({
-            username:'admin',
-            name:'admin admin',
-            email:'eraswapAdmin@eraswaptoken.io',
-            password:'admin'
-        });
-        return adminObj.save();
-    }
-});
 Currency.estimatedDocumentCount({}).exec().then(async (isUpdated) => {
     if (!isUpdated) {
         const allCur = await require('./helpers/cryptos').getAllCurrency();

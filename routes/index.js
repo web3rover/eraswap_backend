@@ -17,7 +17,8 @@ isAuth =(req,res,next)=>{
           _id:decoded._id,
           email:decoded.email,
           username:decoded.username,
-          wallet:decoded.wallet || null
+          wallet:decoded.wallet || null,
+          admin:decoded.admin || false
         };
         next();
       });
@@ -40,12 +41,10 @@ api.includeRoutes = app => {
   var escrow = require('./escrow');
 
   //admin route
-  var adminUserAuth = require('./admins/auth');
   var adminRoutes = require('./admins');
 
   app.use('/auth', userAuth);
-  app.use('/admins/auth', adminUserAuth);
-  app.use('/apis/*',isAuth);
+    app.use('/apis/*',isAuth);
   app.use('/admins/apis/*',isAuth);
 
   app.use('/apis/ping',(req,res,next)=>{
@@ -57,7 +56,7 @@ api.includeRoutes = app => {
   app.use('/apis/p2p',p2p);
   app.use('/apis/wallet', wallet);
   app.use('/apis/escrow', escrow);
-  app.use('/admins',adminRoutes);
+  app.use('/admins/apis',adminRoutes);
 };
 
 module.exports = api;
