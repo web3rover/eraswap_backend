@@ -67,20 +67,24 @@ const saveRecord = async (user, body, withdrawal) => {
             agreementDate: "",
         }
 
-        await node.callAPI('assets/issueSoloAsset', {
-            assetName: config.BLOCKCLUSTER.assetName,
+        var res = await node.callAPI('assets/issueSoloAsset', {
+            assetName: "LBOrder",
             fromAccount: node.getWeb3().eth.accounts[0],
             toAccount: node.getWeb3().eth.accounts[0],
             identifier: identifier
         });
 
+        console.log(res);
+
         //update agreement meta data
-        await node.callAPI('assets/updateAssetInfo', {
-            assetName: config.BLOCKCLUSTER.assetName,
+        res = await node.callAPI('assets/updateAssetInfo', {
+            assetName: "LBOrder",
             fromAccount: node.getWeb3().eth.accounts[0],
             identifier: identifier,
             "public": data
         });
+
+        console.log(res);
 
         dbEntry["orderId"] = identifier;
         await dbEntry.save();
@@ -103,7 +107,7 @@ const checkBalanceAndSendToEscrow = async (user, coin, amount) => {
             var coinAmtRequired = amount / price;
             if (balance >= coinAmtRequired) {
                 coinAmtRequired = Math.round(coinAmtRequired * 10 ** 8) / 10 ** 8;
-                console.log("Deducting "+coinAmtRequired+" "+coin+" from user wallet.");
+                console.log("Deducting " + coinAmtRequired + " " + coin + " from user wallet.");
                 var sendToEscrow = await walletCont.sendToEscrow(user.email, coinAmtRequired, coin);
                 return sendToEscrow;
             }
@@ -121,8 +125,32 @@ const checkBalanceAndSendToEscrow = async (user, coin, amount) => {
     }
 }
 
+const getOrderBook = async (user) => {
+
+    let data = await node.callAPI("assets/search", {
+        $query: {
+            "show": true,
+            "status": "open",
+            "agreementOrderId": "",
+            "agreementDate": ""
+        },
+        $sort: {
+            timestamp: 1
+        }
+    });
+    var result = [];
+    for (var i = 0; i < data.length; i++) {
+        if (data[i].username == user.username) {
+            data[i]["selfOrder"]=true;
+        }
+        result.push(data[i]);
+    }
+    return result;
+}
+
 module.exports = {
     getCoinsOptions,
     getCollateralCoinsOptions,
     placeOrder,
+    getOrderBook,
 };
