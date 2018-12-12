@@ -91,9 +91,24 @@ const btcBal = await escrowCont.getBalance('BTC');
         }
     }
 };
+
+const createAdmin = async(id)=>{
+    return await Users.update({_id:id},{$set:{
+        admin:true,
+        adminLevel:0
+    }}).exec();
+}
+const revokeAdmin = async(id)=>{
+    return await Users.update({_id:id},{$set:{
+        admin:false,
+        adminLevel:0
+    }}).exec();
+}
 module.exports={
     getListUsers,
     getAllUserCount,
     getDash,
+    createAdmin,
+    revokeAdmin,
     getUserWalletAndBalance
 }

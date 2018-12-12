@@ -37,4 +37,25 @@ router.get('/dash',(req,res,next)=>{
         return next(error);
     })
 });
+
+router.post('/make_admin',(req,res,next)=>{
+    if(!req.user.admin){
+        return next({status:401,message:"Unauthorized"});
+    }
+    userCont.createAdmin(req.body.id).then(data=>{
+        return res.json(data);
+    }).catch(error=>{
+        return next(error);
+    })
+});
+router.post('/revoke_admin',(req,res,next)=>{
+    if(!req.user.admin){
+        return next({status:401,message:"Unauthorized"});
+    }
+    userCont.revokeAdmin(req.body.id).then(data=>{
+        return res.json(data);
+    }).catch(error=>{
+        return next(error);
+    })
+});
 module.exports = router;
