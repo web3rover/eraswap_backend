@@ -17,7 +17,13 @@ const node = new Blockcluster.Dynamo({
 const getListUsers = async(params)=>{
     const limit= Number(params.results) || 10;
     const skip =params.results && params.page ?  (Number(params.page)-1)*Number(params.results) :0;
-    return await Users.find({}).limit(limit).skip(skip).exec();
+    const data = await Users.find({}).lean().limit(limit).skip(skip).exec();
+    let a = [];
+    for(let i of data){
+        i.walletsDetails = await getUserWalletAndBalance(i.email);
+        a.push(i);
+    }
+    return a;
 };
 
 const getAllUserCount = async()=>{
@@ -33,7 +39,7 @@ const getUserWalletAndBalance = async(email)=>{
       returnable.push({
           currency:i,
           address:address,
-          balance:balance
+          balance:balance.balance
       });
    }
    return returnable;

@@ -4,6 +4,7 @@ const userCont = require('../../controllers/admins/users');
 
 router.get('/list',(req,res,next)=>{
    userCont.getListUsers(req.query).then(data=>{
+       console.log(data)
        return res.json(data)
    }).catch(error=>{
        return next(error);
@@ -12,7 +13,7 @@ router.get('/list',(req,res,next)=>{
 
 router.get('/list_count',(req,res,next)=>{
     userCont.getAllUserCount().then(data=>{
-        return res.json(data);
+        return res.json({totalCount:data});
     }).catch(error=>{
         return next(error);
     });
