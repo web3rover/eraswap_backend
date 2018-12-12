@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const txnCont = require('../../controllers/admins/txns');
 
-router.get('/txn',(req,res,next)=>{
+router.get('/list',(req,res,next)=>{
     txnCont.getTxns(req.query).then(data=>{
         console.log(data)
         return res.json(data)
@@ -11,7 +11,7 @@ router.get('/txn',(req,res,next)=>{
     })
 });
 
-outer.get('/txn_count',(req,res,next)=>{
+router.get('/list_count',(req,res,next)=>{
     txnCont.getTxnCount().then(data=>{
         console.log(data)
         return res.json({totalCount:data})
