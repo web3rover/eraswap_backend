@@ -118,7 +118,7 @@ const getBalance = async (email, crypto) => {
                 if (!address.error)
                     balance = await rpcModule.getBalance(address);
                 else
-                return Promise.reject({ message: "Public key not found. Please try again!" });
+                return Promise.reject({ message: address.error });
             }
             if (balance.error) {
                 return Promise.reject({ message: balance.error });

@@ -48,6 +48,9 @@ class EthRpc {
     async getAddress(email) {
         try {
             var user = await Users.findOne({ email: email }).populate('wallet');
+            if (!user) {
+                return { error: "User not found!" };
+            }
             var address = '';
             for (var i = 0; i < user.wallet.length; i++) {
                 if (user.wallet[i].type == 'eth') {
