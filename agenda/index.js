@@ -347,17 +347,22 @@ async function checkDependancy(txn) {
 }
 
 async function checkIfOrderAndUpdate(withdrawal) {
-    if(withdrawal){
-        if(withdrawal.orderId){
+    if (withdrawal) {
+        if (withdrawal.orderId) {
+            try {
+                var res = await node.callAPI('assets/updateAssetInfo', {
+                    assetName: "LBOrder",
+                    fromAccount: node.getWeb3().eth.accounts[0],
+                    identifier: withdrawal.orderId,
+                    "public": {
+                        show: true,
+                    }
+                });
 
-            await node.callAPI('assets/updateAssetInfo', {
-                assetName: config.BLOCKCLUSTER.assetName,
-                fromAccount: node.getWeb3().eth.accounts[0],
-                identifier: withdrawal.orderId,
-                "public": {
-                    show: true,
-                }
-            });
+                console.log(res);
+            } catch (ex) {
+                console.log(ex.message);
+            }
         }
         return;
     }

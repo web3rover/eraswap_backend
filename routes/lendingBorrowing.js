@@ -26,5 +26,13 @@ router.post('/placeOrder', async (req, res, next) => {
     });
 });
 
+router.get('/getOrderBook', async (req, res, next) => {
+    LBController.getOrderBook(req.user).then(data => {
+        return res.json(data);
+    }).catch(error => {
+        return next(error);
+    });
+});
+
 
 module.exports = router;
