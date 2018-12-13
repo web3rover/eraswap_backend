@@ -262,7 +262,7 @@ const finishDeal = async(id,record,item)=>{
         //requester should be buyer > 
       const buyeremail =   await Users.findOne({_id:item.userId}).select('email').exec();
       const buyeraddress = await walletCont.getAddress(buyeremail.email,record.cryptoCur);
-        await escrowCont.send(record.cryptoCur,buyeraddress,amount); //send it
+        await escrowCont.send(record.cryptoCur,buyeraddress,item.amount); //send it
         const data =await node.callAPI('assets/updateAssetInfo', {
             assetName: config.BLOCKCLUSTER.matchAssetName,
             fromAccount: node.getWeb3().eth.accounts[0],
@@ -276,7 +276,7 @@ const finishDeal = async(id,record,item)=>{
         //its a buy listing
         //requester should be seller
         const buyeraddress = await walletCont.getAddress(record.email,record.cryptoCur);
-        await escrowCont.send(record.cryptoCur,buyeraddress,amount);
+        await escrowCont.send(record.cryptoCur,buyeraddress,item.amount);
         const data =await node.callAPI('assets/updateAssetInfo', {
             assetName: config.BLOCKCLUSTER.matchAssetName,
             fromAccount: node.getWeb3().eth.accounts[0],
