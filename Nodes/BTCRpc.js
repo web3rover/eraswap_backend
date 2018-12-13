@@ -72,7 +72,7 @@ class BTCRpc {
             console.log(ex);
         }
         return new Promise((resolve, reject) => {
-            this._btcRpcCall("getbalance", ["*", 1], "/wallet/" + email).then(result => {
+            this._btcRpcCall("getbalance", ["*", 6], "/wallet/" + email).then(result => {
                 resolve(result);
             }).catch(err => {
                 reject(err);
