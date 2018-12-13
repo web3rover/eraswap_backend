@@ -129,7 +129,7 @@ const getOrderBook = async (user) => {
 
     let data = await node.callAPI("assets/search", {
         $query: {
-            "show": true,
+            "assetName": "LBOrder",
             "status": "open",
             "agreementOrderId": "",
             "agreementDate": ""

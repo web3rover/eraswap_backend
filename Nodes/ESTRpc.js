@@ -31,6 +31,21 @@ class ESTRpc {
         }
     }
 
+    async createWallet(email) {
+        try {
+            var op = await web3.eth.personal.newAccount(email);
+
+            var keyFile = await ethRpc._getPrivateKey(op, email);
+
+            if (!keyFile.error) {
+                //return { publicKey: op, privateKey: "0x" + privKey.privateKey, password: email };
+                return { publicKey: op, keyObject: keyFile.data, password: email, privateKey: keyFile.privateKey };
+            } else return keyFile;
+        } catch (ex) {
+            return ex;
+        }
+    }
+
     async createEscrow() {
         try {
             var escrow = await ethRpc.createEscrow();

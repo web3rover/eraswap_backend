@@ -115,8 +115,10 @@ const getBalance = async (email, crypto) => {
             }
             else {
                 var address = await getAddress(email, crypto);
-                balance = await rpcModule.getBalance(address);
-
+                if (!address.error)
+                    balance = await rpcModule.getBalance(address);
+                else
+                return Promise.reject({ message: address.error });
             }
             if (balance.error) {
                 return Promise.reject({ message: balance.error });
