@@ -69,9 +69,15 @@ class EthRpc {
 
     async getBalance(address) {
         try {
-            var balance = await web3.eth.getBalance(address);
+            var latestBlock = await web3.eth.getBlockNumber();
+            if (latestBlock) {
+                var balance = await web3.eth.getBalance(address, latestBlock - 15);
 
-            return web3.utils.fromWei(balance, 'ether');
+                return web3.utils.fromWei(balance, 'ether');
+            }
+            else {
+                throw "Latest block not found!";
+            }
         } catch (ex) {
             return { error: ex.message };
         }
