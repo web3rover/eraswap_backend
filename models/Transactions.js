@@ -16,6 +16,9 @@ const TxnSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    feePaid:{
+        type:Boolean
+    },
     cancelledConvertion: {
         type: Boolean,
         default: false
