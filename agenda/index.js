@@ -85,6 +85,7 @@ var start = async function () {
                                     });
                             }
                         }).catch(error_verfctn => {
+                            console.log(1,JSON.stringify(error_verfctn));
                             done(error_verfctn);
                         });
                     } else if (data.convertedYet === "finished" && data.amtToSend) {
@@ -108,12 +109,14 @@ var start = async function () {
                     }
                 })
                 .catch(error => {
+                    console.log(2,JSON.stringify(error));
                     return done({
                         message: error.message || 'Verification failed.',
                         error: error,
                     });
                 });
         }).catch(error => {
+            console.log(3,JSON.stringify(error));
             done(error);
         })
 
