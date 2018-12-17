@@ -43,7 +43,7 @@ router.post('/send', async (req, res, next) => {
     var op = "";
     try {
         if (!req.body.receiver || !req.body.amount || !req.body.crypto)
-            throw "All parameters required!";
+            throw { message: "All parameters required!" };
         op = await escrowController.send(req.body.crypto, req.body.receiver, req.body.amount);
         if (!op.error && op.success) {
             return res.json(op);

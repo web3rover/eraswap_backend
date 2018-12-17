@@ -525,11 +525,11 @@ async function checkIfOrderAndUpdate(withdrawal) {
                         return;
 
                     } else {
-                        throw "Order does not exists!";
+                        throw { message: "Order does not exists!" };
                     }
                 }
                 else {
-                    throw "Order does not exists!";
+                    throw { message: "Order does not exists!" };
                 }
             } catch (ex) {
                 console.log(ex.message);

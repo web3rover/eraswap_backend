@@ -122,7 +122,7 @@ const getBalance = async (email, crypto) => {
                 if (!address.error)
                     balance = await rpcModule.getBalance(address);
                 else
-                return Promise.reject({ message: address.error });
+                    return Promise.reject({ message: address.error });
             }
             if (balance.error) {
                 return Promise.reject({ message: balance.error });
@@ -151,35 +151,35 @@ const getAddress = async (email, crypto) => {
         return { error: "RPC module not found!" };
     }
 }
- function  makeItPdf(finalHTML){
-     return new Promise((resolve,reject)=>{
-    var fileName = "privateKey.pdf";
+function makeItPdf(finalHTML) {
+    return new Promise((resolve, reject) => {
+        var fileName = "privateKey.pdf";
 
-                pdf.create(finalHTML, {format: 'Tabloid' ,orientation: "landscape",timeout: '100000'  }).toFile(fileName, function(err, res) {
-                    if (err) return reject(err);
-                    console.log(res);
-                    const pdfData =  fs.readFileSync(fileName);
-                        let base64String = new Buffer(pdfData).toString('base64');
-                        return resolve(base64String);
-                });
-            })
+        pdf.create(finalHTML, { format: 'Tabloid', orientation: "landscape", timeout: '100000' }).toFile(fileName, function (err, res) {
+            if (err) return reject(err);
+            console.log(res);
+            const pdfData = fs.readFileSync(fileName);
+            let base64String = new Buffer(pdfData).toString('base64');
+            return resolve(base64String);
+        });
+    })
 }
 const getPrivateKey = async (email, crypto) => {
     var rpc = getRpcModule(crypto);
     if (rpc) {
         try {
             var address = await rpc.getPrivateKey(email);
-            if(address && !address.error){
-                const ejsTemplate = await helper.getEJSTemplate({fileName:'PrivateKey.ejs'});
+            if (address && !address.error) {
+                const ejsTemplate = await helper.getEJSTemplate({ fileName: 'PrivateKey.ejs' });
                 const finalHTML = ejsTemplate({
-                    key:address.data
+                    key: address.data
                 });
-                
+
                 return await makeItPdf(finalHTML);
-            }else{
+            } else {
                 return address.error;
             }
-            
+
         } catch (ex) {
             return ex;
         }
@@ -196,7 +196,7 @@ const send = async (email, amount, receiver, crypto) => {
         var op = "";
         try {
             if (!receiver || !amount)
-                throw "All parameters required!";
+                throw { message: "All parameters required!" };
             if (crypto === "BTC") {
                 op = await rpcModule.send(email, receiver, amount.toFixed(8));
             }

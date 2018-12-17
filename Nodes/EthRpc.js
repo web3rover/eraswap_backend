@@ -76,7 +76,7 @@ class EthRpc {
                 return web3.utils.fromWei(balance, 'ether');
             }
             else {
-                throw "Latest block not found!";
+                throw { message: "Latest block not found!"};
             }
         } catch (ex) {
             return { error: ex.message };
