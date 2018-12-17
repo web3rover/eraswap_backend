@@ -219,7 +219,7 @@ var start = async function () {
                         if (dependentTxn) {
                             await agenda.schedule("in 5 seconds", "Check gas txn before token transfer", {
                                 crypto: dependentTxn.type,
-                                txnHash: withdrawal.txnHash,
+                                txnHash: pendingWithdrawals[i].txnHash,
                                 sender: dependentTxn.txn.sender,
                                 receiver: dependentTxn.txn.receiver,
                                 amount: dependentTxn.txn.amount,
@@ -345,6 +345,54 @@ var start = async function () {
         reSchedule(null, job, 15, done);
     });
 
+    agenda.define('Match orders and create agreements', async (job, done) => {
+        try {
+            let lendingOrders = await node.callAPI("assets/search", {
+                $query: {
+                    "assetName": "LBOrder",
+                    "show": "true",
+                    "agreementDate": "",
+                    "agreementOrderId": "",
+                    "orderType": "lend"
+                }
+            });
+            if (lendingOrders.length > 0) {
+                let borrowingOrders = await node.callAPI("assets/search", {
+                    $query: {
+                        "assetName": "LBOrder",
+                        "show": "true",
+                        "agreementDate": "",
+                        "agreementOrderId": "",
+                        "orderType": "borrow"
+                    }
+                });
+                if (borrowingOrders.length > 0) {
+                    var skip = [];
+                    for (var i = 0; i < lendingOrders.length; i++) {
+                        for (var j = 0; j < borrowingOrders.length; j++) {
+                            if (skip.indexOf(j) == -1 && lendingOrders[i].coin == borrowingOrders[j].coin && lendingOrders[i].collateral == borrowingOrders[j].collateral
+                                && lendingOrders[i].interest == borrowingOrders[j].interest && lendingOrders[i].duration == borrowingOrders[j].duration
+                                && lendingOrders[i].amount == borrowingOrders[j].amount) {
+                                console.log("Orders matched!!", lendingOrders[i].uniqueIdentifier, borrowingOrders[j].uniqueIdentifier);
+                                var res = await createAgreement(lendingOrders[i], borrowingOrders[j]);
+                                console.log(res);
+                                skip.push(j);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            reSchedule(null, job, 20, done);
+        }
+        catch (ex) {
+            console.log(ex);
+            reSchedule(null, job, 20, done);
+        }
+    });
+
+    await agenda.every('20 seconds', 'Match orders and create agreements');
+
     await agenda.every('15 seconds', 'Check missing wallets and add');
 
     await agenda.every('15 seconds', 'Check pending withdrawals');
@@ -354,6 +402,109 @@ var start = async function () {
 };
 
 start();
+
+async function createAgreement(lendingOrder, borrowingOrder) {
+    try {
+        if (lendingOrder) {
+            if (borrowingOrder) {
+                var res = await node.callAPI('assets/updateAssetInfo', {
+                    assetName: "LBOrder",
+                    fromAccount: node.getWeb3().eth.accounts[0],
+                    identifier: lendingOrder.uniqueIdentifier,
+                    "public": {
+                        show: false,
+                    }
+                });
+
+                console.log(res);
+
+                res = await node.callAPI('assets/updateAssetInfo', {
+                    assetName: "LBOrder",
+                    fromAccount: node.getWeb3().eth.accounts[0],
+                    identifier: borrowingOrder.uniqueIdentifier,
+                    "public": {
+                        show: false,
+                    }
+                });
+
+                console.log(res);
+
+                var identifier = shortid.generate();
+                res = await node.callAPI('assets/issueSoloAsset', {
+                    assetName: "Agreements",
+                    fromAccount: node.getWeb3().eth.accounts[0],
+                    toAccount: node.getWeb3().eth.accounts[0],
+                    identifier: identifier
+                });
+
+                console.log(res);
+                var timestamp = + new Date();
+                var month = new Date(timestamp).getMonth() + 1;
+                var year = new Date(timestamp).getFullYear();
+
+                var agreementData = {
+                    lendOrderId: lendingOrder.uniqueIdentifier,
+                    borrowOrderId: borrowingOrder.uniqueIdentifier,
+                    lenderEmail: lendingOrder.email,
+                    borrowerEmail: borrowingOrder.email,
+                    lender: lendingOrder.username,
+                    borrower: borrowingOrder.username,
+                    coin: lendingOrder.coin,
+                    collateralCoin: lendingOrder.collateral,
+                    interest: lendingOrder.interest,
+                    months: lendingOrder.duration,
+                    agreementDate: timestamp,
+                    nextPaymentDate: + getLastDateOfMonth(year, month),
+                    emiPaidCount: 0,
+                    active: true,
+                };
+
+                //update agreement meta data
+                res = await node.callAPI('assets/updateAssetInfo', {
+                    assetName: "Agreements",
+                    fromAccount: node.getWeb3().eth.accounts[0],
+                    identifier: identifier,
+                    "public": agreementData
+                });
+
+                console.log(res);
+
+                lendingOrder["agreementOrderId"] = identifier;
+                lendingOrder["agreementDate"] = timestamp;
+
+                borrowingOrder["agreementOrderId"] = identifier;
+                borrowingOrder["agreementDate"] = timestamp;
+
+
+                var res = await node.callAPI('assets/updateAssetInfo', {
+                    assetName: "LBOrder",
+                    fromAccount: node.getWeb3().eth.accounts[0],
+                    identifier: lendingOrder.uniqueIdentifier,
+                    "public": lendingOrder
+                });
+
+                console.log(res);
+
+                var res = await node.callAPI('assets/updateAssetInfo', {
+                    assetName: "LBOrder",
+                    fromAccount: node.getWeb3().eth.accounts[0],
+                    identifier: borrowingOrder.uniqueIdentifier,
+                    "public": borrowingOrder
+                });
+
+                console.log(res);
+
+                var escrowCont = require('../controllers/escrow.cont');
+
+                var op = await escrowCont.send(agreementData.coin, borrowingOrder.email, agreementData.amount);
+
+                console.log(op);
+            }
+        }
+    } catch (ex) {
+        console.log(ex);
+    }
+}
 
 async function addMissingWallets(user) {
     try {
@@ -393,8 +544,8 @@ async function addMissingWallets(user) {
 
 async function checkDependancy(txn) {
     try {
-        var withdrawal = await require('../models/Withdrawal')
-            .findOne({ waitFor: txn._id, status: { "$exists": true, "$ne": "Confirmed" } });
+        var Withdrawal = require('../models/Withdrawal');
+        var withdrawal = await Withdrawal.findOne({ waitFor: txn._id, status: { "$exists": true, "$ne": "Confirmed" } });
         if (withdrawal) {
             return withdrawal;
         }
@@ -418,8 +569,6 @@ async function checkIfOrderAndUpdate(withdrawal) {
                     identifier: withdrawal.orderInfo.orderId,
                     "public": {
                         show: true,
-                        "agreementDate": "",
-                        "agreementOrderId": "",
                     }
                 });
 
@@ -522,6 +671,13 @@ async function checkIfOrderAndUpdate(withdrawal) {
                         });
 
                         console.log(res);
+
+                        var escrowCont = require('../controllers/escrow.cont');
+
+                        var op = await escrowCont.send(agreementData.coin, borrowOrder.email, agreementData.amount);
+
+                        console.log(op);
+
                         return;
 
                     } else {

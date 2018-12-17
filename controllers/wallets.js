@@ -198,11 +198,11 @@ const send = async (email, amount, receiver, crypto) => {
             if (!receiver || !amount)
                 throw { message: "All parameters required!" };
             if (crypto === "BTC") {
-                op = await rpcModule.send(email, receiver, amount.toFixed(8));
+                op = await rpcModule.send(email, receiver, amount);
             }
             else {
                 var sender = await getAddress(email, crypto);
-                op = await rpcModule.send(sender, receiver, amount.toFixed(8));
+                op = await rpcModule.send(sender, receiver, amount);
             }
             if (!op.error && op.success) {
                 return (op);

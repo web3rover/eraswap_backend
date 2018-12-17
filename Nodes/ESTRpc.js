@@ -120,14 +120,17 @@ class ESTRpc {
             var data = await this.tokenContract.methods.transfer(receiver, amount).encodeABI();
             var gasEstimate = await web3.eth.estimateGas({ from: sender, to: this.tokenContractAddress, data: data });
             var gasPrice = await web3.eth.getGasPrice();
-            if (gasPrice.error) { throw { message: "Could not find gas price. Please try again!"}; }
+            if (gasPrice.error) { throw { message: "Could not find gas price. Please try again!" }; }
             var price = new BigNumber(gasPrice);
-            price = price.mul(gasEstimate);
+            if (price.mul)
+                price = price.mul(gasEstimate);
+            else
+                price = price * gasEstimate;
             var gas = web3.utils.fromWei(price.toString(), 'ether');
 
             var wallet = await Wallets.findOne({ publicKey: sender, type: "est" }).populate('owner');
             if (!wallet) {
-                throw { message: "User not found!"};
+                throw { message: "User not found!" };
             }
             var withdrwal = new Withdrwals(
                 {

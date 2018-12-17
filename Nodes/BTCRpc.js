@@ -6,7 +6,7 @@ const Wallets = require('../models/Wallets');
 class BTCRpc {
     constructor(host, port, username, password) {
         if (!host || !port || !username || !password) {
-            throw { message: "Please provide all parameters!"};
+            throw { status: 200, message: "Please provide all parameters!"};
         }
         else {
             this.host = host;

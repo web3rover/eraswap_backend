@@ -107,11 +107,7 @@ const checkBalanceAndSendToEscrow = async (user, coin, amount, type) => {
         var balance = await walletCont.getBalance(user.email, coin);
         balance = balance.balance;
         try {
-            var price = await getCoinRate(coin);
-            if (price.message) {
-                throw price.message;
-            }
-            var coinAmtRequired = amount / price;
+            var coinAmtRequired = amount;
             coinAmtRequired = type == "borrow" ? (coinAmtRequired * 2) : coinAmtRequired
             if (balance >= coinAmtRequired) {
                 coinAmtRequired = Math.round(coinAmtRequired * 10 ** 8) / 10 ** 8;
@@ -128,18 +124,6 @@ const checkBalanceAndSendToEscrow = async (user, coin, amount, type) => {
             console.log(ex);
             return ex;
         }
-    }
-}
-
-const getCoinRate = async (coin) => {
-    try {
-        var data = await request('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=USD&CMC_PRO_API_KEY='
-            + config.coinMktCapKey + '&symbol=' + coin);
-        var price = JSON.parse(data).data[coin].quote.USD.price;
-        return price;
-    } catch (ex) {
-        console.log(ex);
-        return ex;
     }
 }
 
@@ -229,16 +213,10 @@ const apply = async (user, orderId) => {
 
             var coinToescrow = order.orderType == "lend" ? order.collateral : order.coin;
 
-            var price = await getCoinRate(coinToescrow);
-
-            if (price.message) {
-                throw price.message;
-            }
-
             var balance = await walletCont.getBalance(user.email, coinToescrow);
             balance = balance.balance;
 
-            var coinAmtRequired = order.amount / price;
+            var coinAmtRequired = order.amount;
             coinAmtRequired = order.orderType == "lend" ? coinAmtRequired : coinAmtRequired * 2;
             if (balance >= coinAmtRequired) {
                 var email = "";
