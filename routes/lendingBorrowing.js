@@ -34,5 +34,15 @@ router.get('/getOrderBook', async (req, res, next) => {
     });
 });
 
+router.post('/apply', async (req, res, next) => {
+    console.log(req.user);
+    console.log(req.body);
+    LBController.apply(req.user, req.body.orderId).then(data => {
+        return res.json(data);
+    }).catch(error => {
+        return next(error);
+    });
+});
+
 
 module.exports = router;

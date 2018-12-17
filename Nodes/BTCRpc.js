@@ -29,8 +29,30 @@ class BTCRpc {
                 }).catch(err =>
                     reject(err));
             }).catch(err => {
-                reject(err);
+                if (err.message.toString().indexOf("already exists") != -1) {
+                    this.recoverWallet(email).then(res => {
+                        console.log(res);
+                        resolve(res);
+                    })
+                        .catch(err => reject(err));
+                } else {
+                    reject(err);
+                }
             });
+        });
+    }
+
+    async recoverWallet(email) {
+        return new Promise((resolve, reject) => {
+            this._getNewAddressForWallet(email).then(res => {
+                var wallet = { publicKey: res.result, password: email };
+                this._getPrivateKey(email, res.result).then(op => {
+                    wallet["privateKey"] = op.result;
+                    resolve(wallet);
+                }).catch(err =>
+                    reject(err));
+            }).catch(err =>
+                reject(err));
         });
     }
 
@@ -107,8 +129,8 @@ class BTCRpc {
                     dbObject['error'] = '';
                     dbObject['status'] = 'Pending';
                     dbObject = await dbObject.save();
-                    
-                    result["dbObject"]=dbObject;
+
+                    result["dbObject"] = dbObject;
                     resolve(result);
                 }).catch(async err => {
 

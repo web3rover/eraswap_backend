@@ -4,6 +4,7 @@ const request = require('request-promise');
 const config = require('../configs/config');
 const rpcDirectory = require('../Nodes').RPCDirectory;
 const Withdrawals = require('../models/Withdrawal');
+const Users = require('../models/Users');
 
 var Blockcluster = require('blockcluster');
 const shortid = require("shortid");
@@ -36,9 +37,9 @@ const placeOrder = async (user, body) => {
     console.log(user, body);
     try {
         var coin = body.orderType == "lend" ? body.coin : body.collateral;
-        var op = await checkBalanceAndSendToEscrow(user, coin, body.amount);
+        var op = await checkBalanceAndSendToEscrow(user, coin, body.amount, body.orderType);
         if (op.success) {
-            var result = saveRecord(user, body, op.dbObject);
+            var result = await saveRecord(user, body, op.dbObject);
             return result;
         }
         else {
@@ -53,7 +54,7 @@ const saveRecord = async (user, body, withdrawal) => {
     try {
         var identifier = shortid.generate();
 
-        var dbEntry = await Withdrawals.findById(withdrawal._id, );
+        var dbEntry = await Withdrawals.findById(withdrawal._id);
 
         var show = dbEntry.status == "Confirmed";
 
@@ -61,11 +62,13 @@ const saveRecord = async (user, body, withdrawal) => {
             ...body,
             userId: user._id,
             username: user.username,
+            email: user.email,
             withdrawalId: withdrawal._id,
             show: show,
             agreementOrderId: "",
             agreementDate: "",
         }
+        
 
         var res = await node.callAPI('assets/issueSoloAsset', {
             assetName: "LBOrder",
@@ -86,7 +89,11 @@ const saveRecord = async (user, body, withdrawal) => {
 
         console.log(res);
 
-        dbEntry["orderId"] = identifier;
+        dbEntry["orderInfo"] = {
+            orderId: identifier,
+            orderAction: "Creation"
+        };
+        
         await dbEntry.save();
 
         return { success: true };
@@ -95,16 +102,17 @@ const saveRecord = async (user, body, withdrawal) => {
     }
 }
 
-const checkBalanceAndSendToEscrow = async (user, coin, amount) => {
+const checkBalanceAndSendToEscrow = async (user, coin, amount, type) => {
     if (user.email) {
         var balance = await walletCont.getBalance(user.email, coin);
         balance = balance.balance;
         try {
-            var data = await request('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=USD&CMC_PRO_API_KEY='
-                + config.coinMktCapKey + '&symbol=' + coin);
-            var price = JSON.parse(data).data[coin].quote.USD.price;
-            console.log(price);
+            var price = await getCoinRate(coin);
+            if (price.message) {
+                throw price.message;
+            }
             var coinAmtRequired = amount / price;
+            coinAmtRequired = type == "borrow" ? (coinAmtRequired * 2) : coinAmtRequired
             if (balance >= coinAmtRequired) {
                 coinAmtRequired = Math.round(coinAmtRequired * 10 ** 8) / 10 ** 8;
                 console.log("Deducting " + coinAmtRequired + " " + coin + " from user wallet.");
@@ -118,10 +126,20 @@ const checkBalanceAndSendToEscrow = async (user, coin, amount) => {
             }
         } catch (ex) {
             console.log(ex);
-            return {
-                message: ex.message
-            }
+            return ex;
         }
+    }
+}
+
+const getCoinRate = async (coin) => {
+    try {
+        var data = await request('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=USD&CMC_PRO_API_KEY='
+            + config.coinMktCapKey + '&symbol=' + coin);
+        var price = JSON.parse(data).data[coin].quote.USD.price;
+        return price;
+    } catch (ex) {
+        console.log(ex);
+        return ex;
     }
 }
 
@@ -131,6 +149,7 @@ const getOrderBook = async (user) => {
         $query: {
             "assetName": "LBOrder",
             "status": "open",
+            "show": true,
             "agreementOrderId": "",
             "agreementDate": ""
         },
@@ -141,11 +160,124 @@ const getOrderBook = async (user) => {
     var result = [];
     for (var i = 0; i < data.length; i++) {
         if (data[i].username == user.username) {
-            data[i]["selfOrder"]=true;
+            data[i]["selfOrder"] = true;
         }
         result.push(data[i]);
     }
     return result;
+}
+
+const apply = async (user, orderId) => {
+    try {
+        let data = await node.callAPI("assets/search", {
+            $query: {
+                "assetName": "LBOrder",
+                "uniqueIdentifier": orderId,
+                "show": true,
+            }
+        });
+
+        if (data.length > 0) {
+            var order = data[0];
+
+            var coinToescrow = order.orderType == "lend" ? order.collateral : order.coin;
+
+            var price = await getCoinRate(coinToescrow);
+
+            if (price.message) {
+                throw price.message;
+            }
+
+            var balance = await walletCont.getBalance(user.email, coinToescrow);
+            balance = balance.balance;
+
+            var coinAmtRequired = order.amount / price;
+            coinAmtRequired = order.orderType == "lend" ? coinAmtRequired : coinAmtRequired * 2;
+            if (balance >= coinAmtRequired) {
+                var email = "";
+                if (order.email) {
+                    email = order.email;
+                }
+                else {
+                    var userDbObj = await Users.findOne({ username: order.username });
+                    if (userDbObj) {
+                        email = userDbObj.email;
+                    }
+                }
+
+                //Locking the order to apply
+                var res = await node.callAPI('assets/updateAssetInfo', {
+                    assetName: "LBOrder",
+                    fromAccount: node.getWeb3().eth.accounts[0],
+                    identifier: orderId,
+                    "public": {
+                        show: false,
+                    }
+                });
+
+                var withdrawal = await walletCont.sendToEscrow(email, coinAmtRequired, coinToescrow);
+
+                if (withdrawal.message) {
+                    throw withdrawal.message;
+                }
+                else {
+                    var identifier = shortid.generate();
+                    var newOrderData = {
+                        orderType: order.orderType == "lend" ? "borrow" : "lend",
+                        coin: order.coin,
+                        collateral: order.collateral,
+                        interest: order.interest,
+                        duration: order.duration,
+                        amount: order.amount,
+                        userId: user._id,
+                        username: user.username,
+                        email: user.email,
+                        withdrawalId: withdrawal._id,
+                        show: false,
+                        agreementOrderId: "",
+                        agreementDate: "",
+                    }
+
+                    var res = await node.callAPI('assets/issueSoloAsset', {
+                        assetName: "LBOrder",
+                        fromAccount: node.getWeb3().eth.accounts[0],
+                        toAccount: node.getWeb3().eth.accounts[0],
+                        identifier: identifier
+                    });
+
+                    console.log(res);
+
+                    //update agreement meta data
+                    res = await node.callAPI('assets/updateAssetInfo', {
+                        assetName: "LBOrder",
+                        fromAccount: node.getWeb3().eth.accounts[0],
+                        identifier: identifier,
+                        "public": newOrderData
+                    });
+
+                    console.log(res);
+
+                    var dbObject = await Withdrawals.findById(withdrawal._id);
+                    dbObject["orderInfo"] = {
+                        orderId: identifier,
+                        orderType: order.orderType == "lend" ? "borrow" : "lend",
+                        orderAction: "Apply",
+                        orderToApply: orderId,
+                    };
+                    await dbObject.save();
+                    return { success: true };
+                }
+            }
+            else {
+                throw { message: "Insufficient balance in " + coinToescrow + " wallet. Required " + coinAmtRequired + " found " + balance };
+            }
+        } else {
+            throw { message: "Order is not available to apply!" };
+        }
+    } catch (ex) {
+        console.log(ex);
+        return ex;
+    }
 }
 
 module.exports = {
@@ -153,4 +285,5 @@ module.exports = {
     getCollateralCoinsOptions,
     placeOrder,
     getOrderBook,
+    apply,
 };

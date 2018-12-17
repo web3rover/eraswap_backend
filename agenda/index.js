@@ -211,7 +211,7 @@ var start = async function () {
                         await checkIfOrderAndUpdate(pendingWithdrawals[i]);
                         await pendingWithdrawals[i].save();
 
-                        var dependentTxn = await checkDependancy(withdrawal);
+                        var dependentTxn = await checkDependancy(pendingWithdrawals[i]);
                         //crypto, txnHash, sender, receiver, amount, dbObject
                         if (dependentTxn) {
                             await agenda.schedule("in 5 seconds", "Check gas txn before token transfer", {
@@ -379,7 +379,7 @@ async function addMissingWallets(user) {
                     await foundUser.save();
                 }
                 else {
-                    console.log("User "+foundUser.username+" not found!");
+                    console.log("User " + foundUser.username + " not found!");
                 }
             }
         }
@@ -401,27 +401,126 @@ async function checkDependancy(txn) {
     }
 }
 
+function getLastDateOfMonth(Year, Month) {
+    return (new Date((new Date(Year, Month + 1, 1)) - 1));
+}
+
 async function checkIfOrderAndUpdate(withdrawal) {
-    if (withdrawal) {
-        if (withdrawal.orderId) {
+    if (withdrawal && withdrawal.orderInfo) {
+        if (withdrawal.orderInfo.orderId && withdrawal.orderInfo.orderAction == "Creation") {
             try {
                 var res = await node.callAPI('assets/updateAssetInfo', {
                     assetName: "LBOrder",
                     fromAccount: node.getWeb3().eth.accounts[0],
-                    identifier: withdrawal.orderId,
+                    identifier: withdrawal.orderInfo.orderId,
                     "public": {
                         show: true,
                     }
                 });
 
                 console.log(res);
+                return;
             } catch (ex) {
                 console.log(ex.message);
+                return;
             }
         }
-        return;
+        else if (withdrawal.orderInfo.orderId && withdrawal.orderInfo.orderAction == "Apply") {
+            try {
+                let data = await node.callAPI("assets/search", {
+                    $query: {
+                        "assetName": "LBOrder",
+                        "uniqueIdentifier": withdrawal.orderInfo.orderId,
+                    }
+                });
+
+                if (data) {
+                    var order1 = data[0];
+
+                    let data1 = await node.callAPI("assets/search", {
+                        $query: {
+                            "assetName": "LBOrder",
+                            "uniqueIdentifier": withdrawal.orderInfo.orderToApply,
+                        }
+                    });
+
+                    if (data1) {
+
+                        var order2 = data1[0];
+
+                        var lendOrder = withdrawal.orderInfo.orderType == "lend" ? order1 : order2;
+                        var borrowOrder = withdrawal.orderInfo.orderType == "borrow" ? order1 : order2;
+
+                        var identifier = shortid.generate();
+                        var res = await node.callAPI('assets/issueSoloAsset', {
+                            assetName: "Agreement",
+                            fromAccount: node.getWeb3().eth.accounts[0],
+                            toAccount: node.getWeb3().eth.accounts[0],
+                            identifier: identifier
+                        });
+
+                        console.log(res);
+                        var timestamp = + new Date();
+                        var month = new Date(timestamp).getMonth() + 1;
+                        var year = new Date(timestamp).getFullYear();
+
+                        var agreementData = {
+                            lendOrderId: lendOrder.uniqueIdentifier,
+                            borrowOrderId: borrowOrder.uniqueIdentifier,
+                            lender: lendOrder.email,
+                            borrower: borrowOrder.email,
+                            agreement_date: timestamp,
+                            nextPaymentDate: getLastDateOfMonth(year, month),
+                            active: true,
+                        };
+
+                        //update agreement meta data
+                        res = await node.callAPI('assets/updateAssetInfo', {
+                            assetName: "Agreement",
+                            fromAccount: node.getWeb3().eth.accounts[0],
+                            identifier: identifier,
+                            "public": agreementData
+                        });
+
+                        lendOrder["agreementOrderId"] = identifier;
+                        lendOrder["agreementDate"] = timestamp;
+
+                        borrowOrder["agreementOrderId"] = identifier;
+                        borrowOrder["agreementDate"] = timestamp;
+
+
+                        var res = await node.callAPI('assets/updateAssetInfo', {
+                            assetName: "LBOrder",
+                            fromAccount: node.getWeb3().eth.accounts[0],
+                            identifier: lendOrder.uniqueIdentifier,
+                            "public": lendOrder
+                        });
+
+                        console.log(res);
+
+                        var res = await node.callAPI('assets/updateAssetInfo', {
+                            assetName: "LBOrder",
+                            fromAccount: node.getWeb3().eth.accounts[0],
+                            identifier: borrowOrder.uniqueIdentifier,
+                            "public": borrowOrder
+                        });
+
+                        console.log(res);
+                        return;
+
+                    } else {
+                        throw "Order does not exists!";
+                    }
+                }
+                else {
+                    throw "Order does not exists!";
+                }
+            } catch (ex) {
+                console.log(ex.message);
+                return;
+            }
+        }
     }
-    return;
 }
 
 
