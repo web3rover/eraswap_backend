@@ -470,10 +470,17 @@ async function checkIfOrderAndUpdate(withdrawal) {
                         var agreementData = {
                             lendOrderId: lendOrder.uniqueIdentifier,
                             borrowOrderId: borrowOrder.uniqueIdentifier,
-                            lender: lendOrder.email,
-                            borrower: borrowOrder.email,
-                            agreement_date: timestamp,
+                            lenderEmail: lendOrder.email,
+                            borrowerEmail: borrowOrder.email,
+                            lender: lendOrder.username,
+                            borrower: borrowOrder.username,
+                            coin: lendOrder.coin,
+                            collateralCoin: lendOrder.collateral,
+                            interest: lendOrder.interest,
+                            months: lendOrder.duration,
+                            agreementDate: timestamp,
                             nextPaymentDate: getLastDateOfMonth(year, month),
+                            emiPaidCount: 0,
                             active: true,
                         };
 

@@ -68,7 +68,7 @@ const saveRecord = async (user, body, withdrawal) => {
             agreementOrderId: "",
             agreementDate: "",
         }
-        
+
 
         var res = await node.callAPI('assets/issueSoloAsset', {
             assetName: "LBOrder",
@@ -93,7 +93,7 @@ const saveRecord = async (user, body, withdrawal) => {
             orderId: identifier,
             orderAction: "Creation"
         };
-        
+
         await dbEntry.save();
 
         return { success: true };
@@ -165,6 +165,46 @@ const getOrderBook = async (user) => {
         result.push(data[i]);
     }
     return result;
+}
+
+const getAgreements = async (user) => {
+    let lenderData = await node.callAPI("assets/search", {
+        $query: {
+            "assetName": "Agreement",
+            "status": "open",
+            "active": "true",
+            "lender": user.email,
+        },
+        $sort: {
+            timestamp: 1
+        }
+    });
+
+    let borrowerData = await node.callAPI("assets/search", {
+        $query: {
+            "assetName": "Agreement",
+            "status": "open",
+            "active": "true",
+            "borrower": user.email,
+        },
+        $sort: {
+            timestamp: 1
+        }
+    });
+
+    var data = [...lenderData, ...borrowerData];
+    if (data.length > 0) {
+        data.sort(function (a, b) { return a.agreementDate - b.agreementDate });
+
+        for (var i = 0; i < data.length; i++) {
+            data["user"] = data.lender == user.username ? data.borrower : data.lender;
+            data["type"] = data.lender == user.username ? "Lend" : "Borrow";
+            data["nextPayment"] = "Still working on this";
+        }
+
+        return data;
+    }
+    return [];
 }
 
 const apply = async (user, orderId) => {
@@ -286,4 +326,5 @@ module.exports = {
     placeOrder,
     getOrderBook,
     apply,
+    getAgreements,
 };

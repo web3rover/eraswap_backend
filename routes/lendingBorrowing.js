@@ -34,6 +34,14 @@ router.get('/getOrderBook', async (req, res, next) => {
     });
 });
 
+router.get('/getAgreements', async (req, res, next) => {
+    LBController.getAgreements(req.user).then(data => {
+        return res.json(data);
+    }).catch(error => {
+        return next(error);
+    });
+});
+
 router.post('/apply', async (req, res, next) => {
     console.log(req.user);
     console.log(req.body);
