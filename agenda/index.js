@@ -689,15 +689,15 @@ async function checkIfOrderAndUpdate(withdrawal) {
     if (withdrawal && withdrawal.orderInfo) {
         if (withdrawal.orderInfo.orderId && withdrawal.orderInfo.orderAction == "Creation") {
             try {
-                let data = await node.callAPI("assets/search", {
+                var orderData = await node.callAPI("assets/search", {
                     $query: {
                         "assetName": "LBOrder",
                         "uniqueIdentifier": withdrawal.orderInfo.orderId
                     }
                 });
 
-                if (data.length > 0) {
-                    if (data[0].show == true)
+                if (orderData.length > 0) {
+                    if (orderData[0].show == true)
                         return;
                     var res = await node.callAPI('assets/updateAssetInfo', {
                         assetName: "LBOrder",
@@ -723,15 +723,15 @@ async function checkIfOrderAndUpdate(withdrawal) {
 
                     console.log(res);
 
-                    var data = withdrawal.orderInfo.data;
-                    data["show"] = true;
+                    orderData = withdrawal.orderInfo.data;
+                    orderData["show"] = true;
 
                     //update agreement meta data
                     res = await node.callAPI('assets/updateAssetInfo', {
                         assetName: "LBOrder",
                         fromAccount: node.getWeb3().eth.accounts[0],
                         identifier: identifier,
-                        "public": data
+                        "public": orderData
                     });
 
                     console.log(res);
@@ -751,15 +751,15 @@ async function checkIfOrderAndUpdate(withdrawal) {
         }
         else if (withdrawal.orderInfo.orderId && withdrawal.orderInfo.orderAction == "Apply") {
             try {
-                let data = await node.callAPI("assets/search", {
+                var newOrderData = await node.callAPI("assets/search", {
                     $query: {
                         "assetName": "LBOrder",
                         "uniqueIdentifier": withdrawal.orderInfo.orderId,
                     }
                 });
 
-                if (data.length > 0) {
-                    var order1 = data[0];
+                if (newOrderData.length > 0) {
+                    var order1 = newOrderData[0];
                     if (order1["agreementDate"] == "" && order1["status"] == "open" && order1["agreementOrderId"] == "") {
 
                         let data1 = await node.callAPI("assets/search", {
@@ -911,7 +911,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
     }
     else if (withdrawal && withdrawal.agreementInfo) {
         try {
-            let data = await node.callAPI("assets/search", {
+            let agreementData = await node.callAPI("assets/search", {
                 $query: {
                     "assetName": "Agreements",
                     "uniqueIdentifier": withdrawal.agreementInfo.agreementId,
@@ -920,8 +920,8 @@ async function checkIfOrderAndUpdate(withdrawal) {
                 }
             });
 
-            if (data.length > 0) {
-                var agreement = data[0];
+            if (agreementData.length > 0) {
+                var agreement = agreementData[0];
 
                 var updates = {};
                 if (withdrawal.agreementInfo.mode == "coin") {
