@@ -24,6 +24,7 @@
     "agenda": "^2.0.2",
     "as-table": "^1.0.36",
     "bcrypt-nodejs": "0.0.3",
+    "bignumber.js": "^8.0.1",
     "blockcluster": "^1.0.3",
     "bluebird": "^3.5.3",
     "body-parser": "^1.18.3",
