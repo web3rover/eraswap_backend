@@ -128,9 +128,9 @@ class ESTRpc {
                 price = price * gasEstimate;
             var gas = web3.utils.fromWei(price.toString(), 'ether');
 
-            var wallet = await Wallets.findOne({ publicKey: sender, type: "est" }).populate('owner');
+            var wallet = await Wallets.findOne({ publicKey: sender, type: "est" });
             if (!wallet) {
-                throw { message: "User not found!" };
+                throw { message: "Wallet not found!" };
             }
             var withdrwal = new Withdrwals(
                 {

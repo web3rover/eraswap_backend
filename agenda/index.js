@@ -351,6 +351,7 @@ var start = async function () {
                 $query: {
                     "assetName": "LBOrder",
                     "show": "true",
+                    "status": "open",
                     "agreementDate": "",
                     "agreementOrderId": "",
                     "orderType": "lend"
@@ -361,6 +362,7 @@ var start = async function () {
                     $query: {
                         "assetName": "LBOrder",
                         "show": "true",
+                        "status": "open",
                         "agreementDate": "",
                         "agreementOrderId": "",
                         "orderType": "borrow"
@@ -391,6 +393,110 @@ var start = async function () {
         }
     });
 
+    agenda.define('Handle Borrowers emi', async (job, done) => {
+        try {
+            var agreements = await node.callAPI("assets/search", {
+                $query: {
+                    "assetName": "Agreements",
+                    "status": "open",
+                    "active": "true",
+                }
+            });
+
+            const Withdrawals = require('../models/Withdrawal');
+            const walletCont = require('../controllers/wallets');
+            const escrowCont = require('../controllers/escrow.cont');
+
+            var today = new Date();
+            var currentMonth = today.getMonth();
+            var year = today.getFullYear();
+
+            for (var i = 0; i < agreements.length; i++) {
+
+                var payUsingCollateral = false;
+                var paymentDate = new Date(agreements[i].nextPaymentDate);
+
+                if (paymentDate.getMonth() <= currentMonth) {
+
+                    var coinBalance = await walletCont.getBalance(agreements[i].borrowerEmail, agreements[i].coin);
+                    if (!coinBalance.message) {
+                        coinBalance = coinBalance.balance;
+                        if (coinBalance > agreements[i].emi) {
+
+                            var emiDeduction = await walletCont.send(agreements[i].borrowerEmail, agreements[i].emi, agreements[i].lenderEmail, agreements[i].coin);
+
+                            if (emiDeduction.success) {
+                                var dbObject = await Withdrawals.findById(emiDeduction.dbObject._id);
+                                dbObject["agreementInfo"] = {
+                                    agreementId: agreements[i].uniqueIdentifier,
+                                    type: "emi payment",
+                                    mode: "coin"
+                                };
+                                await dbObject.save();
+
+                                var res = await node.callAPI('assets/updateAssetInfo', {
+                                    assetName: "Agreements",
+                                    fromAccount: node.getWeb3().eth.accounts[0],
+                                    identifier: agreements[i].uniqueIdentifier,
+                                    "public": {
+                                        nextPaymentDate: + getLastDateOfMonth(year, currentMonth + 1),
+                                    }
+                                });
+
+                                console.log(res);
+                            }
+                            else {
+                                payUsingCollateral = true;
+                            }
+                        }
+                        if (payUsingCollateral || coinBalance < agreements[i].emi) {
+                            var emiDeductionInCollateral = await escrowCont.send(agreements[i].collateral, agreements[i].lenderEmail, agreements[i].emiInCollateral);
+                            if (emiDeductionInCollateral.success) {
+                                var dbObject = await Withdrawals.findById(emiDeductionInCollateral.dbObject._id);
+                                dbObject["agreementInfo"] = {
+                                    agreementId: agreements[i].uniqueIdentifier,
+                                    type: "emi payment",
+                                    mode: "collateral"
+                                };
+                                await dbObject.save();
+
+                                var res = await node.callAPI('assets/updateAssetInfo', {
+                                    assetName: "Agreements",
+                                    fromAccount: node.getWeb3().eth.accounts[0],
+                                    identifier: agreements[i].uniqueIdentifier,
+                                    "public": {
+                                        nextPaymentDate: + getLastDateOfMonth(year, currentMonth + 1),
+                                    }
+                                });
+
+                                console.log(res);
+                            }
+                            else {
+                                console.log(emiDeductionInCollateral);
+                            }
+                        }
+                    }
+                    else {
+                        console.log(balance);
+                    }
+                }
+            }
+
+            var today = new Date();
+            var year = today.getFullYear();
+            var month = today.getMonth();
+            var futureDate = getLastDateOfMonth(year, month + 1);
+            var daysFromNow = findDaysDifference(today, futureDate);
+
+            agenda.schedule(daysFromNow + ' days', 'Handle Borrowers emi');
+            job.remove();
+            done();
+        } catch (ex) {
+            console.log(ex);
+            reSchedule(ex.message, job, 10, done);
+        }
+    });
+
     await agenda.every('20 seconds', 'Match orders and create agreements');
 
     await agenda.every('15 seconds', 'Check missing wallets and add');
@@ -399,6 +505,13 @@ var start = async function () {
 
     await agenda.every('15 seconds', 'On error reSchedule withdrawals');
 
+    var today = new Date();
+    var year = today.getFullYear();
+    var month = today.getMonth();
+    var futureDate = getLastDateOfMonth(year, month);
+    var daysFromNow = findDaysDifference(today, futureDate);
+
+    agenda.schedule(daysFromNow + ' days', 'Handle Borrowers emi');
 };
 
 start();
@@ -442,6 +555,14 @@ async function createAgreement(lendingOrder, borrowingOrder) {
                 var month = new Date(timestamp).getMonth() + 1;
                 var year = new Date(timestamp).getFullYear();
 
+                var principlePerMonth = lendingOrder.amount / lendingOrder.duration;
+                var interest = principlePerMonth * lendingOrder.interest / 100;
+                var emi = principlePerMonth + interest;
+
+                var principlePerMonthInCollateral = borrowingOrder.collateralDeducted / lendingOrder.duration;
+                var interestInCollateral = principlePerMonthInCollateral * lendingOrder.interest / 100;
+                var emiInCollateral = principlePerMonth + interest;
+
                 var agreementData = {
                     lendOrderId: lendingOrder.uniqueIdentifier,
                     borrowOrderId: borrowingOrder.uniqueIdentifier,
@@ -450,12 +571,16 @@ async function createAgreement(lendingOrder, borrowingOrder) {
                     lender: lendingOrder.username,
                     borrower: borrowingOrder.username,
                     coin: lendingOrder.coin,
+                    amount: lendingOrder.amount,
                     collateralCoin: lendingOrder.collateral,
                     interest: lendingOrder.interest,
                     months: lendingOrder.duration,
                     agreementDate: timestamp,
                     nextPaymentDate: + getLastDateOfMonth(year, month),
                     emiPaidCount: 0,
+                    emiPaidInCollateral: 0,
+                    emi: emi,
+                    emiInCollateral: emiInCollateral,
                     active: true,
                 };
 
@@ -586,6 +711,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
                         "assetName": "LBOrder",
                         "uniqueIdentifier": withdrawal.orderInfo.orderId,
                         "agreementDate": "",
+                        "status": "open",
                         "agreementOrderId": "",
                     }
                 });
@@ -598,6 +724,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
                             "assetName": "LBOrder",
                             "uniqueIdentifier": withdrawal.orderInfo.orderToApply,
                             "agreementDate": "",
+                            "status": "open",
                             "agreementOrderId": "",
                         }
                     });
@@ -622,6 +749,14 @@ async function checkIfOrderAndUpdate(withdrawal) {
                         var month = new Date(timestamp).getMonth() + 1;
                         var year = new Date(timestamp).getFullYear();
 
+                        var principlePerMonth = lendOrder.amount / lendOrder.duration;
+                        var interest = principlePerMonth * lendOrder.interest / 100;
+                        var emi = principlePerMonth + interest;
+
+                        var principlePerMonthInCollateral = borrowOrder.collateralDeducted / lendOrder.duration;
+                        var interestInCollateral = principlePerMonthInCollateral * lendOrder.interest / 100;
+                        var emiInCollateral = principlePerMonth + interest;
+
                         var agreementData = {
                             lendOrderId: lendOrder.uniqueIdentifier,
                             borrowOrderId: borrowOrder.uniqueIdentifier,
@@ -632,10 +767,14 @@ async function checkIfOrderAndUpdate(withdrawal) {
                             coin: lendOrder.coin,
                             collateralCoin: lendOrder.collateral,
                             interest: lendOrder.interest,
+                            amount: lendOrder.amount,
                             months: lendOrder.duration,
                             agreementDate: timestamp,
                             nextPaymentDate: + getLastDateOfMonth(year, month),
+                            emi: emi,
+                            emiInCollateral: emiInCollateral,
                             emiPaidCount: 0,
+                            emiPaidInCollateral: 0,
                             active: true,
                         };
 
@@ -693,8 +832,65 @@ async function checkIfOrderAndUpdate(withdrawal) {
             }
         }
     }
+    else if (withdrawal && withdrawal.agreementInfo) {
+        try {
+            let data = await node.callAPI("assets/search", {
+                $query: {
+                    "assetName": "Agreements",
+                    "uniqueIdentifier": withdrawal.agreementInfo.agreementId,
+                    "status": "open",
+                    "active": "true",
+                }
+            });
+
+            if (data.length > 0) {
+                var agreement = data[0];
+
+                var updates = {};
+                if (withdrawal.agreementInfo.mode == "coin") {
+                    updates["emiPaidCount"] = agreement.emiPaidCount + 1;
+                } else {
+                    updates["emiPaidInCollateral"] = agreement.emiPaidInCollateral + 1;
+                }
+
+                if (agreement.months == (agreement.emiPaidCount + agreement.emiPaidInCollateral + 1)) {
+                    updates["nextPaymentDate"] = "";
+                    updates["active"] = false;
+                    updates["agreementEndDate"] = + new Date();
+                }
+
+                var res = await node.callAPI('assets/updateAssetInfo', {
+                    assetName: "Agreements",
+                    fromAccount: node.getWeb3().eth.accounts[0],
+                    identifier: agreements[i].uniqueIdentifier,
+                    "public": updates
+                });
+
+                console.log(res);
+            }
+            else {
+                throw { message: "Agreement" + withdrawal.agreementInfo.agreementId + "not found!" };
+            }
+        } catch (ex) {
+            console.log(ex);
+        }
+    }
 }
 
+function findDaysDifference(date1, date2) {
+    //Get 1 day in milliseconds
+    var oneDay_ms = 1000 * 60 * 60 * 24;
+
+    // Convert both dates to milliseconds
+    var date1_ms = date1.getTime();
+    var date2_ms = date2.getTime();
+
+    // Calculate the difference in milliseconds
+    var difference_ms = date2_ms - date1_ms;
+
+    // Convert back to days and return
+    return Math.round(difference_ms / oneDay_ms);
+}
 
 async function reSchedule(error, job, seconds, done) {
     //console.log("Rescheduling => ", job.attrs.name);
