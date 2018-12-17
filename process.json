@@ -8,7 +8,8 @@
 	  },
 	  "env_production" : {
          "ENV": "prod",
-         "PORT":7000
+				 "PORT":7000,
+				 "FRONTEND_HOST":"http://18.220.230.245:3000"
 	  }
 	}]
   }
