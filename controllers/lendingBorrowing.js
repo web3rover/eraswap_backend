@@ -144,7 +144,6 @@ const getCoinRate = async (coin) => {
 }
 
 const getOrderBook = async (user) => {
-
     let data = await node.callAPI("assets/search", {
         $query: {
             "assetName": "LBOrder",
@@ -168,12 +167,17 @@ const getOrderBook = async (user) => {
 }
 
 const getAgreements = async (user) => {
+    let allAssets = await node.callAPI("assets/search", {
+        $query: {
+            "assetName": "Agreements"
+        }
+    });
     let lenderData = await node.callAPI("assets/search", {
         $query: {
-            "assetName": "Agreement",
+            "assetName": "Agreements",
             "status": "open",
             "active": "true",
-            "lender": user.email,
+            "lender": user.username,
         },
         $sort: {
             timestamp: 1
@@ -182,10 +186,10 @@ const getAgreements = async (user) => {
 
     let borrowerData = await node.callAPI("assets/search", {
         $query: {
-            "assetName": "Agreement",
+            "assetName": "Agreements",
             "status": "open",
             "active": "true",
-            "borrower": user.email,
+            "borrower": user.username,
         },
         $sort: {
             timestamp: 1
@@ -209,11 +213,14 @@ const getAgreements = async (user) => {
 
 const apply = async (user, orderId) => {
     try {
+
         let data = await node.callAPI("assets/search", {
             $query: {
                 "assetName": "LBOrder",
                 "uniqueIdentifier": orderId,
                 "show": true,
+                "agreementDate": "",
+                "agreementOrderId": "",
             }
         });
 
@@ -261,6 +268,7 @@ const apply = async (user, orderId) => {
                     throw withdrawal.message;
                 }
                 else {
+                    withdrawal = withdrawal.dbObject;
                     var identifier = shortid.generate();
                     var newOrderData = {
                         orderType: order.orderType == "lend" ? "borrow" : "lend",

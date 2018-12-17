@@ -85,7 +85,7 @@ var start = async function () {
                                     });
                             }
                         }).catch(error_verfctn => {
-                            console.log(1,JSON.stringify(error_verfctn));
+                            console.log(1, JSON.stringify(error_verfctn));
                             done(error_verfctn);
                         });
                     } else if (data.convertedYet === "finished" && data.amtToSend) {
@@ -109,14 +109,14 @@ var start = async function () {
                     }
                 })
                 .catch(error => {
-                    console.log(2,JSON.stringify(error));
+                    console.log(2, JSON.stringify(error));
                     return done({
                         message: error.message || 'Verification failed.',
                         error: error,
                     });
                 });
         }).catch(error => {
-            console.log(3,JSON.stringify(error));
+            console.log(3, JSON.stringify(error));
             done(error);
         })
 
@@ -418,6 +418,8 @@ async function checkIfOrderAndUpdate(withdrawal) {
                     identifier: withdrawal.orderInfo.orderId,
                     "public": {
                         show: true,
+                        "agreementDate": "",
+                        "agreementOrderId": "",
                     }
                 });
 
@@ -434,20 +436,24 @@ async function checkIfOrderAndUpdate(withdrawal) {
                     $query: {
                         "assetName": "LBOrder",
                         "uniqueIdentifier": withdrawal.orderInfo.orderId,
+                        "agreementDate": "",
+                        "agreementOrderId": "",
                     }
                 });
 
-                if (data) {
+                if (data.length > 0) {
                     var order1 = data[0];
 
                     let data1 = await node.callAPI("assets/search", {
                         $query: {
                             "assetName": "LBOrder",
                             "uniqueIdentifier": withdrawal.orderInfo.orderToApply,
+                            "agreementDate": "",
+                            "agreementOrderId": "",
                         }
                     });
 
-                    if (data1) {
+                    if (data1.length > 0) {
 
                         var order2 = data1[0];
 
@@ -456,7 +462,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
 
                         var identifier = shortid.generate();
                         var res = await node.callAPI('assets/issueSoloAsset', {
-                            assetName: "Agreement",
+                            assetName: "Agreements",
                             fromAccount: node.getWeb3().eth.accounts[0],
                             toAccount: node.getWeb3().eth.accounts[0],
                             identifier: identifier
@@ -479,14 +485,14 @@ async function checkIfOrderAndUpdate(withdrawal) {
                             interest: lendOrder.interest,
                             months: lendOrder.duration,
                             agreementDate: timestamp,
-                            nextPaymentDate: getLastDateOfMonth(year, month),
+                            nextPaymentDate: + getLastDateOfMonth(year, month),
                             emiPaidCount: 0,
                             active: true,
                         };
 
                         //update agreement meta data
                         res = await node.callAPI('assets/updateAssetInfo', {
-                            assetName: "Agreement",
+                            assetName: "Agreements",
                             fromAccount: node.getWeb3().eth.accounts[0],
                             identifier: identifier,
                             "public": agreementData
