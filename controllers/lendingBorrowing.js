@@ -72,6 +72,14 @@ const saveRecord = async (user, body, withdrawal) => {
             data["collateralDeducted"] = dbEntry.txn.amount;
         }
 
+        dbEntry["orderInfo"] = {
+            orderId: identifier,
+            orderAction: "Creation",
+            data: data,
+        };
+
+        await dbEntry.save();
+
         var res = await node.callAPI('assets/issueSoloAsset', {
             assetName: "LBOrder",
             fromAccount: node.getWeb3().eth.accounts[0],
@@ -91,15 +99,9 @@ const saveRecord = async (user, body, withdrawal) => {
 
         console.log(res);
 
-        dbEntry["orderInfo"] = {
-            orderId: identifier,
-            orderAction: "Creation"
-        };
-
-        await dbEntry.save();
-
         return { success: true };
     } catch (ex) {
+        console.log(ex);
         return ex;
     }
 }
@@ -302,6 +304,16 @@ const apply = async (user, orderId) => {
                         newOrderData["collateralDeducted"] = coinAmtRequired;
                     }
 
+                    var dbObject = await Withdrawals.findById(withdrawal._id);
+                    dbObject["orderInfo"] = {
+                        orderId: identifier,
+                        orderType: order.orderType == "lend" ? "borrow" : "lend",
+                        orderAction: "Apply",
+                        orderToApply: orderId,
+                        data: newOrderData,
+                    };
+                    await dbObject.save();
+
                     var res = await node.callAPI('assets/issueSoloAsset', {
                         assetName: "LBOrder",
                         fromAccount: node.getWeb3().eth.accounts[0],
@@ -321,14 +333,6 @@ const apply = async (user, orderId) => {
 
                     console.log(res);
 
-                    var dbObject = await Withdrawals.findById(withdrawal._id);
-                    dbObject["orderInfo"] = {
-                        orderId: identifier,
-                        orderType: order.orderType == "lend" ? "borrow" : "lend",
-                        orderAction: "Apply",
-                        orderToApply: orderId,
-                    };
-                    await dbObject.save();
                     return { success: true };
                 }
             }
