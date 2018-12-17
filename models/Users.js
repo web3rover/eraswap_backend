@@ -18,6 +18,10 @@ const UserSchema = new mongoose.Schema({
     unique: 'Email ({VALUE}) Already Exist',
     required: true,
   },
+  activated:{
+    type:Boolean,
+    default:false
+  },
   adminLevel:{
     type:Number,
     default:0 

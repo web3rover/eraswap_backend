@@ -1,10 +1,14 @@
+
+var fs = require('fs');
+var pdf = require('html-pdf');
+
 const Users = require('../models/Users');
 const Withdrawals = require('../models/Withdrawal');
 const Wallets = require('../models/Wallets');
 const nodes = require('../configs/config').NODES;
 const BTCRpc = require('../Nodes/BTCRpc');
 const ETHRpc = require('../Nodes/EthRpc');
-
+const helper = require('../helpers/mailHelper');
 
 const Nodes = require('../Nodes');
 const rpcDirectory = Nodes.RPCDirectory;
@@ -147,13 +151,35 @@ const getAddress = async (email, crypto) => {
         return { error: "RPC module not found!" };
     }
 }
+ function  makeItPdf(finalHTML){
+     return new Promise((resolve,reject)=>{
+    var fileName = "privateKey.pdf";
 
+                pdf.create(finalHTML, {format: 'Tabloid' ,orientation: "landscape",timeout: '100000'  }).toFile(fileName, function(err, res) {
+                    if (err) return reject(err);
+                    console.log(res);
+                    const pdfData =  fs.readFileSync(fileName);
+                        let base64String = new Buffer(pdfData).toString('base64');
+                        return resolve(base64String);
+                });
+            })
+}
 const getPrivateKey = async (email, crypto) => {
     var rpc = getRpcModule(crypto);
     if (rpc) {
         try {
             var address = await rpc.getPrivateKey(email);
-            return address.error ? address : address.data;
+            if(address && !address.error){
+                const ejsTemplate = await helper.getEJSTemplate({fileName:'PrivateKey.ejs'});
+                const finalHTML = ejsTemplate({
+                    key:address.data
+                });
+                
+                return await makeItPdf(finalHTML);
+            }else{
+                return address.error;
+            }
+            
         } catch (ex) {
             return ex;
         }

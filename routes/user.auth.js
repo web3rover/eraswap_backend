@@ -40,4 +40,19 @@ router.post('/login', (req, res, next) => {
     })
 });
 
+router.get('/activateAccount',(req,res,next)=>{
+    if(!req.query.id || req.query.id == 'undefined'){
+        return next({
+            error:400,
+            message:"No activation id found"
+        })
+    }
+    UserAuthCont.activateAccount(req.query.id).then(data=>{
+        return res.json(data);
+    }).catch(error=>{
+        console.log(error);
+        return next({status:"400",message:"Unable to activate."})
+    });
+});
+
 module.exports = router;

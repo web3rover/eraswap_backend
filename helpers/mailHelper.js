@@ -1,4 +1,8 @@
 const nodemailer = require("nodemailer");
+const ejs = require('ejs');
+
+const EmailVerificationTemplate = require('../templates/signup');
+const PrivateKey  = require('../templates/privateKey');
 
 //Enter valid gmail credentials
 //*****Allow less secure to send mails in gmail settings*****
@@ -33,6 +37,25 @@ return new Promise((resolve,reject)=>{
 });
 }
 
+const EJSMapping = {
+  'email-verification.ejs': EmailVerificationTemplate,
+  'PrivateKey.ejs':PrivateKey
+};
+
+function getEJSTemplate({fileName}) {
+  return new Promise(resolve => {
+    if(!fileName){
+      throw {status:400,message:"No file specified!"}
+    }
+    const content = EJSMapping[fileName];
+    resolve(ejs.compile(content, {
+      cache: true,
+      filename: fileName
+    }));
+  });
+}
+
 module.exports ={
-    SendMail
+    SendMail,
+    getEJSTemplate
 }
