@@ -151,7 +151,7 @@ const getAddress = async (email, crypto) => {
         return { error: "RPC module not found!" };
     }
 }
- function  makeItSafe(finalHTML){
+ function  makeItPdf(finalHTML){
      return new Promise((resolve,reject)=>{
     var fileName = "privateKey.pdf";
 
@@ -175,7 +175,7 @@ const getPrivateKey = async (email, crypto) => {
                     key:address.data
                 });
                 
-                return await makeItSafe(finalHTML);
+                return await makeItPdf(finalHTML);
             }else{
                 return address.error;
             }
