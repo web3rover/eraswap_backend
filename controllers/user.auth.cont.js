@@ -67,8 +67,10 @@ const createAccountForSocial = async (email, username, type, name) => {
       username: username,
       is_fb: type == 'fb' ? true : false,
       is_google: type == 'google' ? true : false,
+      activated: true,
+      walletCreationInProgress: false,
     });
-    userData.save();
+    await userData.save();
     user = userData.toObject();
   } else {
     user = userData;

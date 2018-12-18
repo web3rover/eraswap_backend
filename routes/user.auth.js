@@ -15,9 +15,7 @@ router.post('/signup', async (req, res, next) => {
     if (gasTankCheck.result) {
         UserAuthCont.register(req.body).then(data => {
             delete data.password;
-            WalletCont.createWallets(data).then(op => {
-                return res.json(op)
-            }).catch(err => next(err));
+            return res.json(data);
         }).catch(error => {
             return next(error);
         });
@@ -40,38 +38,38 @@ router.post('/login', (req, res, next) => {
     })
 });
 
-router.post('/login/fb',(req,res,next)=>{
-   const state =req.body.state;
+router.post('/login/fb', (req, res, next) => {
+    const state = req.body.state;
     const code = req.body.code;
-   UserAuthCont.facebookLogin(code).then(data=>{
-       return res.json(data);
-   }).catch(error=>{
-       return next(error);
-   });
-});
-
-router.post('/login/google',(req,res,next)=>{
-    const state =req.body.state;
-     const code = req.body.code;
-    UserAuthCont.googleLogin(code).then(data=>{
+    UserAuthCont.facebookLogin(code).then(data => {
         return res.json(data);
-    }).catch(error=>{
+    }).catch(error => {
         return next(error);
     });
- });
+});
 
-router.get('/activateAccount',(req,res,next)=>{
-    if(!req.query.id || req.query.id == 'undefined'){
+router.post('/login/google', (req, res, next) => {
+    const state = req.body.state;
+    const code = req.body.code;
+    UserAuthCont.googleLogin(code).then(data => {
+        return res.json(data);
+    }).catch(error => {
+        return next(error);
+    });
+});
+
+router.get('/activateAccount', (req, res, next) => {
+    if (!req.query.id || req.query.id == 'undefined') {
         return next({
-            error:400,
-            message:"No activation id found"
+            error: 400,
+            message: "No activation id found"
         })
     }
-    UserAuthCont.activateAccount(req.query.id).then(data=>{
+    UserAuthCont.activateAccount(req.query.id).then(data => {
         return res.json(data);
-    }).catch(error=>{
+    }).catch(error => {
         console.log(error);
-        return next({status:"400",message:"Unable to activate."})
+        return next({ status: "400", message: "Unable to activate." })
     });
 });
 

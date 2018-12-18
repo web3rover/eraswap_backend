@@ -80,6 +80,13 @@ const saveRecord = async (user, body, withdrawal) => {
 
         await dbEntry.save();
 
+        console.log({
+            assetName: "LBOrder",
+            fromAccount: node.getWeb3().eth.accounts[0],
+            toAccount: node.getWeb3().eth.accounts[0],
+            identifier: identifier
+        });
+
         var res = await node.callAPI('assets/issueSoloAsset', {
             assetName: "LBOrder",
             fromAccount: node.getWeb3().eth.accounts[0],

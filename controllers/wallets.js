@@ -20,10 +20,11 @@ const btcRpc = new BTCRpc(nodes.btc.host, nodes.btc.port, nodes.btc.username, no
 const ethRpc = new ETHRpc(nodes.eth.host, nodes.eth.port);
 
 const createWallets = async body => {
+    var btcWalletDoc, ethWalletDoc, estWalletDoc = null;
     try {
         var btcWallet = await btcRpc.createWallet(body.email);
 
-        var btcWalletDoc = await new Wallets({
+        btcWalletDoc = await new Wallets({
             type: 'btc',
             privateKey: btcWallet.privateKey,
             publicKey: btcWallet.publicKey,
@@ -33,7 +34,7 @@ const createWallets = async body => {
 
         var ethWallet = await ethRpc.createWallet(body.email);
 
-        var ethWalletDoc = await new Wallets({
+        ethWalletDoc = await new Wallets({
             type: 'eth',
             publicKey: ethWallet.publicKey,
             privateKey: ethWallet.privateKey ? ethWallet.privateKey : "",
@@ -44,7 +45,7 @@ const createWallets = async body => {
 
         var estWallet = await ethRpc.createWallet(body.email);
 
-        var estWalletDoc = await new Wallets({
+        estWalletDoc = await new Wallets({
             type: 'est',
             publicKey: estWallet.publicKey,
             privateKey: estWallet.privateKey ? estWallet.privateKey : "",
@@ -59,10 +60,22 @@ const createWallets = async body => {
             users[0].wallet.push(btcWalletDoc._id);
             users[0].wallet.push(ethWalletDoc._id);
             users[0].wallet.push(estWalletDoc._id);
+            users[0].walletCreationInProgress = false;
             user = await users[0].save();
         }
         return user;
     } catch (ex) {
+
+        var users = await Users.find({ email: body.email });
+        var user = {};
+        if (users.length >= 1) {
+            btcWalletDoc ? users[0].wallet.push(btcWalletDoc._id) : "";
+            ethWalletDoc ? users[0].wallet.push(ethWalletDoc._id) : "";
+            estWalletDoc ? users[0].wallet.push(estWalletDoc._id) : "";
+            users[0].walletCreationInProgress = false;
+            user = await users[0].save();
+        }
+
         return ex;
     }
 }

@@ -335,14 +335,14 @@ var start = async function () {
         var wallets = Object.keys(rpcDirectory);
         var len = wallets.length;
         var str = "wallet"
-        var allUsers = Users.find({}).populate('wallet');
+        var allUsers = Users.find({ walletCreationInProgress: false, activated: true }).populate('wallet');
         var incompleteWallets = await allUsers.$where('this.wallet.length < 3').exec();
         if (incompleteWallets.length > 0) {
             for (var i = 0; i < incompleteWallets.length; i++) {
                 await addMissingWallets(incompleteWallets[i]);
             }
         }
-        reSchedule(null, job, 15, done);
+        reSchedule(null, job, 30, done);
     });
 
     agenda.define('Match orders and create agreements', async (job, done) => {
@@ -499,7 +499,7 @@ var start = async function () {
 
     await agenda.every('20 seconds', 'Match orders and create agreements');
 
-    await agenda.every('15 seconds', 'Check missing wallets and add');
+    await agenda.every('30 seconds', 'Check missing wallets and add');
 
     await agenda.every('15 seconds', 'Check pending withdrawals');
 
@@ -633,6 +633,14 @@ async function createAgreement(lendingOrder, borrowingOrder) {
 
 async function addMissingWallets(user) {
     try {
+        var foundUser = await Users.findById(user._id);
+        if (foundUser) {
+            foundUser.walletCreationInProgress = true;
+            await foundUser.save();
+        }
+        else {
+            console.log("User " + foundUser.username + " not found!");
+        }
         var RPCDirectory = require('../Nodes').RPCDirectory;
         var walletlist = Object.keys(RPCDirectory);
 
@@ -652,9 +660,10 @@ async function addMissingWallets(user) {
                 newWallet = { ...newWallet, type: walletlist[i].toLowerCase(), owner: user._id }
                 var wallet = await new Wallets(newWallet).save();
                 console.log(walletlist[i] + " " + "Wallet created for user: " + user.username);
-                var foundUser = await Users.findById(user._id);
+                foundUser = await Users.findById(user._id);
                 if (foundUser) {
                     foundUser.wallet.push(wallet._id);
+                    foundUser.walletCreationInProgress = false;
                     await foundUser.save();
                 }
                 else {
