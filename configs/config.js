@@ -69,5 +69,17 @@ module.exports = {
             port: '8545',
             contractAddress: '0x5679f3797da4073298284fc47c95b98a74e7eba7',
         }
+    },
+    SOCIAL:{
+        GOOGLE:{
+            CLIENT_ID:'524726124380-u1nngf3k396jhtgrbmnqc6gchvsr6s3k.apps.googleusercontent.com',
+            CLIENT_SECRET:'kNUGAz_SQpBoZCTyOW7F3JHz',
+            REDIRECT_URI:'http://ec2-18-220-230-245.us-east-2.compute.amazonaws.com:3000/login'
+        },
+        FB:{
+            CLIENT_ID:"570289253420635",
+            CLIENT_SECRET:'48222bcb575887cd46d1a1996a00be23',
+            REDIRECT_URI:'https://7d9a37c6.ngrok.io/login'  //FB needs HTTPS only
+        }
     }
 };

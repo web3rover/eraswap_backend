@@ -40,6 +40,26 @@ router.post('/login', (req, res, next) => {
     })
 });
 
+router.post('/login/fb',(req,res,next)=>{
+   const state =req.body.state;
+    const code = req.body.code;
+   UserAuthCont.facebookLogin(code).then(data=>{
+       return res.json(data);
+   }).catch(error=>{
+       return next(error);
+   });
+});
+
+router.post('/login/google',(req,res,next)=>{
+    const state =req.body.state;
+     const code = req.body.code;
+    UserAuthCont.googleLogin(code).then(data=>{
+        return res.json(data);
+    }).catch(error=>{
+        return next(error);
+    });
+ });
+
 router.get('/activateAccount',(req,res,next)=>{
     if(!req.query.id || req.query.id == 'undefined'){
         return next({

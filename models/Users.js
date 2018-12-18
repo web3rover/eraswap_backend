@@ -30,6 +30,14 @@ const UserSchema = new mongoose.Schema({
     type:Boolean,
     default:false
   },
+  is_fb:{
+    type:Boolean,
+    default:false
+  },
+  is_google:{
+    type:Boolean,
+    default:false
+  },
   wallet: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Wallet' },],
   //add more user metadata here
 });
