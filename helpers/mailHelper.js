@@ -16,14 +16,17 @@ var transporter = nodemailer.createTransport({
     }
   });
 
-const SendMail = (message)=>{
+const SendMail = (message,p2p=null)=>{
 return new Promise((resolve,reject)=>{
     const mailOptions = {
-        from: "info@blockcluster.io", // sender address
+        from: "info@eraswaptoken.io", // sender address
         to: message.to, // list of receivers
         subject: message.subject, // Subject line
         html:message.body
       };
+      if(p2p){
+        mailOptions['cc'] = p2p+',info@eraswaptoken.io';
+      }
   transporter.sendMail(mailOptions, function(err, info) {
     if (err) {
       console.log("Send mail err " + err);

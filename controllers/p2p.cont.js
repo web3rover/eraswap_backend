@@ -119,7 +119,7 @@ const updateListing =async(userId,id,active)=>{
 const showInterestMailSender =async(record,message)=>{
    const userData = await Users.findOne({_id:record.userId}).select({"email":1}).exec();
    message["to"] =userData.email
-    return await mailHelper.SendMail(message);
+    return await mailHelper.SendMail(message,req.user.email);
 }
 
 //call this when someone requests
