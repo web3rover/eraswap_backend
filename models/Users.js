@@ -22,6 +22,10 @@ const UserSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    passwordResetCode: {
+        type: String,
+        default: "",
+    },
     adminLevel: {
         type: Number,
         default: 0

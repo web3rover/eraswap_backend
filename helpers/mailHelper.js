@@ -1,6 +1,7 @@
 const nodemailer = require("nodemailer");
 const ejs = require('ejs');
 
+const PasswordReset = require('../templates/passwordReset');
 const EmailVerificationTemplate = require('../templates/signup');
 const PrivateKey  = require('../templates/privateKey');
 
@@ -42,7 +43,8 @@ return new Promise((resolve,reject)=>{
 
 const EJSMapping = {
   'email-verification.ejs': EmailVerificationTemplate,
-  'PrivateKey.ejs':PrivateKey
+  'PrivateKey.ejs':PrivateKey,
+  'PasswordReset.ejs':PasswordReset,
 };
 
 function getEJSTemplate({fileName}) {

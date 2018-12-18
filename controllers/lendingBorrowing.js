@@ -11,7 +11,7 @@ const shortid = require("shortid");
 
 const node = new Blockcluster.Dynamo({
     locationDomain: config.BLOCKCLUSTER.host,
-    instanceId: config.BLOCKCLUSTER.instanceId
+    instanceId: "ftmbjpjb"
 });
 
 const getCoinsOptions = async () => {

@@ -58,6 +58,36 @@ router.post('/login/google', (req, res, next) => {
     });
 });
 
+router.get('/forgotPassword', (req, res, next) => {
+    console.log(req.query);
+    if (req.query.email) {
+        UserAuthCont.forgotPassword(req.query.email)
+            .then(data => {
+                return res.json(data);
+            })
+            .catch(error => {
+                console.log(error);
+                return next({ status: "400", message: "Unable to activate." })
+            });
+    }
+    else {
+        return next({
+            error: 400,
+            message: "No email address found"
+        })
+    }
+});
+
+router.post('/resetPassword', (req, res, next) => {
+    const password = req.body.password;
+    const code = req.body.code;
+    UserAuthCont.resetPassword(code, password).then(data => {
+        return res.json(data);
+    }).catch(error => {
+        return next(error);
+    });
+});
+
 router.get('/activateAccount', (req, res, next) => {
     if (!req.query.id || req.query.id == 'undefined') {
         return next({
