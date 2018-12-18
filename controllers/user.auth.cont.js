@@ -138,10 +138,10 @@ const forgotPassword = async email => {
             await helper.SendMail({ to: email, subject: '[Eraswap] Reset Your Password', body: finalHTML });
             return ({ success: true });
         } else {
-            Promise.reject({ message: "User with email address does not exist" });
+            return({ message: "User with email address does not exist" });
         }
     } catch (ex) {
-        return Promise.reject(ex);
+        return (ex);
     }
 };
 
@@ -164,13 +164,13 @@ const resetPassword = async (code, password) => {
                 user = await user.save();
                 return { success: true };
             } else {
-                return Promise.reject({ message: "Password reset link expired" });
+                return ({ message: "Password reset link expired" });
             }
         } else {
-            return Promise.reject({ message: "Missing arguments" });
+            return ({ message: "Missing arguments" });
         }
     } catch (ex) {
-        return Promise.reject(ex);
+        return (ex);
     }
 }
 

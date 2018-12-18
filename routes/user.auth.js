@@ -63,7 +63,11 @@ router.get('/forgotPassword', (req, res, next) => {
     if (req.query.email) {
         UserAuthCont.forgotPassword(req.query.email)
             .then(data => {
-                return res.json(data);
+                if (data.success) {
+                    return res.json(data);
+                } else {
+                    return next({ status: "400", ...data })
+                }
             })
             .catch(error => {
                 console.log(error);
@@ -82,7 +86,11 @@ router.post('/resetPassword', (req, res, next) => {
     const password = req.body.password;
     const code = req.body.code;
     UserAuthCont.resetPassword(code, password).then(data => {
-        return res.json(data);
+        if (data.success) {
+            return res.json(data);
+        } else {
+            return next({ status: "400", ...data })
+        }
     }).catch(error => {
         return next(error);
     });
