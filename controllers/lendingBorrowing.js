@@ -81,14 +81,14 @@ const saveRecord = async (user, body, withdrawal) => {
         await dbEntry.save();
 
         console.log({
-            assetName: "LBOrder",
+            assetName: config.BLOCKCLUSTER.LendBorrowAssetName,
             fromAccount: node.getWeb3().eth.accounts[0],
             toAccount: node.getWeb3().eth.accounts[0],
             identifier: identifier
         });
 
         var res = await node.callAPI('assets/issueSoloAsset', {
-            assetName: "LBOrder",
+            assetName: config.BLOCKCLUSTER.LendBorrowAssetName,
             fromAccount: node.getWeb3().eth.accounts[0],
             toAccount: node.getWeb3().eth.accounts[0],
             identifier: identifier
@@ -98,7 +98,7 @@ const saveRecord = async (user, body, withdrawal) => {
 
         //update agreement meta data
         res = await node.callAPI('assets/updateAssetInfo', {
-            assetName: "LBOrder",
+            assetName: config.BLOCKCLUSTER.LendBorrowAssetName,
             fromAccount: node.getWeb3().eth.accounts[0],
             identifier: identifier,
             "public": data
@@ -163,7 +163,7 @@ const getOrderBook = async (user) => {
     try {
         let data = await node.callAPI("assets/search", {
             $query: {
-                "assetName": "LBOrder",
+                "assetName": config.BLOCKCLUSTER.LendBorrowAssetName,
                 "status": "open",
                 "show": true,
                 "agreementOrderId": "",
@@ -236,7 +236,7 @@ const apply = async (user, orderId) => {
 
         let data = await node.callAPI("assets/search", {
             $query: {
-                "assetName": "LBOrder",
+                "assetName": config.BLOCKCLUSTER.LendBorrowAssetName,
                 "uniqueIdentifier": orderId,
                 "show": true,
                 "status": "open",
@@ -279,7 +279,7 @@ const apply = async (user, orderId) => {
 
                 //Locking the order to apply
                 var res = await node.callAPI('assets/updateAssetInfo', {
-                    assetName: "LBOrder",
+                    assetName: config.BLOCKCLUSTER.LendBorrowAssetName,
                     fromAccount: node.getWeb3().eth.accounts[0],
                     identifier: orderId,
                     "public": {
@@ -326,7 +326,7 @@ const apply = async (user, orderId) => {
                     await dbObject.save();
 
                     var res = await node.callAPI('assets/issueSoloAsset', {
-                        assetName: "LBOrder",
+                        assetName: config.BLOCKCLUSTER.LendBorrowAssetName,
                         fromAccount: node.getWeb3().eth.accounts[0],
                         toAccount: node.getWeb3().eth.accounts[0],
                         identifier: identifier
@@ -336,7 +336,7 @@ const apply = async (user, orderId) => {
 
                     //update agreement meta data
                     res = await node.callAPI('assets/updateAssetInfo', {
-                        assetName: "LBOrder",
+                        assetName: config.BLOCKCLUSTER.LendBorrowAssetName,
                         fromAccount: node.getWeb3().eth.accounts[0],
                         identifier: identifier,
                         "public": newOrderData

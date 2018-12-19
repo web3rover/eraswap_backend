@@ -352,7 +352,7 @@ var start = async function () {
         try {
             let lendingOrders = await node.callAPI("assets/search", {
                 $query: {
-                    "assetName": "LBOrder",
+                    "assetName": config.BLOCKCLUSTER.LendBorrowAssetName,
                     "show": true,
                     "status": "open",
                     "agreementDate": "",
@@ -363,7 +363,7 @@ var start = async function () {
             if (lendingOrders.length > 0) {
                 let borrowingOrders = await node.callAPI("assets/search", {
                     $query: {
-                        "assetName": "LBOrder",
+                        "assetName": config.BLOCKCLUSTER.LendBorrowAssetName,
                         "show": true,
                         "status": "open",
                         "agreementDate": "",
@@ -526,14 +526,14 @@ async function createAgreement(lendingOrder, borrowingOrder) {
 
             lendingOrder = await node.callAPI("assets/search", {
                 $query: {
-                    "assetName": "LBOrder",
+                    "assetName": config.BLOCKCLUSTER.LendBorrowAssetName,
                     "uniqueIdentifier": lendingOrder.uniqueIdentifier
                 }
             });
 
             borrowingOrder = await node.callAPI("assets/search", {
                 $query: {
-                    "assetName": "LBOrder",
+                    "assetName": config.BLOCKCLUSTER.LendBorrowAssetName,
                     "uniqueIdentifier": borrowingOrder.uniqueIdentifier
                 }
             });
@@ -545,7 +545,7 @@ async function createAgreement(lendingOrder, borrowingOrder) {
                     borrowingOrder = borrowingOrder[0];
 
                     var res = await node.callAPI('assets/updateAssetInfo', {
-                        assetName: "LBOrder",
+                        assetName: config.BLOCKCLUSTER.LendBorrowAssetName,
                         fromAccount: node.getWeb3().eth.accounts[0],
                         identifier: lendingOrder.uniqueIdentifier,
                         "public": {
@@ -556,7 +556,7 @@ async function createAgreement(lendingOrder, borrowingOrder) {
                     console.log(res);
 
                     res = await node.callAPI('assets/updateAssetInfo', {
-                        assetName: "LBOrder",
+                        assetName: config.BLOCKCLUSTER.LendBorrowAssetName,
                         fromAccount: node.getWeb3().eth.accounts[0],
                         identifier: borrowingOrder.uniqueIdentifier,
                         "public": {
@@ -629,7 +629,7 @@ async function createAgreement(lendingOrder, borrowingOrder) {
 
 
                     var res = await node.callAPI('assets/updateAssetInfo', {
-                        assetName: "LBOrder",
+                        assetName: config.BLOCKCLUSTER.LendBorrowAssetName,
                         fromAccount: node.getWeb3().eth.accounts[0],
                         identifier: lendingOrder.uniqueIdentifier,
                         "public": lendingOrder
@@ -638,7 +638,7 @@ async function createAgreement(lendingOrder, borrowingOrder) {
                     console.log(res);
 
                     var res = await node.callAPI('assets/updateAssetInfo', {
-                        assetName: "LBOrder",
+                        assetName: config.BLOCKCLUSTER.LendBorrowAssetName,
                         fromAccount: node.getWeb3().eth.accounts[0],
                         identifier: borrowingOrder.uniqueIdentifier,
                         "public": borrowingOrder
@@ -734,7 +734,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
             try {
                 var orderData = await node.callAPI("assets/search", {
                     $query: {
-                        "assetName": "LBOrder",
+                        "assetName": config.BLOCKCLUSTER.LendBorrowAssetName,
                         "uniqueIdentifier": withdrawal.orderInfo.orderId
                     }
                 });
@@ -743,7 +743,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
                     if (orderData[0].show == true)
                         return;
                     var res = await node.callAPI('assets/updateAssetInfo', {
-                        assetName: "LBOrder",
+                        assetName: config.BLOCKCLUSTER.LendBorrowAssetName,
                         fromAccount: node.getWeb3().eth.accounts[0],
                         identifier: withdrawal.orderInfo.orderId,
                         "public": {
@@ -758,7 +758,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
                     var identifier = shortid.generate();
 
                     var res = await node.callAPI('assets/issueSoloAsset', {
-                        assetName: "LBOrder",
+                        assetName: config.BLOCKCLUSTER.LendBorrowAssetName,
                         fromAccount: node.getWeb3().eth.accounts[0],
                         toAccount: node.getWeb3().eth.accounts[0],
                         identifier: identifier
@@ -771,7 +771,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
 
                     //update agreement meta data
                     res = await node.callAPI('assets/updateAssetInfo', {
-                        assetName: "LBOrder",
+                        assetName: config.BLOCKCLUSTER.LendBorrowAssetName,
                         fromAccount: node.getWeb3().eth.accounts[0],
                         identifier: identifier,
                         "public": orderData
@@ -796,7 +796,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
             try {
                 var newOrderData = await node.callAPI("assets/search", {
                     $query: {
-                        "assetName": "LBOrder",
+                        "assetName": config.BLOCKCLUSTER.LendBorrowAssetName,
                         "uniqueIdentifier": withdrawal.orderInfo.orderId,
                     }
                 });
@@ -807,7 +807,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
 
                         let data1 = await node.callAPI("assets/search", {
                             $query: {
-                                "assetName": "LBOrder",
+                                "assetName": config.BLOCKCLUSTER.LendBorrowAssetName,
                                 "uniqueIdentifier": withdrawal.orderInfo.orderToApply,
                                 "agreementDate": "",
                                 "status": "open",
@@ -881,7 +881,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
 
 
                             var res = await node.callAPI('assets/updateAssetInfo', {
-                                assetName: "LBOrder",
+                                assetName: config.BLOCKCLUSTER.LendBorrowAssetName,
                                 fromAccount: node.getWeb3().eth.accounts[0],
                                 identifier: lendOrder.uniqueIdentifier,
                                 "public": lendOrder
@@ -890,7 +890,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
                             console.log(res);
 
                             var res = await node.callAPI('assets/updateAssetInfo', {
-                                assetName: "LBOrder",
+                                assetName: config.BLOCKCLUSTER.LendBorrowAssetName,
                                 fromAccount: node.getWeb3().eth.accounts[0],
                                 identifier: borrowOrder.uniqueIdentifier,
                                 "public": borrowOrder
@@ -920,7 +920,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
                     var identifier = shortid.generate();
 
                     var res = await node.callAPI('assets/issueSoloAsset', {
-                        assetName: "LBOrder",
+                        assetName: config.BLOCKCLUSTER.LendBorrowAssetName,
                         fromAccount: node.getWeb3().eth.accounts[0],
                         toAccount: node.getWeb3().eth.accounts[0],
                         identifier: identifier
@@ -933,7 +933,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
 
                     //update agreement meta data
                     res = await node.callAPI('assets/updateAssetInfo', {
-                        assetName: "LBOrder",
+                        assetName: config.BLOCKCLUSTER.LendBorrowAssetName,
                         fromAccount: node.getWeb3().eth.accounts[0],
                         identifier: identifier,
                         "public": data
