@@ -411,6 +411,7 @@ var start = async function () {
             const escrowCont = require('../controllers/escrow.cont');
 
             var today = new Date();
+            var date = today.getDate();
             var currentMonth = today.getMonth();
             var year = today.getFullYear();
 
@@ -419,14 +420,18 @@ var start = async function () {
                 var payUsingCollateral = false;
                 var paymentDate = new Date(agreements[i].nextPaymentDate);
 
-                if (paymentDate.getMonth() <= currentMonth) {
+                if (paymentDate.getMonth() == currentMonth && paymentDate.getFullYear() == year && paymentDate.getDate() == date) {
 
                     var coinBalance = await walletCont.getBalance(agreements[i].borrowerEmail, agreements[i].coin);
                     if (!coinBalance.message) {
                         coinBalance = coinBalance.balance;
-                        if (coinBalance > agreements[i].emi) {
 
-                            var emiDeduction = await walletCont.send(agreements[i].borrowerEmail, agreements[i].emi, agreements[i].lenderEmail, agreements[i].coin);
+                        var receiverKey = await walletCont.getAddress(agreements[i].lenderEmail, agreements[i].coin);
+                        if (receiverKey.message) {
+                            throw receiverKey;
+                        }
+                        if (coinBalance > agreements[i].emi) {
+                            var emiDeduction = await walletCont.send(agreements[i].borrowerEmail, agreements[i].emi, receiverKey, agreements[i].coin);
 
                             if (emiDeduction.success) {
                                 var dbObject = await Withdrawals.findById(emiDeduction.dbObject._id);
@@ -435,7 +440,7 @@ var start = async function () {
                                     type: "emi payment",
                                     mode: "coin"
                                 };
-                                await dbObject.save();
+                                dbObject = await dbObject.save();
 
                                 var nextPaymentDate = new Date(agreements[i].nextPaymentDate)
                                 var paymentDate = + nextPaymentDate.setDate(nextPaymentDate.getDate() + Number(30));
@@ -445,7 +450,7 @@ var start = async function () {
                                     fromAccount: node.getWeb3().eth.accounts[0],
                                     identifier: agreements[i].uniqueIdentifier,
                                     "public": {
-                                        nextPaymentDate: + getLastDateOfMonth(year, currentMonth + 1),
+                                        nextPaymentDate: paymentDate,
                                     }
                                 });
 
@@ -456,7 +461,11 @@ var start = async function () {
                             }
                         }
                         if (payUsingCollateral || coinBalance < agreements[i].emi) {
-                            var emiDeductionInCollateral = await escrowCont.send(agreements[i].collateral, agreements[i].lenderEmail, agreements[i].emiInCollateral);
+                            var receiverCollateralKey = await walletCont.getAddress(agreements[i].lenderEmail, agreements[i].collateralCoin);
+                            if (receiverCollateralKey.message) {
+                                throw receiverCollateralKey;
+                            }
+                            var emiDeductionInCollateral = await escrowCont.send(agreements[i].collateralCoin, receiverCollateralKey, agreements[i].emiInCollateral);
                             if (emiDeductionInCollateral.success) {
                                 var dbObject = await Withdrawals.findById(emiDeductionInCollateral.dbObject._id);
                                 dbObject["agreementInfo"] = {
@@ -464,14 +473,17 @@ var start = async function () {
                                     type: "emi payment",
                                     mode: "collateral"
                                 };
-                                await dbObject.save();
+                                dbObject = await dbObject.save();
+
+                                var today = new Date();
+                                var paymentDate = + today.setDate(today.getDate() + Number(30));
 
                                 var res = await node.callAPI('assets/updateAssetInfo', {
                                     assetName: "Agreements",
                                     fromAccount: node.getWeb3().eth.accounts[0],
                                     identifier: agreements[i].uniqueIdentifier,
                                     "public": {
-                                        nextPaymentDate: + getLastDateOfMonth(year, currentMonth + 1),
+                                        nextPaymentDate: paymentDate,
                                     }
                                 });
 
@@ -488,15 +500,7 @@ var start = async function () {
                 }
             }
 
-            var today = new Date();
-            var year = today.getFullYear();
-            var month = today.getMonth();
-            var futureDate = getLastDateOfMonth(year, month + 1);
-            var daysFromNow = findDaysDifference(today, futureDate);
-
-            agenda.schedule(daysFromNow + ' days', 'Handle Borrowers emi');
-            job.remove();
-            done();
+            reSchedule(null, job, 60 * 60 * 24, done);
         } catch (ex) {
             console.log(ex);
             reSchedule(ex.message, job, 10, done);
@@ -511,13 +515,7 @@ var start = async function () {
 
     await agenda.schedule('in 15 seconds', 'On error reSchedule withdrawals');
 
-    var today = new Date();
-    var year = today.getFullYear();
-    var month = today.getMonth();
-    var futureDate = getLastDateOfMonth(year, month);
-    var daysFromNow = findDaysDifference(today, futureDate);
-
-    agenda.schedule(daysFromNow + ' days', 'Handle Borrowers emi');
+    await agenda.schedule('in 20 seconds', 'Handle Borrowers emi');
 };
 
 start();
@@ -834,6 +832,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
 
                             console.log(res);
                             var timestamp = + new Date();
+                            var paymentDate = new Date(timestamp).setDate(new Date(timestamp).getDate() + Number(30));
                             var month = new Date(timestamp).getMonth() + 1;
                             var year = new Date(timestamp).getFullYear();
 
@@ -858,7 +857,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
                                 amount: lendOrder.amount,
                                 months: lendOrder.duration,
                                 agreementDate: timestamp,
-                                nextPaymentDate: + getLastDateOfMonth(year, month),
+                                nextPaymentDate: + paymentDate,
                                 emi: emi,
                                 emiInCollateral: emiInCollateral,
                                 emiPaidCount: 0,
@@ -986,7 +985,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
                 var res = await node.callAPI('assets/updateAssetInfo', {
                     assetName: "Agreements",
                     fromAccount: node.getWeb3().eth.accounts[0],
-                    identifier: agreements[i].uniqueIdentifier,
+                    identifier: agreement.uniqueIdentifier,
                     "public": updates
                 });
 
