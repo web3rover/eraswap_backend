@@ -11,7 +11,7 @@ const shortid = require("shortid");
 
 const node = new Blockcluster.Dynamo({
     locationDomain: config.BLOCKCLUSTER.host,
-    instanceId: "ftmbjpjb"
+    instanceId: config.BLOCKCLUSTER.instanceId
 });
 
 const agenda = new Agenda({
@@ -247,6 +247,9 @@ var start = async function () {
         const { dbObject } = job.attrs.data;
         const Withdrawals = require('../models/Withdrawal');
         var withdrawal = await Withdrawals.findById(dbObject._id.toString());
+        if (!withdrawal) {
+            done();
+        }
         try {
             if (withdrawal.status != "Error") {
                 var RPC = require('../Nodes').RPCDirectory[withdrawal.type];
@@ -350,7 +353,7 @@ var start = async function () {
             let lendingOrders = await node.callAPI("assets/search", {
                 $query: {
                     "assetName": "LBOrder",
-                    "show": "true",
+                    "show": true,
                     "status": "open",
                     "agreementDate": "",
                     "agreementOrderId": "",
@@ -361,7 +364,7 @@ var start = async function () {
                 let borrowingOrders = await node.callAPI("assets/search", {
                     $query: {
                         "assetName": "LBOrder",
-                        "show": "true",
+                        "show": true,
                         "status": "open",
                         "agreementDate": "",
                         "agreementOrderId": "",
@@ -372,7 +375,7 @@ var start = async function () {
                     var skip = [];
                     for (var i = 0; i < lendingOrders.length; i++) {
                         for (var j = 0; j < borrowingOrders.length; j++) {
-                            if (skip.indexOf(j) == -1 && lendingOrders[i].coin == borrowingOrders[j].coin && lendingOrders[i].collateral == borrowingOrders[j].collateral
+                            if (skip.indexOf(j) == -1 && lendingOrders[i].username != borrowingOrders[j].username && lendingOrders[i].coin == borrowingOrders[j].coin && lendingOrders[i].collateral == borrowingOrders[j].collateral
                                 && lendingOrders[i].interest == borrowingOrders[j].interest && lendingOrders[i].duration == borrowingOrders[j].duration
                                 && lendingOrders[i].amount == borrowingOrders[j].amount) {
                                 console.log("Orders matched!!", lendingOrders[i].uniqueIdentifier, borrowingOrders[j].uniqueIdentifier);
@@ -399,7 +402,7 @@ var start = async function () {
                 $query: {
                     "assetName": "Agreements",
                     "status": "open",
-                    "active": "true",
+                    "active": true,
                 }
             });
 
@@ -433,6 +436,9 @@ var start = async function () {
                                     mode: "coin"
                                 };
                                 await dbObject.save();
+
+                                var nextPaymentDate = new Date(agreements[i].nextPaymentDate)
+                                var paymentDate = + nextPaymentDate.setDate(nextPaymentDate.getDate() + Number(30));
 
                                 var res = await node.callAPI('assets/updateAssetInfo', {
                                     assetName: "Agreements",
@@ -497,13 +503,13 @@ var start = async function () {
         }
     });
 
-    await agenda.every('20 seconds', 'Match orders and create agreements');
+    await agenda.schedule('in 20 seconds', 'Match orders and create agreements');
 
-    await agenda.every('30 seconds', 'Check missing wallets and add');
+    await agenda.schedule('in 30 seconds', 'Check missing wallets and add');
 
-    await agenda.every('15 seconds', 'Check pending withdrawals');
+    await agenda.schedule('in 15 seconds', 'Check pending withdrawals');
 
-    await agenda.every('15 seconds', 'On error reSchedule withdrawals');
+    await agenda.schedule('in 15 seconds', 'On error reSchedule withdrawals');
 
     var today = new Date();
     var year = today.getFullYear();
@@ -518,112 +524,142 @@ start();
 
 async function createAgreement(lendingOrder, borrowingOrder) {
     try {
-        if (lendingOrder) {
-            if (borrowingOrder) {
-                var res = await node.callAPI('assets/updateAssetInfo', {
-                    assetName: "LBOrder",
-                    fromAccount: node.getWeb3().eth.accounts[0],
-                    identifier: lendingOrder.uniqueIdentifier,
-                    "public": {
-                        show: false,
+        if (lendingOrder && borrowingOrder) {
+
+            lendingOrder = await node.callAPI("assets/search", {
+                $query: {
+                    "assetName": "LBOrder",
+                    "uniqueIdentifier": lendingOrder.uniqueIdentifier
+                }
+            });
+
+            borrowingOrder = await node.callAPI("assets/search", {
+                $query: {
+                    "assetName": "LBOrder",
+                    "uniqueIdentifier": borrowingOrder.uniqueIdentifier
+                }
+            });
+
+            if (lendingOrder.length > 0 && borrowingOrder.length > 0) {
+                if (lendingOrder[0].show && borrowingOrder[0].show) {
+
+                    lendingOrder = lendingOrder[0];
+                    borrowingOrder = borrowingOrder[0];
+
+                    var res = await node.callAPI('assets/updateAssetInfo', {
+                        assetName: "LBOrder",
+                        fromAccount: node.getWeb3().eth.accounts[0],
+                        identifier: lendingOrder.uniqueIdentifier,
+                        "public": {
+                            show: false,
+                        }
+                    });
+
+                    console.log(res);
+
+                    res = await node.callAPI('assets/updateAssetInfo', {
+                        assetName: "LBOrder",
+                        fromAccount: node.getWeb3().eth.accounts[0],
+                        identifier: borrowingOrder.uniqueIdentifier,
+                        "public": {
+                            show: false,
+                        }
+                    });
+
+                    console.log(res);
+
+                    var identifier = shortid.generate();
+                    res = await node.callAPI('assets/issueSoloAsset', {
+                        assetName: "Agreements",
+                        fromAccount: node.getWeb3().eth.accounts[0],
+                        toAccount: node.getWeb3().eth.accounts[0],
+                        identifier: identifier
+                    });
+
+                    console.log(res);
+                    var timestamp = + new Date();
+                    var month = new Date(timestamp).getMonth() + 1;
+                    var year = new Date(timestamp).getFullYear();
+
+                    var principlePerMonth = lendingOrder.amount / lendingOrder.duration;
+                    var interest = principlePerMonth * lendingOrder.interest / 100;
+                    var emi = principlePerMonth + interest;
+
+                    var principlePerMonthInCollateral = borrowingOrder.collateralDeducted / lendingOrder.duration;
+                    var interestInCollateral = principlePerMonthInCollateral * lendingOrder.interest / 100;
+                    var emiInCollateral = principlePerMonthInCollateral + interest;
+
+                    var agreementData = new Date(timestamp);
+                    var paymentDate = + agreementData.setDate(agreementData.getDate() + Number(30));
+
+                    var agreementData = {
+                        lendOrderId: lendingOrder.uniqueIdentifier,
+                        borrowOrderId: borrowingOrder.uniqueIdentifier,
+                        lenderEmail: lendingOrder.email,
+                        borrowerEmail: borrowingOrder.email,
+                        lender: lendingOrder.username,
+                        borrower: borrowingOrder.username,
+                        coin: lendingOrder.coin,
+                        amount: lendingOrder.amount,
+                        collateralCoin: lendingOrder.collateral,
+                        interest: lendingOrder.interest,
+                        months: lendingOrder.duration,
+                        agreementDate: timestamp,
+                        nextPaymentDate: paymentDate,
+                        emiPaidCount: 0,
+                        emiPaidInCollateral: 0,
+                        emi: emi,
+                        emiInCollateral: emiInCollateral,
+                        active: true,
+                    };
+
+                    //update agreement meta data
+                    res = await node.callAPI('assets/updateAssetInfo', {
+                        assetName: "Agreements",
+                        fromAccount: node.getWeb3().eth.accounts[0],
+                        identifier: identifier,
+                        "public": agreementData
+                    });
+
+                    console.log(res);
+
+                    lendingOrder["agreementOrderId"] = identifier;
+                    lendingOrder["agreementDate"] = timestamp;
+
+                    borrowingOrder["agreementOrderId"] = identifier;
+                    borrowingOrder["agreementDate"] = timestamp;
+
+
+                    var res = await node.callAPI('assets/updateAssetInfo', {
+                        assetName: "LBOrder",
+                        fromAccount: node.getWeb3().eth.accounts[0],
+                        identifier: lendingOrder.uniqueIdentifier,
+                        "public": lendingOrder
+                    });
+
+                    console.log(res);
+
+                    var res = await node.callAPI('assets/updateAssetInfo', {
+                        assetName: "LBOrder",
+                        fromAccount: node.getWeb3().eth.accounts[0],
+                        identifier: borrowingOrder.uniqueIdentifier,
+                        "public": borrowingOrder
+                    });
+
+                    console.log(res);
+
+                    var escrowCont = require('../controllers/escrow.cont');
+                    var walletCont = require('../controllers/wallets');
+
+                    var publicKey = await walletCont.getAddress(borrowingOrder.email, agreementData.coin);
+                    if (!publicKey.error) {
+                        var op = await escrowCont.send(agreementData.coin, publicKey, agreementData.amount);
+                        console.log(op);
                     }
-                });
-
-                console.log(res);
-
-                res = await node.callAPI('assets/updateAssetInfo', {
-                    assetName: "LBOrder",
-                    fromAccount: node.getWeb3().eth.accounts[0],
-                    identifier: borrowingOrder.uniqueIdentifier,
-                    "public": {
-                        show: false,
+                    else {
+                        throw { message: publicKey.error };
                     }
-                });
-
-                console.log(res);
-
-                var identifier = shortid.generate();
-                res = await node.callAPI('assets/issueSoloAsset', {
-                    assetName: "Agreements",
-                    fromAccount: node.getWeb3().eth.accounts[0],
-                    toAccount: node.getWeb3().eth.accounts[0],
-                    identifier: identifier
-                });
-
-                console.log(res);
-                var timestamp = + new Date();
-                var month = new Date(timestamp).getMonth() + 1;
-                var year = new Date(timestamp).getFullYear();
-
-                var principlePerMonth = lendingOrder.amount / lendingOrder.duration;
-                var interest = principlePerMonth * lendingOrder.interest / 100;
-                var emi = principlePerMonth + interest;
-
-                var principlePerMonthInCollateral = borrowingOrder.collateralDeducted / lendingOrder.duration;
-                var interestInCollateral = principlePerMonthInCollateral * lendingOrder.interest / 100;
-                var emiInCollateral = principlePerMonth + interest;
-
-                var agreementData = {
-                    lendOrderId: lendingOrder.uniqueIdentifier,
-                    borrowOrderId: borrowingOrder.uniqueIdentifier,
-                    lenderEmail: lendingOrder.email,
-                    borrowerEmail: borrowingOrder.email,
-                    lender: lendingOrder.username,
-                    borrower: borrowingOrder.username,
-                    coin: lendingOrder.coin,
-                    amount: lendingOrder.amount,
-                    collateralCoin: lendingOrder.collateral,
-                    interest: lendingOrder.interest,
-                    months: lendingOrder.duration,
-                    agreementDate: timestamp,
-                    nextPaymentDate: + getLastDateOfMonth(year, month),
-                    emiPaidCount: 0,
-                    emiPaidInCollateral: 0,
-                    emi: emi,
-                    emiInCollateral: emiInCollateral,
-                    active: true,
-                };
-
-                //update agreement meta data
-                res = await node.callAPI('assets/updateAssetInfo', {
-                    assetName: "Agreements",
-                    fromAccount: node.getWeb3().eth.accounts[0],
-                    identifier: identifier,
-                    "public": agreementData
-                });
-
-                console.log(res);
-
-                lendingOrder["agreementOrderId"] = identifier;
-                lendingOrder["agreementDate"] = timestamp;
-
-                borrowingOrder["agreementOrderId"] = identifier;
-                borrowingOrder["agreementDate"] = timestamp;
-
-
-                var res = await node.callAPI('assets/updateAssetInfo', {
-                    assetName: "LBOrder",
-                    fromAccount: node.getWeb3().eth.accounts[0],
-                    identifier: lendingOrder.uniqueIdentifier,
-                    "public": lendingOrder
-                });
-
-                console.log(res);
-
-                var res = await node.callAPI('assets/updateAssetInfo', {
-                    assetName: "LBOrder",
-                    fromAccount: node.getWeb3().eth.accounts[0],
-                    identifier: borrowingOrder.uniqueIdentifier,
-                    "public": borrowingOrder
-                });
-
-                console.log(res);
-
-                var escrowCont = require('../controllers/escrow.cont');
-
-                var op = await escrowCont.send(agreementData.coin, borrowingOrder.email, agreementData.amount);
-
-                console.log(op);
+                }
             }
         }
     } catch (ex) {
@@ -807,7 +843,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
 
                             var principlePerMonthInCollateral = borrowOrder.collateralDeducted / lendOrder.duration;
                             var interestInCollateral = principlePerMonthInCollateral * lendOrder.interest / 100;
-                            var emiInCollateral = principlePerMonth + interest;
+                            var emiInCollateral = principlePerMonthInCollateral + interest;
 
                             var agreementData = {
                                 lendOrderId: lendOrder.uniqueIdentifier,
@@ -864,8 +900,10 @@ async function checkIfOrderAndUpdate(withdrawal) {
                             console.log(res);
 
                             var escrowCont = require('../controllers/escrow.cont');
+                            var walletCont = require('../controllers/wallets');
 
-                            var op = await escrowCont.send(agreementData.coin, borrowOrder.email, agreementData.amount);
+                            var borrowerPublicKey = await walletCont.getAddress(borrowOrder.email, agreementData.coin);
+                            var op = await escrowCont.send(agreementData.coin, borrowerPublicKey, agreementData.amount);
 
                             console.log(op);
 
@@ -925,7 +963,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
                     "assetName": "Agreements",
                     "uniqueIdentifier": withdrawal.agreementInfo.agreementId,
                     "status": "open",
-                    "active": "true",
+                    "active": true,
                 }
             });
 

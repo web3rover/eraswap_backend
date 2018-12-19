@@ -6,7 +6,7 @@ module.exports = {
     },
     BLOCKCLUSTER: {
         host: "app-ap-south-1b.blockcluster.io",
-        instanceId: "jgvyjgub",
+        instanceId: "hwrrhauh",
         assetName: "p2pMarketplace",
         matchAssetName:'MatchData'
     },

@@ -76,7 +76,7 @@ class EthRpc {
                 return web3.utils.fromWei(balance, 'ether');
             }
             else {
-                throw { message: "Latest block not found!"};
+                throw { message: "Latest block not found!" };
             }
         } catch (ex) {
             return { error: ex.message };
@@ -85,6 +85,13 @@ class EthRpc {
 
     async send(sender, receiver, amount) {
         try {
+
+            var balance = await this.getBalance(sender);
+            if (balance < amount) {
+                console.log("Insufficient balance in the wallet!");
+                return {error: "Insufficient balance in the wallet"};
+            }
+
             var pwd = await this._getPassword(sender);
 
             var withdrwal = new Withdrwals({
@@ -98,10 +105,11 @@ class EthRpc {
                 },
             });
             var dbObject = await withdrwal.save();
-
             await web3.eth.personal.unlockAccount(sender, pwd, null);
+            var nonce = await web3.eth.getTransactionCount(sender, "pending");
             web3.eth
                 .sendTransaction({
+                    nonce: nonce,
                     from: sender,
                     to: receiver,
                     value: web3.utils.toWei(amount.toString(), 'ether'),
@@ -135,8 +143,10 @@ class EthRpc {
                     var pwd = await this._getPassword(txn.sender);
 
                     await web3.eth.personal.unlockAccount(txn.sender, pwd, null);
+                    var nonce = await web3.eth.getTransactionCount(txn.sender, "pending");
                     web3.eth
                         .sendTransaction({
+                            nonce: nonce,
                             from: txn.sender,
                             to: txn.receiver,
                             value: web3.utils.toWei(txn.amount.toString(), 'ether'),

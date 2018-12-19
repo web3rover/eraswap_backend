@@ -11,7 +11,7 @@ const shortid = require("shortid");
 
 const node = new Blockcluster.Dynamo({
     locationDomain: config.BLOCKCLUSTER.host,
-    instanceId: "ftmbjpjb"
+    instanceId: config.BLOCKCLUSTER.instanceId
 });
 
 const getCoinsOptions = async () => {
@@ -62,7 +62,7 @@ const saveRecord = async (user, body, withdrawal) => {
             userId: user._id,
             username: user.username,
             email: user.email,
-            withdrawalId: withdrawal._id,
+            withdrawalId: withdrawal._id.toString(),
             show: show,
             agreementOrderId: "",
             agreementDate: "",
@@ -160,26 +160,30 @@ const checkBalanceAndSendToEscrow = async (user, coin, collateral, amount, type)
 }
 
 const getOrderBook = async (user) => {
-    let data = await node.callAPI("assets/search", {
-        $query: {
-            "assetName": "LBOrder",
-            "status": "open",
-            "show": true,
-            "agreementOrderId": "",
-            "agreementDate": ""
-        },
-        $sort: {
-            timestamp: 1
+    try {
+        let data = await node.callAPI("assets/search", {
+            $query: {
+                "assetName": "LBOrder",
+                "status": "open",
+                "show": true,
+                "agreementOrderId": "",
+                "agreementDate": ""
+            },
+            $sort: {
+                timestamp: 1
+            }
+        });
+        var result = [];
+        for (var i = 0; i < data.length; i++) {
+            if (data[i].username == user.username) {
+                data[i]["selfOrder"] = true;
+            }
+            result.push(data[i]);
         }
-    });
-    var result = [];
-    for (var i = 0; i < data.length; i++) {
-        if (data[i].username == user.username) {
-            data[i]["selfOrder"] = true;
-        }
-        result.push(data[i]);
+        return result;
+    } catch (ex) {
+        console.log(ex);
     }
-    return result;
 }
 
 const getAgreements = async (user) => {
@@ -192,7 +196,7 @@ const getAgreements = async (user) => {
         $query: {
             "assetName": "Agreements",
             "status": "open",
-            "active": "true",
+            "active": true,
             "lender": user.username,
         },
         $sort: {
@@ -204,7 +208,7 @@ const getAgreements = async (user) => {
         $query: {
             "assetName": "Agreements",
             "status": "open",
-            "active": "true",
+            "active": true,
             "borrower": user.username,
         },
         $sort: {
@@ -217,9 +221,9 @@ const getAgreements = async (user) => {
         data.sort(function (a, b) { return a.agreementDate - b.agreementDate });
 
         for (var i = 0; i < data.length; i++) {
-            data["user"] = data.lender == user.username ? data.borrower : data.lender;
-            data["type"] = data.lender == user.username ? "Lend" : "Borrow";
-            data["nextPayment"] = "Still working on this";
+            data[i]["user"] = data[i].lender == user.username ? data[i].borrower : data[i].lender;
+            data[i]["type"] = data[i].lender == user.username ? "Lend" : "Borrow";
+            data[i]["nextPayment"] = data[i].emi;
         }
 
         return data;
@@ -283,7 +287,7 @@ const apply = async (user, orderId) => {
                     }
                 });
 
-                var withdrawal = await walletCont.sendToEscrow(email, coinAmtRequired, coinToescrow);
+                var withdrawal = await walletCont.sendToEscrow(user.email, coinAmtRequired, coinToescrow);
 
                 if (withdrawal.message) {
                     throw withdrawal.message;
@@ -301,7 +305,7 @@ const apply = async (user, orderId) => {
                         userId: user._id,
                         username: user.username,
                         email: user.email,
-                        withdrawalId: withdrawal._id,
+                        withdrawalId: withdrawal._id.toString(),
                         show: false,
                         agreementOrderId: "",
                         agreementDate: "",

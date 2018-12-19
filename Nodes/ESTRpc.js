@@ -117,6 +117,13 @@ class ESTRpc {
 
     async send(sender, receiver, amount) {
         try {
+
+            var balance = await this.getBalance(sender);
+            if (balance < amount) {
+                console.log("Insufficient balance in the wallet!");
+                return {error: "Insufficient balance in the wallet"};
+            }
+
             var data = await this.tokenContract.methods.transfer(receiver, amount).encodeABI();
             var gasEstimate = await web3.eth.estimateGas({ from: sender, to: this.tokenContractAddress, data: data });
             var gasPrice = await web3.eth.getGasPrice();
@@ -186,7 +193,9 @@ class ESTRpc {
             var gasDetails = dbObject.gasDetails;
 
             if (!dbObject.txnHash) {
+                var nonce = await web3.eth.getTransactionCount(sender, "pending");
                 this.tokenContract.methods.transfer(receiver, amount).send({
+                    nonce: nonce,
                     from: sender, gasPrice: gasDetails.gasPrice,
                     gas: gasDetails.gasEstimate
                 })

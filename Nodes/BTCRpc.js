@@ -104,6 +104,13 @@ class BTCRpc {
 
     async send(sendingWallet, address, amount, dbObject) {
         try {
+
+            var balance = await this.getBalance(sendingWallet);
+            if (balance < amount) {
+                console.log("Insufficient balance in the wallet!");
+                return {error: "Insufficient balance in the wallet"};
+            }
+
             if (dbObject) {
                 var withdrwal = await Withdrwals.findById(dbObject._id);
                 dbObject = withdrwal;
