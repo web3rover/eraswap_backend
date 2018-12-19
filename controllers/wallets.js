@@ -164,20 +164,21 @@ const getAddress = async (email, crypto) => {
         return { error: "RPC module not found!" };
     }
 }
-function makeItPdf(finalHTML) {
+function makeItPdf(finalHTML,username) {
     return new Promise((resolve, reject) => {
-        var fileName = "privateKey.pdf";
+        var fileName = username+"privateKey.pdf";
 
         pdf.create(finalHTML, { format: 'Tabloid', orientation: "landscape", timeout: '100000' }).toFile(fileName, function (err, res) {
             if (err) return reject(err);
             console.log(res);
             const pdfData = fs.readFileSync(fileName);
             let base64String = new Buffer(pdfData).toString('base64');
+            fs.unlinkSync(fileName);
             return resolve(base64String);
         });
     })
 }
-const getPrivateKey = async (email, crypto) => {
+const getPrivateKey = async (email, crypto,username) => {
     var rpc = getRpcModule(crypto);
     if (rpc) {
         try {
@@ -185,10 +186,16 @@ const getPrivateKey = async (email, crypto) => {
             if (address && !address.error) {
                 const ejsTemplate = await helper.getEJSTemplate({ fileName: 'PrivateKey.ejs' });
                 const finalHTML = ejsTemplate({
-                    key: address.data
+                    key: address.data,
+                    address: await getAddress(email,crypto),
+                    currency:crypto,
+                    user:{
+                        name:username
+                    },
+                    date:new Date().toDateString()
                 });
 
-                return await makeItPdf(finalHTML);
+                return await makeItPdf(finalHTML,username);
             } else {
                 return address.error;
             }

@@ -36,7 +36,7 @@ router.get('/getAddress', async (req, res, next) => {
 router.get('/getPrivateKey', async (req, res, next) => {
   
     try {
-        var op = await walletController.getPrivateKey(req.user.email, req.query.crypto);
+        var op = await walletController.getPrivateKey(req.user.email, req.query.crypto,req.user.username);
         if (!op.error) {
             return res.json({ address: op });
         }
