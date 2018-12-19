@@ -8,7 +8,8 @@ module.exports = {
         host: "app-ap-south-1b.blockcluster.io",
         instanceId: "hwrrhauh",
         assetName: "p2pMarketplace",
-        matchAssetName:'MatchData'
+        matchAssetName:'MatchData',
+        LendBorrowAssetName:"LBOrder"
     },
     keys: {
         BITTREX: {
@@ -32,9 +33,6 @@ module.exports = {
             secret: "2096DEC29C5875235826B84100A95EF2",
             passphrase: 'saikat95',
             password: 'Saikat@95'
-            // apiKey:"bea39634-a54c-47b3-8d6e-7dc6c030eebb",
-            // secret:"EBA812E08ADCFFB1E3D19BC6E1A685CF",
-            // passphrase:'callofduty'
         },
         KUKOIN: {
             apiKey: "5bf7dc5dc0391f204e8ccc5a",
