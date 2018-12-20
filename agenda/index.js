@@ -400,7 +400,7 @@ var start = async function () {
         try {
             var agreements = await node.callAPI("assets/search", {
                 $query: {
-                    "assetName": "Agreements",
+                    "assetName": config.BLOCKCLUSTER.agreementsAssetName,
                     "status": "open",
                     "active": true,
                 }
@@ -446,7 +446,7 @@ var start = async function () {
                                 var paymentDate = + nextPaymentDate.setDate(nextPaymentDate.getDate() + Number(30));
 
                                 var res = await node.callAPI('assets/updateAssetInfo', {
-                                    assetName: "Agreements",
+                                    assetName: config.BLOCKCLUSTER.agreementsAssetName,
                                     fromAccount: node.getWeb3().eth.accounts[0],
                                     identifier: agreements[i].uniqueIdentifier,
                                     "public": {
@@ -479,7 +479,7 @@ var start = async function () {
                                 var paymentDate = + today.setDate(today.getDate() + Number(30));
 
                                 var res = await node.callAPI('assets/updateAssetInfo', {
-                                    assetName: "Agreements",
+                                    assetName: config.BLOCKCLUSTER.agreementsAssetName,
                                     fromAccount: node.getWeb3().eth.accounts[0],
                                     identifier: agreements[i].uniqueIdentifier,
                                     "public": {
@@ -568,7 +568,7 @@ async function createAgreement(lendingOrder, borrowingOrder) {
 
                     var identifier = shortid.generate();
                     res = await node.callAPI('assets/issueSoloAsset', {
-                        assetName: "Agreements",
+                        assetName: config.BLOCKCLUSTER.agreementsAssetName,
                         fromAccount: node.getWeb3().eth.accounts[0],
                         toAccount: node.getWeb3().eth.accounts[0],
                         identifier: identifier
@@ -613,7 +613,7 @@ async function createAgreement(lendingOrder, borrowingOrder) {
 
                     //update agreement meta data
                     res = await node.callAPI('assets/updateAssetInfo', {
-                        assetName: "Agreements",
+                        assetName: config.BLOCKCLUSTER.agreementsAssetName,
                         fromAccount: node.getWeb3().eth.accounts[0],
                         identifier: identifier,
                         "public": agreementData
@@ -824,7 +824,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
 
                             var identifier = shortid.generate();
                             var res = await node.callAPI('assets/issueSoloAsset', {
-                                assetName: "Agreements",
+                                assetName: config.BLOCKCLUSTER.agreementsAssetName,
                                 fromAccount: node.getWeb3().eth.accounts[0],
                                 toAccount: node.getWeb3().eth.accounts[0],
                                 identifier: identifier
@@ -867,7 +867,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
 
                             //update agreement meta data
                             res = await node.callAPI('assets/updateAssetInfo', {
-                                assetName: "Agreements",
+                                assetName: config.BLOCKCLUSTER.agreementsAssetName,
                                 fromAccount: node.getWeb3().eth.accounts[0],
                                 identifier: identifier,
                                 "public": agreementData
@@ -959,7 +959,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
         try {
             let agreementData = await node.callAPI("assets/search", {
                 $query: {
-                    "assetName": "Agreements",
+                    "assetName": config.BLOCKCLUSTER.agreementsAssetName,
                     "uniqueIdentifier": withdrawal.agreementInfo.agreementId,
                     "status": "open",
                     "active": true,
@@ -983,7 +983,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
                 }
 
                 var res = await node.callAPI('assets/updateAssetInfo', {
-                    assetName: "Agreements",
+                    assetName: config.BLOCKCLUSTER.agreementsAssetName,
                     fromAccount: node.getWeb3().eth.accounts[0],
                     identifier: agreement.uniqueIdentifier,
                     "public": updates

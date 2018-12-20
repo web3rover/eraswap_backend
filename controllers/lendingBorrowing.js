@@ -189,12 +189,12 @@ const getOrderBook = async (user) => {
 const getAgreements = async (user) => {
     let allAssets = await node.callAPI("assets/search", {
         $query: {
-            "assetName": "Agreements"
+            "assetName": config.BLOCKCLUSTER.agreementsAssetName
         }
     });
     let lenderData = await node.callAPI("assets/search", {
         $query: {
-            "assetName": "Agreements",
+            "assetName": config.BLOCKCLUSTER.agreementsAssetName,
             "status": "open",
             "active": true,
             "lender": user.username,
@@ -206,7 +206,7 @@ const getAgreements = async (user) => {
 
     let borrowerData = await node.callAPI("assets/search", {
         $query: {
-            "assetName": "Agreements",
+            "assetName": config.BLOCKCLUSTER.agreementsAssetName,
             "status": "open",
             "active": true,
             "borrower": user.username,

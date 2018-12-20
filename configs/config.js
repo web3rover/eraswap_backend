@@ -9,7 +9,8 @@ module.exports = {
         instanceId: "hwrrhauh",
         assetName: "p2pMarketplace",
         matchAssetName:'MatchData',
-        LendBorrowAssetName:"LBOrder"
+        LendBorrowAssetName:"LBOrder",
+        agreementsAssetName:'Agreements'
     },
     keys: {
         BITTREX: {
