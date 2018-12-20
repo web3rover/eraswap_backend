@@ -34,31 +34,31 @@ var start = async function () {
 
     console.log("Started agenda");
 
-    agenda.define('fetch coin value',async(job,done)=>{
-        const coins = ['ETH','BTC'];
+    agenda.define('fetch coin value', async (job, done) => {
+        const coins = ['ETH', 'BTC'];
         const currency = ["AED", "USD", "INR", "LBP", "BOB", "CRC", "PHP", "PLN", "JPY", "JOD", "PAB", "GBP", "DZD", "CHF", "ARS", "SAR", "EGP", "CNY", "ZAR", "OMR", "AUD", "SGD", "NOK", "MAD", "ILS", "NIO", "HKD", "TWD", "BGN", "ISK", "UYU", "KRW", "THB", "RSD", "IDR", "CLP", "RUB", "PEN", "DOP", "UAH", "CAD", "MXN", "NZD", "RON", "MKD", "GTQ", "SEK", "MYR", "QAR", "BHD", "HNL", "HRK", "COP", "ALL", "DKK", "BRL", "EUR", "HUF", "IQD"];
 
-        for(let coin of coins){
-            for(let cur of currency){
-        try {
-            var data = await request('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert='+cur+'&CMC_PRO_API_KEY='
-                + config.coinMktCapKey + '&symbol=' + coin);
-            var price = JSON.parse(data).data[coin].quote[cur]['price'];
-            await Coins.update({name:'coinData',in:cur},{$set:{[coin]:price,in:cur}},{upsert:true}).exec();
-            if(coin =='ETH'){
-                   // may be get this val from an api
-            const currentESTPrice =  config.EST_IN_ETH; //ETH value of EST
-            const EST = currentESTPrice*price; //USD value of EST
-            await Coins.update({name:'coinData',in:cur},{$set:{EST:EST,EST_IN_ETH:currentESTPrice,in:cur}},{upsert:true}).exec();
+        for (let coin of coins) {
+            for (let cur of currency) {
+                try {
+                    var data = await request('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=' + cur + '&CMC_PRO_API_KEY='
+                        + config.coinMktCapKey + '&symbol=' + coin);
+                    var price = JSON.parse(data).data[coin].quote[cur]['price'];
+                    await Coins.update({ name: 'coinData', in: cur }, { $set: { [coin]: price, in: cur } }, { upsert: true }).exec();
+                    if (coin == 'ETH') {
+                        // may be get this val from an api
+                        const currentESTPrice = config.EST_IN_ETH; //ETH value of EST
+                        const EST = currentESTPrice * price; //USD value of EST
+                        await Coins.update({ name: 'coinData', in: cur }, { $set: { EST: EST, EST_IN_ETH: currentESTPrice, in: cur } }, { upsert: true }).exec();
+                    }
+                } catch (ex) {
+                    console.log(cur);
+                    done(cur);
+                }
             }
-        } catch (ex) {
-            console.log(cur);
-            done(cur);
         }
-    }
-    }
-  
-    done();
+
+        done();
     });
 
 
@@ -625,6 +625,13 @@ async function createAgreement(lendingOrder, borrowingOrder) {
                     var agreementData = new Date(timestamp);
                     var paymentDate = + agreementData.setDate(agreementData.getDate() + Number(30));
 
+                    let fee = 0;
+                    if (lendingOrder.coin == 'EST') {
+                        fee = (lendingOrder.amount * (config.LB_FEE / 2)) / 100;
+                    } else {
+                        fee = (lendingOrder.amount * (config.LB_FEE)) / 100;
+                    }
+
                     var agreementData = {
                         lendOrderId: lendingOrder.uniqueIdentifier,
                         borrowOrderId: borrowingOrder.uniqueIdentifier,
@@ -634,6 +641,7 @@ async function createAgreement(lendingOrder, borrowingOrder) {
                         borrower: borrowingOrder.username,
                         coin: lendingOrder.coin,
                         amount: lendingOrder.amount,
+                        fee: fee,
                         collateralCoin: lendingOrder.collateral,
                         interest: lendingOrder.interest,
                         months: lendingOrder.duration,
@@ -684,9 +692,11 @@ async function createAgreement(lendingOrder, borrowingOrder) {
                     var escrowCont = require('../controllers/escrow.cont');
                     var walletCont = require('../controllers/wallets');
 
+                    var amountAfterFeeDeduction = (agreementData.amount - fee);
+
                     var publicKey = await walletCont.getAddress(borrowingOrder.email, agreementData.coin);
                     if (!publicKey.error) {
-                        var op = await escrowCont.send(agreementData.coin, publicKey, agreementData.amount);
+                        var op = await escrowCont.send(agreementData.coin, publicKey, amountAfterFeeDeduction);
                         console.log(op);
                     }
                     else {
@@ -879,6 +889,13 @@ async function checkIfOrderAndUpdate(withdrawal) {
                             var interestInCollateral = principlePerMonthInCollateral * lendOrder.interest / 100;
                             var emiInCollateral = principlePerMonthInCollateral + interest;
 
+                            let fee = 0;
+                            if (lendOrder.coin == 'EST') {
+                                fee = (lendOrder.amount * (config.LB_FEE / 2)) / 100;
+                            } else {
+                                fee = (lendOrder.amount * (config.LB_FEE)) / 100;
+                            }
+
                             var agreementData = {
                                 lendOrderId: lendOrder.uniqueIdentifier,
                                 borrowOrderId: borrowOrder.uniqueIdentifier,
@@ -890,6 +907,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
                                 collateralCoin: lendOrder.collateral,
                                 interest: lendOrder.interest,
                                 amount: lendOrder.amount,
+                                fee: fee,
                                 months: lendOrder.duration,
                                 agreementDate: timestamp,
                                 nextPaymentDate: + paymentDate,
@@ -936,8 +954,10 @@ async function checkIfOrderAndUpdate(withdrawal) {
                             var escrowCont = require('../controllers/escrow.cont');
                             var walletCont = require('../controllers/wallets');
 
+                            var amountAfterFeeDeduction = (agreementData.amount - fee);
+
                             var borrowerPublicKey = await walletCont.getAddress(borrowOrder.email, agreementData.coin);
-                            var op = await escrowCont.send(agreementData.coin, borrowerPublicKey, agreementData.amount);
+                            var op = await escrowCont.send(agreementData.coin, borrowerPublicKey, amountAfterFeeDeduction);
 
                             console.log(op);
 
