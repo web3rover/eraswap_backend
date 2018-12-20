@@ -85,7 +85,8 @@ const sendToBuyerOnDispute = async(matchId,listingId,owner,requester,amount,cryp
 
 //when buyer does not pay, or something
 //this will release sellers amount from escrow to his wallet
-const sendToSellerOnDispute = async(matchId,listingId,owner,requester,amount,cryptoCurrency)=>{
+//
+const sendToSellerOnDispute = async(matchId,listingId,owner,requester,amount,fee,cryptoCurrency)=>{
  const listingData = await  node.callAPI("assets/search", {
         $query: {
             assetName: config.BLOCKCLUSTER.assetName,
@@ -105,7 +106,7 @@ const sendToSellerOnDispute = async(matchId,listingId,owner,requester,amount,cry
         //owner is buyer
          ownerAddress = await walletCont.getAddress(requester.email,cryptoCurrency);
     }
-    await escrowCont.send(cryptoCurrency,ownerAddress,amount);
+    await escrowCont.send(cryptoCurrency,ownerAddress,(amount+fee));
     return await node.callAPI('assets/updateAssetInfo', {
         assetName: config.BLOCKCLUSTER.matchAssetName,
         fromAccount: node.getWeb3().eth.accounts[0],

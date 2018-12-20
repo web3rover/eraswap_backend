@@ -4,6 +4,7 @@ const config = require('../configs/config');
 const escrrows = require('./escrow.cont');
 const wallets = require('./wallets');
 const rp = require('request-promise');
+const Coins = require('../models/Coins');
 
 const verifyTxn = (eraswapSendAddress, lctxid, timeFrom, platForm, symbol, amount) => {
   return new Promise((resolve, reject) => {
@@ -155,10 +156,10 @@ const converTdata = async (symbol, id, platForm, fromSymbol, toSymbol, amount, p
   let placableAmt;
   //deduct 0.5% from amount  or 0.25 if its EST
   if (!txnData.feePaid  && platFormFeeCoin == 'EST') {
-    const coinData = await Coins.findOne({name:'coinData',in:'USD'}).select(fromSymbol,'EST').exec(); 
-    const fromCurMarketVal = coinData[fromSymbol];
-    const fromCurVal = amount*JSON.parse(fromCurMarketVal).data[fromSymbol].quote.USD.price;
-    const eqvEstVal = fromCurVal/coinData['EST'];
+     const fromCurMarketVal = await rp('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=USD&CMC_PRO_API_KEY='+config.coinMktCapKey+'&symbol=' + fromSymbol);
+     const fromCurVal = amount*JSON.parse(fromCurMarketVal).data[fromSymbol].quote.USD.price;
+     const EST_VAL = await Coins.findOne({name:'coinData',in:'USD'}).select('EST').exec();
+     const eqvEstVal = fromCurVal/EST_VAL['EST'];
 
     const feeAmt = (eqvEstVal * (config.PLATFORM_FEE / 2)) / 100;
     const depositAdd = await escrrows.getDepositAddress('EST');

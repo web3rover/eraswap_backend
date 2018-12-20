@@ -149,8 +149,18 @@ const recordRequest = async (listingId,listingType,data) => {
   const matchingHandler = async(listingId,sellerEmail,ownerUserId,requester,amount,cryptoCurrency)=>{
       //send the amount to escrow wallet from seller wallet
       const escrowAddress = await escrowCont.getDepositAddress(cryptoCurrency);
-    //  const sendToEscrow = 
-     await walletCont.send(sellerEmail,amount,escrowAddress,cryptoCurrency); //let it transfer or incase error it will exit from here.
+    let placableAmt;
+    let fee;
+      if ( cryptoCurrency == 'EST') {
+        fee = (amount * (config.P2P_FEE / 2)) / 100;
+       placableAmt = amount+feeAmt;
+       //deduct 0.125% from user wallet and send to escrow
+     } else{
+       // 0.25% deduct and place order
+        fee = (amount * config.P2P_FEE) / 100;
+       placableAmt = amount +fee;
+     }
+      await walletCont.send(sellerEmail,placableAmt,escrowAddress,cryptoCurrency); //let it transfer or incase error it will exit from here.
      //do this after sending to escrow;
       const data={
         cryptoCurrency:cryptoCurrency,
@@ -160,7 +170,8 @@ const recordRequest = async (listingId,listingType,data) => {
         amount:amount,
         showIpaid:true,
         iPaidVal:false,
-        finished:false
+        finished:false,
+        fee:fee
       };
     var identifier = shortid.generate();
     await node.callAPI('assets/issueSoloAsset', {

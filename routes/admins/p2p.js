@@ -23,7 +23,7 @@ router.get('/list_count',(req,res,next)=>{
  * matchId,listingId,owner,requester,amount,cryptoCurrency
  */
 router.post('/dispute/send_back_to_seller',(req,res,next)=>{
-    p2pCont.sendToSellerOnDispute(req.body.matchId,req.body.listingId,req.body.owner,req.body.requester,req.body.amount,req.body.cryptoCurrency).then(Data=>{
+    p2pCont.sendToSellerOnDispute(req.body.matchId,req.body.listingId,req.body.owner,req.body.requester,req.body.amount,req.body.fee,req.body.cryptoCurrency).then(Data=>{
         return res.json(data);
     }).catch(error=>{
         return next(error);
