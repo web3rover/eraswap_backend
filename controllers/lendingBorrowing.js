@@ -5,6 +5,7 @@ const config = require('../configs/config');
 const rpcDirectory = require('../Nodes').RPCDirectory;
 const Withdrawals = require('../models/Withdrawal');
 const Users = require('../models/Users');
+const Coins = require('../models/Coins'); 
 
 var Blockcluster = require('blockcluster');
 const shortid = require("shortid");
@@ -115,10 +116,8 @@ const saveRecord = async (user, body, withdrawal) => {
 
 const getCoinRate = async (coin) => {
     try {
-        var data = await request('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=USD&CMC_PRO_API_KEY='
-            + config.coinMktCapKey + '&symbol=' + coin);
-        var price = JSON.parse(data).data[coin].quote.USD.price;
-        return price;
+        const data = await Coins.findOne({name:'coinData',in:'USD'}).select(coin).exec(); 
+        return data[coin];
     } catch (ex) {
         console.log(ex);
         return ex;

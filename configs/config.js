@@ -50,7 +50,7 @@ module.exports = {
         expire: 604800,
     },
     PLATFORM_FEE: 0.5,
-    EST_VAL:1, //in USD,
+    EST_IN_ETH:0.00005804, //in eth
     coinMktCapKey:'1c2d23ed-bdca-4714-b39b-8e33bffe5053',
     NODES: {
         btc: {
