@@ -132,7 +132,7 @@ router.get('/current_BTC', (req, res, next) => {
  return Coins.findOne({name:'coinData',in:cur}).select(cryptoCur).exec()
    .then(data => {
       if (data) {
-          const price =data[req.query.currency];
+          const price =data[req.query.cryptoCur];
           return res.send({ data: price });
       } else {
           return next('Error Occured');

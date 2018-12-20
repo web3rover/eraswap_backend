@@ -110,7 +110,7 @@ router.post('/showInterest', (req, res, next) => {
     .recordRequest(req.body.uniqueIdentifier, req.body.wantsToBuy ? 'Sell' : 'Buy', savableData)
     .then(loggedData => {
       return currencyCont
-        .showInterestMailSender(req.body, message)
+        .showInterestMailSender(req.body, message,req.user.email)
         .then(data => {
           return res.json(data);
         })

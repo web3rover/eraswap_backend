@@ -116,10 +116,10 @@ const updateListing =async(userId,id,active)=>{
       return data;
 }
 
-const showInterestMailSender =async(record,message)=>{
+const showInterestMailSender =async(record,message,userEmail)=>{
    const userData = await Users.findOne({_id:record.userId}).select({"email":1}).exec();
    message["to"] =userData.email
-    return await mailHelper.SendMail(message,req.user.email);
+    return await mailHelper.SendMail(message,userEmail);
 }
 
 //call this when someone requests
@@ -153,7 +153,7 @@ const recordRequest = async (listingId,listingType,data) => {
     let fee;
       if ( cryptoCurrency == 'EST') {
         fee = (amount * (config.P2P_FEE / 2)) / 100;
-       placableAmt = amount+feeAmt;
+       placableAmt = amount+fee;
        //deduct 0.125% from user wallet and send to escrow
      } else{
        // 0.25% deduct and place order
