@@ -60,7 +60,7 @@ router.post('/login/google', (req, res, next) => {
 
 router.post('/forgotPassword', (req, res, next) => {
     console.log(req.query);
-    if (req.query.email) {
+    if (req.body.email) {
         UserAuthCont.forgotPassword(req.body.email)
             .then(data => {
                 if (data.success) {
