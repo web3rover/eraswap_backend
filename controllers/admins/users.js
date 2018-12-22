@@ -20,7 +20,25 @@ const getListUsers = async(params)=>{
     const data = await Users.find({}).lean().limit(limit).skip(skip).exec();
     let a = [];
     for(let i of data){
+        try{
         i.walletsDetails = await getUserWalletAndBalance(i.email);
+        }catch(err){
+            i.walletsDetails = [{
+                currency:'ETH',
+                address:'Not Found or unable to fetch',
+                balance:'Not Found or unable to fetch'
+            },
+            {
+                currency:'EST',
+                address:'Not Found or unable to fetch',
+                balance:'Not Found or unable to fetch'
+            },
+            {
+                currency:'BTC',
+                address:'Not Found or unable to fetch',
+                balance:'Not Found or unable to fetch'
+            }]
+        }
         a.push(i);
     }
     return a;
