@@ -58,10 +58,10 @@ router.post('/login/google', (req, res, next) => {
     });
 });
 
-router.get('/forgotPassword', (req, res, next) => {
+router.post('/forgotPassword', (req, res, next) => {
     console.log(req.query);
     if (req.query.email) {
-        UserAuthCont.forgotPassword(req.query.email)
+        UserAuthCont.forgotPassword(req.body.email)
             .then(data => {
                 if (data.success) {
                     return res.json(data);
