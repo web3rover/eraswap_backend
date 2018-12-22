@@ -25,7 +25,7 @@ const register = body => {
 
 const login = body => {
     return new Promise((resolve, reject) => {
-        Users.findOne({ username: body.username })
+        Users.findOne({ email: body.email })
             .exec()
             .then(user => {
                 if (!user) {
