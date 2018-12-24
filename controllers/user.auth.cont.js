@@ -5,14 +5,14 @@ const Users = require('../models/Users');
 const config = require('../configs/config');
 const helper = require('../helpers/mailHelper');
 
-const register = body => {
+const register = (body, host) => {
     return new Promise(async (resolve, reject) => {
         const savable = new Users(body);
         savable.save(async (error, saved) => {
             if (error) {
                 return reject(error);
             }
-            const URL = `${config.FRONTEND_HOST}/activate?id=${savable._id}`;
+            const URL = `${host}/activate?id=${savable._id}`;
             const ejsTemplate = await helper.getEJSTemplate({ fileName: 'email-verification.ejs' });
             const finalHTML = ejsTemplate({
                 link: URL,
