@@ -123,14 +123,14 @@ const googleLogin = async code => {
     }
 };
 
-const forgotPassword = async email => {
+const forgotPassword = async (email, host) => {
     try {
         var user = await Users.findOne({ email: email });
         if (user) {
             user["passwordResetCode"] = randomString(40);
             user = await user.save();
 
-            const URL = `${config.FRONTEND_HOST}/reset?id=${user.passwordResetCode}`;
+            const URL = `${host}/reset?id=${user.passwordResetCode}`;
             const ejsTemplate = await helper.getEJSTemplate({ fileName: 'PasswordReset.ejs' });
             const finalHTML = ejsTemplate({
                 link: URL,

@@ -50,8 +50,6 @@ router.post('/login/fb', (req, res, next) => {
 
 router.post('/login/google', (req, res, next) => {
     const state = req.body.state;
-    var requestIp = require('request-ip');
-    var clientIp = requestIp.getClientIp(req);
 
     const code = req.body.code;
     UserAuthCont.googleLogin(code).then(data => {
@@ -64,7 +62,7 @@ router.post('/login/google', (req, res, next) => {
 router.post('/forgotPassword', (req, res, next) => {
     console.log(req.query);
     if (req.body.email) {
-        UserAuthCont.forgotPassword(req.body.email)
+        UserAuthCont.forgotPassword(req.body.email, req.body.host)
             .then(data => {
                 if (data.success) {
                     return res.json(data);
