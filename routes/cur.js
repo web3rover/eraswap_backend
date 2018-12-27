@@ -38,7 +38,7 @@ router.get('/checkVal', (req, res, next) => {
     });
   }
   return  Coins.findOne({ name: 'coinData' ,in:'USD'})
-  .select(req.query.currency,'EST')
+  .select({[req.query.currency]:1,'EST':1})
   .exec()
   .then(data => {
       console.log(data);
