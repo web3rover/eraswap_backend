@@ -5,7 +5,7 @@ const UserAuthCont = require('../controllers/user.auth.cont');
 const WalletCont = require('../controllers/wallets');
 
 router.post('/signup', async (req, res, next) => {
-    if (!req.body.email || !req.body.username || !req.body.password) {
+    if (!req.body.email || !req.body.username || !req.body.password || !req.body.host) {
         return next({
             message: 'All fields are required.',
             status: 400
@@ -13,7 +13,7 @@ router.post('/signup', async (req, res, next) => {
     }
     var gasTankCheck = await WalletCont.checkGasTank();
     if (gasTankCheck.result) {
-        UserAuthCont.register(req.body).then(data => {
+        UserAuthCont.register(req.body, req.body.host).then(data => {
             delete data.password;
             return res.json(data);
         }).catch(error => {
@@ -50,6 +50,7 @@ router.post('/login/fb', (req, res, next) => {
 
 router.post('/login/google', (req, res, next) => {
     const state = req.body.state;
+
     const code = req.body.code;
     UserAuthCont.googleLogin(code).then(data => {
         return res.json(data);
@@ -61,7 +62,7 @@ router.post('/login/google', (req, res, next) => {
 router.post('/forgotPassword', (req, res, next) => {
     console.log(req.query);
     if (req.body.email) {
-        UserAuthCont.forgotPassword(req.body.email)
+        UserAuthCont.forgotPassword(req.body.email, req.body.host)
             .then(data => {
                 if (data.success) {
                     return res.json(data);
