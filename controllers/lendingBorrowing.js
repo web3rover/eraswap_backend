@@ -5,7 +5,7 @@ const config = require('../configs/config');
 const rpcDirectory = require('../Nodes').RPCDirectory;
 const Withdrawals = require('../models/Withdrawal');
 const Users = require('../models/Users');
-const Coins = require('../models/Coins'); 
+const Coins = require('../models/Coins');
 
 var Blockcluster = require('blockcluster');
 const shortid = require("shortid");
@@ -46,6 +46,65 @@ const placeOrder = async (user, body) => {
             return op;
         }
     } catch (ex) {
+        return ex;
+    }
+}
+
+const deleteOrder = async (user, orderId) => {
+    try {
+
+        var order = await node.callAPI('assets/search', {
+            assetName: config.BLOCKCLUSTER.LendBorrowAssetName,
+            "uniqueIdentifier": orderId,
+            "email": user.email,
+            "status": "open",
+            "show": true,
+        });
+
+        if (order.length > 0) {
+            var userObj = await Users.findById(user._id).populate('wallet');
+
+            if (userObj) {
+
+                var refund = await refundOrderAmount(userObj, order[0]);
+                if (refund.success) {
+
+                    var res = await node.callAPI('assets/updateAssetInfo', {
+                        assetName: config.BLOCKCLUSTER.LendBorrowAssetName,
+                        fromAccount: node.getWeb3().eth.accounts[0],
+                        identifier: orderId,
+                        email: user.email,
+                        "public": {
+                            show: false,
+                            status: "closed"
+                        }
+                    });
+
+                    //if()
+
+                    //escrow.send(;
+
+                    console.log(res);
+                    return { success: true };
+                }
+            }
+        }
+    }
+    catch (ex) {
+        return ex;
+    }
+}
+
+const refundOrderAmount = async (user, order) => {
+    try {
+        var Withdrawal = await Withdrawals.findById(order.withdrawalId);
+        if (Withdrawal) {
+            var res = await escrow.send(Withdrawal.type, Withdrawal.txn.sender, Withdrawal.txn.amount);
+            return res;
+        }
+        return { message: "Withdrawals transaction not found in database to make a refund." };
+    }
+    catch (ex) {
         return ex;
     }
 }
@@ -116,7 +175,7 @@ const saveRecord = async (user, body, withdrawal) => {
 
 const getCoinRate = async (coin) => {
     try {
-        const data = await Coins.findOne({name:'coinData',in:'USD'}).select(coin).exec(); 
+        const data = await Coins.findOne({ name: 'coinData', in: 'USD' }).select(coin).exec();
         return data[coin];
     } catch (ex) {
         console.log(ex);
@@ -365,4 +424,5 @@ module.exports = {
     getOrderBook,
     apply,
     getAgreements,
+    deleteOrder,
 };
