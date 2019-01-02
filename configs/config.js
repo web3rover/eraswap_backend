@@ -1,8 +1,8 @@
 module.exports = {
     FRONTEND_HOST: 'http://localhost:3000' || process.env.FRONTEND_HOST,
     mongo: {
-        //url: 'mongodb://saikatharryc:saikat95@ds129720.mlab.com:29720/test2',
-        url: 'mongodb://localhost:27017/test2',
+        url: 'mongodb://saikatharryc:saikat95@ds129720.mlab.com:29720/test2',
+        //url: 'mongodb://localhost:27017/test2',
     },
     BLOCKCLUSTER: {
         host: "app-ap-south-1b.blockcluster.io",
