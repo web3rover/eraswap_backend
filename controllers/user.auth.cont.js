@@ -51,10 +51,7 @@ const login = body => {
 
 const createAccountForSocial = async (email, username, type, name) => {
     let userData = await Users.findOne({
-        username: username,
         email: email,
-        is_fb: type == 'fb' ? true : false,
-        is_google: type == 'google' ? true : false,
     })
         .lean()
         .exec();
