@@ -45,7 +45,7 @@ const searchListing = async(params)=>{
           $limit:Number(params.results) || 10,
           $skip: params.results && params.page ?  (Number(params.page)-1)*Number(params.results) :0,
           $sort: {
-            timestamp: 1
+            _id: -1
           }
       });
     }catch(error){
@@ -67,7 +67,7 @@ const getAllListings = async(params)=>{
            $limit:Number(params.results) || 10,
            $skip: params.results && params.page ?  (Number(params.page)-1)*Number(params.results) :0,
            $sort: {
-             timestamp: 1
+             _id: -1
            }
        });
      }catch(error){
@@ -209,7 +209,7 @@ const recordRequest = async (listingId,listingType,data) => {
             
             },
            $sort: {
-             timestamp: 1
+             _id: -1
            }
        });
      }catch(error){
@@ -225,7 +225,7 @@ const recordRequest = async (listingId,listingType,data) => {
             ownerUserId:userId
           },
           $sort: {
-            timestamp: 1
+            _id: -1
           }
       });
 
@@ -238,7 +238,7 @@ const recordRequest = async (listingId,listingType,data) => {
             requester:userId
           },
           $sort: {
-            timestamp: 1
+            _id: -1
           }
       });
   }
