@@ -5,7 +5,6 @@ const walletCont = require('../controllers/wallets');
 const Coins = require('../models/Coins');
 const request = require('request-promise');
 const config = require('../configs/config');
-const Coins = require('../models/Coins');
 
 router.get('/get_all_supported_currency', (req, res, next) => {
   currencyCont
