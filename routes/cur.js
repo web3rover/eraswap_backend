@@ -43,11 +43,11 @@ router.get('/checkVal', (req, res, next) => {
     .exec()
     .then(async data => {
       if (!data[req.query.currency]) {
-        var data = await request(
+        var capdata = await request(
           'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=USD&CMC_PRO_API_KEY=' + config.coinMktCapKey + '&symbol=' + req.query.currency
         );
-        var price = JSON.parse(data).data[coin].quote['USD']['price'];
-        await Coins.update({ name: 'coinData', in: 'USD' }, { $set: { [req.query.currency]: price } }, { upsert: true }).exec();
+        var price = JSON.parse(capdata).data[req.query.currency].quote['USD']['price'];
+        // await Coins.update({ name: 'coinData', in: 'USD' }, { $set: {  [req.query.currency]: price,in:'USD' } }, { upsert: true }).exec();
         data = { ...data, [req.query.currency]: price };
       }
       if (req.query.platform === 'EST') {

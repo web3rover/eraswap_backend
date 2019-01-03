@@ -43,7 +43,7 @@ module.exports = {
     LB_FEE:0.25,
     P2P_FEE:0.25,
     EST_IN_ETH:0.00005804, //in eth
-    coinMktCapKey:'1c2d23ed-bdca-4714-b39b-8e33bffe5053',
+    coinMktCapKey:'298dba8f-b0b4-4a72-8c85-a39c525781dc',
     NODES: {
         btc: {
             host: '13.233.168.86',
