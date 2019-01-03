@@ -5,6 +5,7 @@ const walletCont = require('../controllers/wallets');
 const Coins = require('../models/Coins');
 const request = require('request-promise');
 const config = require('../configs/config');
+const Coins = require('../models/Coins');
 
 router.get('/get_all_supported_currency', (req, res, next) => {
   currencyCont
@@ -37,11 +38,19 @@ router.get('/checkVal', (req, res, next) => {
       status: 400,
     });
   }
-  return  Coins.findOne({ name: 'coinData' ,in:'USD'})
-  .select({[req.query.currency]:1,'EST':1})
-  .exec()
-  .then(data => {
-      console.log(data);
+  return Coins.findOne({ name: 'coinData', in: 'USD' })
+    .select({ [req.query.currency]: 1, EST: 1 })
+    .lean()
+    .exec()
+    .then(async data => {
+      if (!data[req.query.currency]) {
+        var data = await request(
+          'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=USD&CMC_PRO_API_KEY=' + config.coinMktCapKey + '&symbol=' + req.query.currency
+        );
+        var price = JSON.parse(data).data[coin].quote['USD']['price'];
+        await Coins.update({ name: 'coinData', in: 'USD' }, { $set: { [req.query.currency]: price } }, { upsert: true }).exec();
+        data = { ...data, [req.query.currency]: price };
+      }
       if (req.query.platform === 'EST') {
         walletCont
           .getBalance(req.user.email, 'EST')
@@ -127,15 +136,17 @@ router.get('/getPrice', (req, res, next) => {
     });
 });
 router.get('/current_BTC', (req, res, next) => {
-  let cryptoCur= req.query.cryptoCur; 
+  let cryptoCur = req.query.cryptoCur;
   let cur = req.query.currency;
- return Coins.findOne({name:'coinData',in:cur}).select(cryptoCur).exec()
-   .then(data => {
+  return Coins.findOne({ name: 'coinData', in: cur })
+    .select(cryptoCur)
+    .exec()
+    .then(data => {
       if (data) {
-          const price =data[req.query.cryptoCur];
-          return res.send({ data: price });
+        const price = data[req.query.cryptoCur];
+        return res.send({ data: price });
       } else {
-          return next('Error Occured');
+        return next('Error Occured');
       }
     })
     .catch(error => {
