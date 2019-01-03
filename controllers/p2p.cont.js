@@ -23,11 +23,12 @@ const addListing =async(data)=>{
       });
 
       //update agreement meta data
+
       await node.callAPI('assets/updateAssetInfo', {
         assetName: config.BLOCKCLUSTER.assetName,
         fromAccount: node.getWeb3().eth.accounts[0],
         identifier: identifier,
-        "public": data
+        "public": {...data,createdAt:Date.now()}
       });
 };
 
