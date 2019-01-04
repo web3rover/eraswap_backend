@@ -8,6 +8,7 @@ var crypto = require('../helpers/cryptos');
 var Users = require('../models/Users');
 var Wallets = require('../models/Wallets');
 var Coins = require('../models/Coins');
+var Currency = require('../models/Currency');
 var ethRpc = null;
 
 var Blockcluster = require('blockcluster');
@@ -30,19 +31,22 @@ var start = async function () {
 
     await agenda.start();
 
-    await agenda.every('*/15 * * * *', 'fetch coin value');
+    await agenda.every('*/16 * * * *', 'fetch coin value');
 
     console.log("Started agenda");
 
     agenda.define('fetch coin value', async (job, done) => {
-        const coins = ['ETH', 'BTC'];
-        const currency = ["AED", "USD", "INR", "LBP", "BOB", "CRC", "PHP", "PLN", "JPY", "JOD", "PAB", "GBP", "DZD", "CHF", "ARS", "SAR", "EGP", "CNY", "ZAR", "OMR", "AUD", "SGD", "NOK", "MAD", "ILS", "NIO", "HKD", "TWD", "BGN", "ISK", "UYU", "KRW", "THB", "RSD", "IDR", "CLP", "RUB", "PEN", "DOP", "UAH", "CAD", "MXN", "NZD", "RON", "MKD", "GTQ", "SEK", "MYR", "QAR", "BHD", "HNL", "HRK", "COP", "ALL", "DKK", "BRL", "EUR", "HUF", "IQD"];
+        let coins=['ETH','BTC'];
+      
+       console.log(coins);
+        const currency = ["AED", "USD", "INR", "LBP", "BOB", "CRC", "PHP", "PLN", "JPY", "JOD", "PAB", "GBP", "DZD", "CHF", "ARS", "SAR", "EGP", "CNY", "ZAR", "OMR", "AUD", "SGD", "NOK", "MAD", "ILS", "NIO", "HKD", "TWD", "BGN", "ISK", "UYU", "KRW"];
 
-        for (let coin of coins) {
-            for (let cur of currency) {
+       
                 try {
-                    var data = await request('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=' + cur + '&CMC_PRO_API_KEY='
-                        + config.coinMktCapKey + '&symbol=' + coin);
+                    var data = await request('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=' + currency.join() + '&CMC_PRO_API_KEY='
+                        + config.coinMktCapKey + '&symbol=' + coins.join());
+                        for (let coin of coins) {
+                            for (let cur of currency) {
                     var price = JSON.parse(data).data[coin].quote[cur]['price'];
                     await Coins.update({ name: 'coinData', in: cur }, { $set: { [coin]: price, in: cur } }, { upsert: true }).exec();
                     if (coin == 'ETH') {
@@ -51,12 +55,13 @@ var start = async function () {
                         const EST = currentESTPrice * price; //USD value of EST
                         await Coins.update({ name: 'coinData', in: cur }, { $set: { EST: EST, EST_IN_ETH: currentESTPrice, in: cur } }, { upsert: true }).exec();
                     }
+                }
+            }
                 } catch (ex) {
                     console.log(cur);
                     done(cur);
                 }
-            }
-        }
+       
 
         done();
     });
