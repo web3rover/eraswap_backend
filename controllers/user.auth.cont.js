@@ -23,6 +23,25 @@ const register = (body, host) => {
     });
 };
 
+const resendVerification = async (email, host) => {
+    var user = await Users.findOne({ email: email });
+    if (user) {
+        if (!user.active) {
+            user["active"] = false;
+            await user.save();
+        }
+        const URL = `${host}/activate?id=${user._id}`;
+        const ejsTemplate = await helper.getEJSTemplate({ fileName: 'email-verification.ejs' });
+        const finalHTML = ejsTemplate({
+            link: URL,
+        });
+        await helper.SendMail({ to: user.email, subject: '[Eraswap] Activation Email', body: finalHTML });
+    }
+    else {
+        return { message: "User not found!" }
+    }
+}
+
 const login = body => {
     return new Promise((resolve, reject) => {
         Users.findOne({ email: body.email })
@@ -135,7 +154,7 @@ const forgotPassword = async (email, host) => {
             await helper.SendMail({ to: email, subject: '[Eraswap] Reset Your Password', body: finalHTML });
             return ({ success: true });
         } else {
-            return({ message: "User with email address does not exist" });
+            return ({ message: "User with email address does not exist" });
         }
     } catch (ex) {
         return (ex);
@@ -183,4 +202,5 @@ module.exports = {
     googleLogin,
     forgotPassword,
     resetPassword,
+    resendVerification,
 };

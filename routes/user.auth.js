@@ -24,6 +24,7 @@ router.post('/signup', async (req, res, next) => {
         return next(gasTankCheck);
     }
 });
+
 router.post('/login', (req, res, next) => {
     if (!req.body.email || !req.body.password) {
         return next({
@@ -32,6 +33,21 @@ router.post('/login', (req, res, next) => {
         });
     }
     UserAuthCont.login(req.body).then(data => {
+        return res.json(data);
+    }).catch(error => {
+        return next(error);
+    })
+});
+
+router.post('/resendVerification', (req, res, next) => {
+    if (!req.body.email || !req.body.host) {
+        return next({
+            message: 'All fields are required.',
+            status: 400
+        });
+    }
+    console.log(req.body);
+    UserAuthCont.resendVerification(req.body.email, req.body.host).then(data => {
         return res.json(data);
     }).catch(error => {
         return next(error);
