@@ -31,7 +31,7 @@ var start = async function () {
 
     await agenda.start();
 
-    await agenda.every('*/16 * * * *', 'fetch coin value');
+    await agenda.every('*/11 * * * *', 'fetch coin value');
 
     console.log("Started agenda");
 
