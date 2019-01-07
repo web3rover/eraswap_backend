@@ -4,6 +4,7 @@ const request = require('request');
 const Users = require('../models/Users');
 const Wallets = require('../models/Wallets');
 const Withdrwals = require('../models/Withdrawal');
+const BigNumber = require('bignumber.js');
 const keythereum = require('keythereum');
 
 class EthRpc {
@@ -87,9 +88,19 @@ class EthRpc {
         try {
 
             var balance = await this.getBalance(sender);
-            if (balance < amount) {
+            var gasEstimate = await web3.eth.estimateGas({ from: sender, to: receiver });
+            var gasPrice = await web3.eth.getGasPrice();
+            if (gasPrice.error) { throw { message: "Could not find gas price. Please try again!" }; }
+            var price = new BigNumber(gasPrice);
+            if (price.mul)
+                price = price.mul(gasEstimate);
+            else
+                price = price * gasEstimate;
+            var gas = web3.utils.fromWei(price.toString(), 'ether');
+
+            if (balance < (amount + gas)) {
                 console.log("Insufficient balance in the wallet!");
-                return {error: "Insufficient balance in the wallet"};
+                return { error: "Insufficient balance in the wallet" };
             }
 
             var pwd = await this._getPassword(sender);
@@ -107,12 +118,16 @@ class EthRpc {
             var dbObject = await withdrwal.save();
             await web3.eth.personal.unlockAccount(sender, pwd, null);
             var nonce = await web3.eth.getTransactionCount(sender, "pending");
+            let roundOffAmt = Math.round(amount * 10 ** 18) / 10 ** 18;
+            let amtInWei = web3.utils.toWei(roundOffAmt.toString(), 'ether');
             web3.eth
                 .sendTransaction({
                     nonce: nonce,
                     from: sender,
                     to: receiver,
-                    value: web3.utils.toWei(amount.toString(), 'ether'),
+                    value: amtInWei,
+                    gas: gasEstimate,
+                    gasPrice: gasPrice,
                 })
                 .on('transactionHash', async function (hash) {
                     dbObject['txnHash'] = hash;

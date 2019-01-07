@@ -36,17 +36,17 @@ var start = async function () {
     console.log("Started agenda");
 
     agenda.define('fetch coin value', async (job, done) => {
-        let coins=['ETH','BTC'];
-      
-       console.log(coins);
+        let coins = ['ETH', 'BTC'];
+
+        console.log(coins);
         const currency = ["AED", "USD", "INR", "LBP", "BOB", "CRC", "PHP", "PLN", "JPY", "JOD", "PAB", "GBP", "DZD", "CHF", "ARS", "SAR", "EGP", "CNY", "ZAR", "OMR", "AUD", "SGD", "NOK", "MAD", "ILS", "NIO", "HKD", "TWD", "BGN", "ISK", "UYU", "KRW"];
 
-       
-                try {
-                    var data = await request('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=' + currency.join() + '&CMC_PRO_API_KEY='
-                        + config.coinMktCapKey + '&symbol=' + coins.join());
-                        for (let coin of coins) {
-                            for (let cur of currency) {
+
+        try {
+            var data = await request('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=' + currency.join() + '&CMC_PRO_API_KEY='
+                + config.coinMktCapKey + '&symbol=' + coins.join());
+            for (let coin of coins) {
+                for (let cur of currency) {
                     var price = JSON.parse(data).data[coin].quote[cur]['price'];
                     await Coins.update({ name: 'coinData', in: cur }, { $set: { [coin]: price, in: cur } }, { upsert: true }).exec();
                     if (coin == 'ETH') {
@@ -57,11 +57,11 @@ var start = async function () {
                     }
                 }
             }
-                } catch (ex) {
-                    console.log(cur);
-                    done(cur);
-                }
-       
+        } catch (ex) {
+            console.log(cur);
+            done(cur);
+        }
+
 
         done();
     });
@@ -505,7 +505,20 @@ var start = async function () {
                             if (receiverCollateralKey.message) {
                                 throw receiverCollateralKey;
                             }
-                            var emiDeductionInCollateral = await escrowCont.send(agreements[i].collateralCoin, receiverCollateralKey, agreements[i].emiInCollateral);
+
+                            var data = await Coins.findOne({ name: 'coinData', in: 'USD' }).select(agreements[i].collateralCoin).exec();
+                            var collateralRate = data[agreements[i].collateralCoin];
+
+                            data = await Coins.findOne({ name: 'coinData', in: 'USD' }).select(agreements[i].coin).exec();
+                            var coinRate = data[agreements[i].coin];
+
+                            var monthsRemaining = agreements[i].months - agreements[i].emiPaidCount;
+                            var amountInUSD = agreements[i].emi * monthsRemaining * coinRate;
+                            var collateralToDeduct = amountInUSD / collateralRate;
+                            var totalCollateral = (agreements[i].emiInCollateral * agreements[i].months * 100) / agreements[i].interest;
+                            var finalDeductionAmount = collateralToDeduct > totalCollateral ? totalCollateral : collateralToDeduct;
+
+                            var emiDeductionInCollateral = await escrowCont.send(agreements[i].collateralCoin, receiverCollateralKey, finalDeductionAmount);
                             if (emiDeductionInCollateral.success) {
                                 var dbObject = await Withdrawals.findById(emiDeductionInCollateral.dbObject._id);
                                 dbObject["agreementInfo"] = {
@@ -515,19 +528,37 @@ var start = async function () {
                                 };
                                 dbObject = await dbObject.save();
 
-                                var today = new Date();
-                                var paymentDate = + today.setDate(today.getDate() + Number(30));
-
+                                //Close agreement
                                 var res = await node.callAPI('assets/updateAssetInfo', {
                                     assetName: config.BLOCKCLUSTER.agreementsAssetName,
                                     fromAccount: node.getWeb3().eth.accounts[0],
                                     identifier: agreements[i].uniqueIdentifier,
                                     "public": {
-                                        nextPaymentDate: paymentDate,
+                                        nextPaymentDate: "",
+                                        active: false,
+                                        agreementEndDate: + new Date(),
                                     }
                                 });
 
                                 console.log(res);
+
+                                //Send Remaining collateral to borrower
+                                if (finalDeductionAmount != totalCollateral) {
+                                    var borrowerCollateralAddr = await walletCont.getAddress(agreements[i].borrowerEmail, agreements[i].collateralCoin);
+                                    if (borrowerCollateralAddr.message) {
+                                        throw borrowerCollateralAddr;
+                                    }
+                                    var returnCollateral = await escrowCont.send(agreements[i].collateralCoin, borrowerCollateralAddr, (totalCollateral - finalDeductionAmount));
+                                    if (returnCollateral.success) {
+                                        var dbObject1 = await Withdrawals.findById(returnCollateral.dbObject._id);
+                                        dbObject1["agreementInfo"] = {
+                                            agreementId: agreements[i].uniqueIdentifier,
+                                            type: "Collateral Return",
+                                            mode: "collateral"
+                                        };
+                                        dbObject1 = await dbObject1.save();
+                                    }
+                                }
                             }
                             else {
                                 console.log(emiDeductionInCollateral);
@@ -1017,6 +1048,8 @@ async function checkIfOrderAndUpdate(withdrawal) {
     }
     else if (withdrawal && withdrawal.agreementInfo) {
         try {
+            if (withdrawal.agreementInfo.type == "Collateral Return")
+                return;
             let agreementData = await node.callAPI("assets/search", {
                 $query: {
                     "assetName": config.BLOCKCLUSTER.agreementsAssetName,
@@ -1036,23 +1069,53 @@ async function checkIfOrderAndUpdate(withdrawal) {
                     updates["emiPaidInCollateral"] = agreement.emiPaidInCollateral + 1;
                 }
 
+                //All Emis paid
                 if (agreement.months == (agreement.emiPaidCount + agreement.emiPaidInCollateral + 1)) {
                     updates["nextPaymentDate"] = "";
                     updates["active"] = false;
                     updates["agreementEndDate"] = + new Date();
-                }
+                    
+                    let res = await node.callAPI('assets/updateAssetInfo', {
+                        assetName: config.BLOCKCLUSTER.agreementsAssetName,
+                        fromAccount: node.getWeb3().eth.accounts[0],
+                        identifier: agreement.uniqueIdentifier,
+                        "public": updates
+                    });
 
-                var res = await node.callAPI('assets/updateAssetInfo', {
-                    assetName: config.BLOCKCLUSTER.agreementsAssetName,
-                    fromAccount: node.getWeb3().eth.accounts[0],
-                    identifier: agreement.uniqueIdentifier,
-                    "public": updates
-                });
+                    console.log(res);
+
+                    var escrowCont = require('../controllers/escrow.cont');
+                    var walletCont = require('../controllers/wallets');
+
+                    var totalCollateral = (agreement.emiInCollateral * agreement.months * 100) / agreement.interest;
+                    var borrowerCollateralAddr = await walletCont.getAddress(agreement.borrowerEmail, agreement.collateralCoin);
+                    if (borrowerCollateralAddr.message) {
+                        throw borrowerCollateralAddr;
+                    }
+                    var returnCollateral = await escrowCont.send(agreement.collateralCoin, borrowerCollateralAddr, totalCollateral);
+                    if (returnCollateral.success) {
+                        var dbObject1 = await Withdrawals.findById(returnCollateral.dbObject._id);
+                        dbObject1["agreementInfo"] = {
+                            agreementId: agreement.uniqueIdentifier,
+                            type: "Collateral Return",
+                            mode: "collateral"
+                        };
+                        dbObject1 = await dbObject1.save();
+                    }
+                }
+                else {
+                    let res = await node.callAPI('assets/updateAssetInfo', {
+                        assetName: config.BLOCKCLUSTER.agreementsAssetName,
+                        fromAccount: node.getWeb3().eth.accounts[0],
+                        identifier: agreement.uniqueIdentifier,
+                        "public": updates
+                    });
+                }
 
                 console.log(res);
             }
             else {
-                throw { message: "Agreement" + withdrawal.agreementInfo.agreementId + "not found!" };
+                throw { message: "Agreement " + withdrawal.agreementInfo.agreementId + " not found!" };
             }
         } catch (ex) {
             console.log(ex);
