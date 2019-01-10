@@ -78,6 +78,7 @@ class ESTRpc {
     async getBalance(address) {
         try {
             var bal = await this.tokenContract.methods.balanceOf(address).call();
+            bal = web3.utils.fromWei(bal.toString(), 'ether');
             return bal;
         } catch (ex) {
             //Returned error: no suitable peers available
@@ -121,10 +122,10 @@ class ESTRpc {
             var balance = await this.getBalance(sender);
             if (balance < amount) {
                 console.log("Insufficient balance in the wallet!");
-                return {error: "Insufficient balance in the wallet"};
+                return { error: "Insufficient balance in the wallet" };
             }
 
-            var data = await this.tokenContract.methods.transfer(receiver, amount).encodeABI();
+            var data = await this.tokenContract.methods.transfer(receiver, web3.utils.toWei(amount.toString())).encodeABI();
             var gasEstimate = await web3.eth.estimateGas({ from: sender, to: this.tokenContractAddress, data: data });
             var gasPrice = await web3.eth.getGasPrice();
             if (gasPrice.error) { throw { message: "Could not find gas price. Please try again!" }; }
