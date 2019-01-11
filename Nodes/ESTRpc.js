@@ -125,7 +125,7 @@ class ESTRpc {
                 return { error: "Insufficient balance in the wallet" };
             }
 
-            var data = await this.tokenContract.methods.transfer(receiver, web3.utils.toWei(amount.toString())).encodeABI();
+            var data = await this.tokenContract.methods.transfer(receiver, web3.utils.toWei(amount.toString(), 'ether')).encodeABI();
             var gasEstimate = await web3.eth.estimateGas({ from: sender, to: this.tokenContractAddress, data: data });
             var gasPrice = await web3.eth.getGasPrice();
             if (gasPrice.error) { throw { message: "Could not find gas price. Please try again!" }; }
@@ -195,7 +195,7 @@ class ESTRpc {
 
             if (!dbObject.txnHash) {
                 var nonce = await web3.eth.getTransactionCount(sender, "pending");
-                this.tokenContract.methods.transfer(receiver, amount).send({
+                this.tokenContract.methods.transfer(receiver, web3.utils.toWei(amount.toString(), 'ether')).send({
                     nonce: nonce,
                     from: sender, gasPrice: gasDetails.gasPrice,
                     gas: gasDetails.gasEstimate
