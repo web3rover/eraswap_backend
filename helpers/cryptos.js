@@ -50,7 +50,7 @@ let kuCoinGetWithdrawals = coin => {
 const getAllCurrency = async () => {
   let allCurs = [];
   for (ele of Exchanges) {
-    await ele.loadMarkets();
+    // await ele.loadMarkets();
     allCurs.push(Object.keys(ele.currencies));
   }
   const allArr = [].concat.apply([], allCurs);
@@ -83,7 +83,7 @@ const getDepositAddress = async (platform, symbol) => {
     //   return data[0];
     // } else 
     if (name.name.toLowerCase() == platform.toLowerCase()) {
-      await name.loadMarkets();
+      // await name.loadMarkets();
       let data;
       try {
         data = await name.fetchDepositAddress(symbol);
@@ -101,7 +101,7 @@ const getCurrentMarket = async (platform, symbol) => {
   for (let x in Exchanges) {
     let name = Exchanges[x];
     if (name.name.toLowerCase() == platform.toLowerCase()) {
-      await name.loadMarkets();
+      // await name.loadMarkets();
       let data;
       try {
         sym = symbol;
@@ -361,7 +361,7 @@ const sendCurrency = async (platForm, address, amount, symbol,tag) => {
     let name = Exchanges[x];
 
     if (name.name.toLowerCase() == platForm.toLowerCase()) {
-      await name.loadMarkets();
+      // await name.loadMarkets();
       try {
         // const data={
         //     info:"",
