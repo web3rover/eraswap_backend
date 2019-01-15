@@ -154,27 +154,29 @@ const getMytxn = user => {
 const converTdata = async (symbol, id, platForm, fromSymbol, toSymbol, amount, platFormFeeCoin, userEmail) => {
   const txnData = await Txn.findOne({_id:id}).exec();
   let placableAmt;
+  let fee;
   //deduct 0.5% from amount  or 0.25 if its EST
   if (!txnData.feePaid  && platFormFeeCoin == 'EST') {
      const fromCurMarketVal = await rp('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=USD&CMC_PRO_API_KEY='+config.coinMktCapKey+'&symbol=' + fromSymbol);
      const fromCurVal = amount*JSON.parse(fromCurMarketVal).data[fromSymbol].quote.USD.price;
      const EST_VAL = await Coins.findOne({name:'coinData',in:'USD'}).select('EST').exec();
      const eqvEstVal = fromCurVal/EST_VAL['EST'];
-
-    const feeAmt = (eqvEstVal * (config.PLATFORM_FEE / 2)) / 100;
+  
+     fee = (eqvEstVal * (config.PLATFORM_FEE / 2)) / 100;
     const depositAdd = await escrrows.getDepositAddress('EST');
-    const sendStatus = await wallets.send(userEmail, feeAmt, depositAdd, 'EST');
+    const sendStatus = await wallets.send(userEmail, fee, depositAdd, 'EST');
     console.log(sendStatus); //maybe log this or something
     placableAmt = amount;
     //deduct 25% from user wallet and send to escrow
   } else if(!txnData.feePaid){
     // 50% deduct and place order
-    placableAmt = amount - (amount * config.PLATFORM_FEE) / 100;
+    fee= (amount * config.PLATFORM_FEE) / 100;
+    placableAmt = amount - fee;
   }
   const data = await cryptoHelper.convertCurrency(symbol, platForm, fromSymbol, toSymbol, placableAmt);
   await Txn.findOneAndUpdate(
     { _id: id },
-    { $set: { feePaid:true,convertedYet: 'started', convertionTime: data.timestamp, orderId: data.id, side: data.side, orderplacingAmt: data.orderplacingAmt } }
+    { $set: { feePaid:true,convertedYet: 'started',platform_fee:fee, convertionTime: data.timestamp, orderId: data.id, side: data.side, orderplacingAmt: data.orderplacingAmt } }
   ).exec();
 
   return data;

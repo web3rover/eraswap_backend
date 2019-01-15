@@ -19,6 +19,9 @@ const TxnSchema = new mongoose.Schema({
     feePaid:{
         type:Boolean
     },
+    platform_fee:{
+        type:Number
+    },
     cancelledConvertion: {
         type: Boolean,
         default: false
