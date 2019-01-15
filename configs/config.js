@@ -14,7 +14,7 @@ module.exports = {
     },
     keys: {
         BITTREX: {
-            apiKey: 'a75b68ba617d4e4a99c7dx6812f898325',
+            apiKey: 'a75b68ba617d4e4a99c7d6812f898325',
             secret: 'c15f14f6a9874f498c725af39f224d59',
         },
         POLONIEX: {
