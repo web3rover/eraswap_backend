@@ -147,21 +147,24 @@ const recordRequest = async (listingId,listingType,data) => {
   };
 
   //call this on match from the request received list
-  const matchingHandler = async(listingId,sellerEmail,ownerUserId,requester,amount,cryptoCurrency)=>{
+  const matchingHandler = async(listingId,sellerEmail,ownerUserId,requester,amount,cryptoCurrency,feeCoin)=>{
       //send the amount to escrow wallet from seller wallet
       const escrowAddress = await escrowCont.getDepositAddress(cryptoCurrency);
-    let placableAmt;
-    let fee;
-      if ( cryptoCurrency == 'EST') {
+      const feeAddress = await escrowCont.getDepositAddress(feeCoin);
+
+      let fee;
+      if ( feeCoin == 'EST') {
         fee = (amount * (config.P2P_FEE / 2)) / 100;
-       placableAmt = amount+fee;
        //deduct 0.125% from user wallet and send to escrow
+       await walletCont.send(sellerEmail,fee,feeAddress,'EST'); //let it transfer or incase error it will exit from here.
      } else{
        // 0.25% deduct and place order
         fee = (amount * config.P2P_FEE) / 100;
-       placableAmt = amount +fee;
+        await walletCont.send(sellerEmail,fee,feeAddress,feeCoin);
      }
-      await walletCont.send(sellerEmail,placableAmt,escrowAddress,cryptoCurrency); //let it transfer or incase error it will exit from here.
+     
+     await walletCont.send(sellerEmail,amount,escrowAddress,cryptoCurrency); //let it transfer or incase error it will exit from here.
+   
      //do this after sending to escrow;
       const data={
         cryptoCurrency:cryptoCurrency,

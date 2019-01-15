@@ -17,6 +17,7 @@ var RequestSchema = new mongoose.Schema(
             sellerEmail:String,
             amount:Number,
             message:String,
+            sellerFeeCoin:String
         }
     ],
   }

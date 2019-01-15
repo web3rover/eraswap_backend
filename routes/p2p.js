@@ -104,6 +104,7 @@ router.post('/showInterest', (req, res, next) => {
     amount: req.body.askAmount,
     message: req.body.specialMessage,
     sellerEmail: req.body.wantsToBuy ? req.body.email : req.user.email,
+    sellerFeeCoin:req.body.feeCoin
   };
 
   currencyCont
@@ -144,7 +145,7 @@ router.post('/makeMatch', (req, res, next) => {
    * cryptoCurrency
    */
   currencyCont
-    .matchingHandler(req.body.listingId, req.body.sellerEmail, req.user._id, req.body.requester, req.body.amount, req.body.cryptoCurrency)
+    .matchingHandler(req.body.listingId, req.body.sellerEmail, req.user._id, req.body.requester, req.body.amount, req.body.cryptoCurrency, req.body.feeCoin)
     .then(data => {
       return res.json(data);
     })
