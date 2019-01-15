@@ -175,7 +175,8 @@ const recordRequest = async (listingId,listingType,data) => {
         showIpaid:true,
         iPaidVal:false,
         finished:false,
-        fee:fee
+        fee:fee,
+        feeCoin:feeCoin
       };
     var identifier = shortid.generate();
     await node.callAPI('assets/issueSoloAsset', {
