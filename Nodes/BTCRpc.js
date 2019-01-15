@@ -91,7 +91,7 @@ class BTCRpc {
         try {
             await this._loadWallet(email);
         } catch (ex) {
-            console.log(ex);
+            //console.log(ex);
         }
         return new Promise((resolve, reject) => {
             this._btcRpcCall("getbalance", ["*", 6], "/wallet/" + email).then(result => {
