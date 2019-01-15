@@ -122,7 +122,7 @@ const getExchangeVal = async (from, to) => {
   let symbol;
   for (let x in Exchanges) {
     let name = Exchanges[x];
-    await name.loadMarkets();
+    // await name.loadMarkets();
     let data;
     try {
       symbol = from + '/' + to;
