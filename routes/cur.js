@@ -86,23 +86,25 @@ router.get('/checkVal', (req, res, next) => {
           .catch(error => {
             return next(error);
           });
-      } else if (req.query.platform == "source") {
-        walletCont
-          .getBalance(req.user.email, req.query.currency)
-          .then(balanceData => {
-            const deductableAmount = (Number(req.query.amount) * config.PLATFORM_FEE) / 100;
+      } 
+      // else if (req.query.platform == "source") {
+      //   walletCont
+      //     .getBalance(req.user.email, req.query.currency)
+      //     .then(balanceData => {
+      //       const deductableAmount = (Number(req.query.amount) * config.PLATFORM_FEE) / 100;
 
-            if (balanceData && Number(balanceData.balance) >= deductableAmount) {
-              console.log('Its having enough amount to pay');
-              return res.json(data);
-            } else {
-              return next({ status: 400, message: 'User Does not have enough amount to payoff fee. required fee is ' + deductableAmount + 'EST' });
-            }
-          })
-          .catch(error => {
-            return next(error);
-          });
-      } else {
+      //       if (balanceData && Number(balanceData.balance) >= deductableAmount) {
+      //         console.log('Its having enough amount to pay');
+      //         return res.json(data);
+      //       } else {
+      //         return next({ status: 400, message: 'User Does not have enough amount to payoff fee. required fee is ' + deductableAmount + 'EST' });
+      //       }
+      //     })
+      //     .catch(error => {
+      //       return next(error);
+      //     });
+      // } 
+      else {
         return res.json(data);
       }
     })
