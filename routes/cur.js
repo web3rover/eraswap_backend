@@ -37,15 +37,15 @@ router.get('/checkFee',async(req,res,next)=>{
       message:'Invalid request.'
     })
   }
-  const fromCurMarketVal = await rp('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=USD&CMC_PRO_API_KEY='+config.coinMktCapKey+'&symbol=' + req.query.fromSymbol);
-     const fromCurVal = req.query.amount*JSON.parse(fromCurMarketVal).data[fromSymbol].quote.USD.price;
+  const fromCurMarketVal = await request('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=USD&CMC_PRO_API_KEY='+config.coinMktCapKey+'&symbol=' + req.query.fromSymbol);
+     const fromCurVal = req.query.amount*JSON.parse(fromCurMarketVal).data[req.query.fromSymbol].quote.USD.price;
      const EST_VAL = await Coins.findOne({name:'coinData',in:'USD'}).select('EST').exec();
      const eqvEstVal = fromCurVal/EST_VAL['EST'];
     const ESTfeeAmt = (eqvEstVal * (config.PLATFORM_FEE / 2)) / 100;
     const SourcefeeAmt = (req.query.amount * config.PLATFORM_FEE)/100
     return res.json({
-      EST:ESTfeeAmt,
-      [req.query.fromSymbol]:SourcefeeAmt
+      EST:ESTfeeAmt.toFixed(3),
+      [req.query.fromSymbol]:SourcefeeAmt.toFixed(3)
     });
 });
 router.get('/checkVal', (req, res, next) => {
@@ -86,9 +86,9 @@ router.get('/checkVal', (req, res, next) => {
           .catch(error => {
             return next(error);
           });
-      } else if (req.query.fromWallet) {
+      } else if (req.query.platform == "source") {
         walletCont
-          .getBalance(req.user.email, req.query.platform)
+          .getBalance(req.user.email, req.query.currency)
           .then(balanceData => {
             const deductableAmount = (Number(req.query.amount) * config.PLATFORM_FEE) / 100;
 
