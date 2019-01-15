@@ -3,17 +3,19 @@ const cryptoHelper = require('../helpers/cryptos');
 
 
 const get_supported_currency = async value => {
-  const currency = await Currency.find({
-    $or: [
-      {
-        name: { $regex: value, $options: 'i' },
-      },
-      {
-        value: { $regex: value, $options: 'i' },
-      },
-    ],
-  })
-    .limit(8)
+  // const query={
+  //   $or: [
+  //     {
+  //       name: { $regex: value, $options: 'i' },
+  //     },
+  //     {
+  //       value: { $regex: value, $options: 'i' },
+  //     },
+  //   ],
+  // };
+const query={};
+  const currency = await Currency.find(query)
+    // .limit(8)
     .exec();
   return currency;
 };
