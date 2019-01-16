@@ -58,4 +58,13 @@ router.post('/revoke_admin',(req,res,next)=>{
         return next(error);
     })
 });
+
+router.get('/searchUser',(req,res,next)=>{
+    console.log(req.user);
+    userCont.searchUser(req.query.key).then(data=>{
+        return res.json(data);
+    }).catch(error=>{
+        return next(error);
+    })
+});
 module.exports = router;

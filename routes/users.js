@@ -11,4 +11,5 @@ router.get('/allUsers',(req,res,next)=>{
     })
 });
 
+
 module.exports =router;
