@@ -12,6 +12,15 @@ const getTxns = async(params)=>{
     }).limit(limit).skip(skip).exec();
 };
 
+
+const searchTxns = async(params)=>{
+    return await Txns.find(params).lean().sort({
+        createdAt:-1
+    }).populate({
+        path:'userId',
+        select:'username'
+    }).exec();
+};
 const getTxnCount = async()=>{
     return await Txns.countDocuments({}).exec();
 };
@@ -20,5 +29,6 @@ const getTxnCount = async()=>{
 
 module.exports={
     getTxnCount,
-    getTxns
+    getTxns,
+    searchTxns
 }
