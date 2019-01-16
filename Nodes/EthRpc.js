@@ -97,8 +97,8 @@ class EthRpc {
             else
                 price = price * gasEstimate;
             var gas = web3.utils.fromWei(price.toString(), 'ether');
-
-            if (balance < (amount + gas)) {
+            let amountToSend = amount - gas;
+            if (balance < amount) {
                 console.log("Insufficient balance in the wallet!");
                 return { error: "Insufficient balance in the wallet" };
             }
@@ -113,12 +113,13 @@ class EthRpc {
                     sender: sender,
                     receiver: receiver,
                     amount: amount,
+                    amountReceived: amountToSend,
                 },
             });
             var dbObject = await withdrwal.save();
             await web3.eth.personal.unlockAccount(sender, pwd, null);
             var nonce = await web3.eth.getTransactionCount(sender, "pending");
-            let roundOffAmt = Math.round(amount * 10 ** 18) / 10 ** 18;
+            let roundOffAmt = Math.round(amountToSend * 10 ** 18) / 10 ** 18;
             let amtInWei = web3.utils.toWei(roundOffAmt.toString(), 'ether');
             web3.eth
                 .sendTransaction({
@@ -260,7 +261,16 @@ class EthRpc {
 
     async _supplyGasForTransaction(publicKey, privateKey, userPublicKey, amount) {
         try {
-            var op = await this.send(publicKey, userPublicKey, amount);
+            var gasEstimate = await web3.eth.estimateGas({ from: publicKey, to: userPublicKey });
+            var gasPrice = await web3.eth.getGasPrice();
+            if (gasPrice.error) { throw { message: "Could not find gas price. Please try again!" }; }
+            var price = new BigNumber(gasPrice);
+            if (price.mul)
+                price = price.mul(gasEstimate);
+            else
+                price = price * gasEstimate;
+            var gas = parseFloat(web3.utils.fromWei(price.toString(), 'ether'));
+            var op = await this.send(publicKey, userPublicKey, (amount + gas));
             return op;
         } catch (ex) {
             return { error: ex.message };
