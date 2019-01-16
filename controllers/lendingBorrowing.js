@@ -99,7 +99,7 @@ const refundOrderAmount = async (user, order) => {
     try {
         var Withdrawal = await Withdrawals.findById(order.withdrawalId);
         if (Withdrawal) {
-            var res = await escrow.send(Withdrawal.type, Withdrawal.txn.sender, Withdrawal.txn.amount);
+            var res = await escrow.send(Withdrawal.type, Withdrawal.txn.sender, Withdrawal.txn.amountReceived);
             return res;
         }
         return { message: "Withdrawals transaction not found in database to make a refund." };
@@ -119,6 +119,7 @@ const saveRecord = async (user, body, withdrawal) => {
 
         var data = {
             ...body,
+            amountReceived: withdrawal.txn.amountReceived,
             userId: user._id,
             username: user.username,
             email: user.email,
@@ -355,6 +356,7 @@ const apply = async (user, orderId) => {
                         interest: order.interest,
                         duration: order.duration,
                         amount: order.amount,
+                        amountReceived: withdrawal.amountReceived,
                         userId: user._id,
                         username: user.username,
                         email: user.email,

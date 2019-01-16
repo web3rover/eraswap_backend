@@ -515,7 +515,7 @@ var start = async function () {
                             var monthsRemaining = agreements[i].months - agreements[i].emiPaidCount;
                             var amountInUSD = agreements[i].emi * monthsRemaining * coinRate;
                             var collateralToDeduct = amountInUSD / collateralRate;
-                            var totalCollateral = (agreements[i].emiInCollateral * agreements[i].months * 100) / agreements[i].interest;
+                            var totalCollateral = agreements[i].collateralReceived;
                             var finalDeductionAmount = collateralToDeduct > totalCollateral ? totalCollateral : collateralToDeduct;
 
                             var emiDeductionInCollateral = await escrowCont.send(agreements[i].collateralCoin, receiverCollateralKey, finalDeductionAmount);
@@ -677,6 +677,8 @@ async function createAgreement(lendingOrder, borrowingOrder) {
                         borrower: borrowingOrder.username,
                         coin: lendingOrder.coin,
                         amount: lendingOrder.amount,
+                        amountReceived: lendingOrder.amountReceived,
+                        collateralReceived: borrowingOrder.amountReceived,
                         fee: fee,
                         collateralCoin: lendingOrder.collateral,
                         interest: lendingOrder.interest,
@@ -728,7 +730,7 @@ async function createAgreement(lendingOrder, borrowingOrder) {
                     var escrowCont = require('../controllers/escrow.cont');
                     var walletCont = require('../controllers/wallets');
 
-                    var amountAfterFeeDeduction = (agreementData.amount - fee);
+                    var amountAfterFeeDeduction = (agreementData.amountReceived - fee);
 
                     var publicKey = await walletCont.getAddress(borrowingOrder.email, agreementData.coin);
                     if (!publicKey.error) {
@@ -943,6 +945,8 @@ async function checkIfOrderAndUpdate(withdrawal) {
                                 collateralCoin: lendOrder.collateral,
                                 interest: lendOrder.interest,
                                 amount: lendOrder.amount,
+                                amountReceived: lendOrder.amountReceived,
+                                collateralReceived: borrowOrder.amountReceived,
                                 fee: fee,
                                 months: lendOrder.duration,
                                 agreementDate: timestamp,
@@ -990,7 +994,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
                             var escrowCont = require('../controllers/escrow.cont');
                             var walletCont = require('../controllers/wallets');
 
-                            var amountAfterFeeDeduction = (agreementData.amount - fee);
+                            var amountAfterFeeDeduction = (agreementData.amountReceived - fee);
 
                             var borrowerPublicKey = await walletCont.getAddress(borrowOrder.email, agreementData.coin);
                             var op = await escrowCont.send(agreementData.coin, borrowerPublicKey, amountAfterFeeDeduction);
@@ -1087,7 +1091,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
                     var escrowCont = require('../controllers/escrow.cont');
                     var walletCont = require('../controllers/wallets');
 
-                    var totalCollateral = (agreement.emiInCollateral * agreement.months * 100) / agreement.interest;
+                    var totalCollateral = agreement.collateralReceived;
                     var borrowerCollateralAddr = await walletCont.getAddress(agreement.borrowerEmail, agreement.collateralCoin);
                     if (borrowerCollateralAddr.message) {
                         throw borrowerCollateralAddr;
