@@ -6,7 +6,7 @@ const Wallets = require('../models/Wallets');
 class BTCRpc {
     constructor(host, port, username, password) {
         if (!host || !port || !username || !password) {
-            throw { status: 200, message: "Please provide all parameters!"};
+            throw { status: 200, message: "Please provide all parameters!" };
         }
         else {
             this.host = host;
@@ -108,7 +108,7 @@ class BTCRpc {
             var balance = await this.getBalance(sendingWallet);
             if (balance < amount) {
                 console.log("Insufficient balance in the wallet!");
-                return {error: "Insufficient balance in the wallet"};
+                return { error: "Insufficient balance in the wallet" };
             }
 
             if (dbObject) {
@@ -129,12 +129,18 @@ class BTCRpc {
             }
 
             return new Promise((resolve, reject) => {
-                this._btcRpcCall("sendtoaddress", [address, amount], "/wallet/" + sendingWallet).then(async result => {
+                this._btcRpcCall("sendtoaddress", [address, amount, "", "", true], "/wallet/" + sendingWallet).then(async result => {
                     result["success"] = true;
 
                     dbObject["txnHash"] = result.result;
                     dbObject['error'] = '';
                     dbObject['status'] = 'Pending';
+                    dbObject = await dbObject.save();
+
+                    let txn = await this._getTransaction(result.result);
+                    let amountReceived = parseFloat(txn.amount) * -1;
+
+                    dbObject.txn["amountReceived"] = amountReceived;
                     dbObject = await dbObject.save();
 
                     result["dbObject"] = dbObject;
