@@ -119,11 +119,11 @@ const saveRecord = async (user, body, withdrawal) => {
 
         var data = {
             ...body,
-            amountReceived: withdrawal.txn.amountReceived,
+            amountReceived: dbEntry.txn.amountReceived,
             userId: user._id,
             username: user.username,
             email: user.email,
-            withdrawalId: withdrawal._id.toString(),
+            withdrawalId: dbEntry._id.toString(),
             show: show,
             agreementOrderId: "",
             agreementDate: "",
@@ -251,7 +251,7 @@ const getAgreements = async (user) => {
             "assetName": config.BLOCKCLUSTER.agreementsAssetName,
             "status": "open",
             "active": true,
-            "lender": user.username,
+            "lenderEmail": user.email,
         },
         $sort: {
             timestamp: 1
@@ -263,7 +263,7 @@ const getAgreements = async (user) => {
             "assetName": config.BLOCKCLUSTER.agreementsAssetName,
             "status": "open",
             "active": true,
-            "borrower": user.username,
+            "borrowerEmail": user.email,
         },
         $sort: {
             timestamp: 1

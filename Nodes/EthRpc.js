@@ -97,7 +97,7 @@ class EthRpc {
             else
                 price = price * gasEstimate;
             var gas = web3.utils.fromWei(price.toString(), 'ether');
-            let amountToSend = amount - gas;
+            let amountToSend = amount - parseFloat(gas);
             if (balance < amount) {
                 console.log("Insufficient balance in the wallet!");
                 return { error: "Insufficient balance in the wallet" };
@@ -259,9 +259,9 @@ class EthRpc {
         }
     }
 
-    async _supplyGasForTransaction(publicKey, privateKey, userPublicKey, amount) {
+    async _supplyGasForTransaction(sender, privateKey, receiver, amount) {
         try {
-            var gasEstimate = await web3.eth.estimateGas({ from: publicKey, to: userPublicKey });
+            var gasEstimate = await web3.eth.estimateGas({ from: sender, to: receiver });
             var gasPrice = await web3.eth.getGasPrice();
             if (gasPrice.error) { throw { message: "Could not find gas price. Please try again!" }; }
             var price = new BigNumber(gasPrice);
@@ -270,7 +270,8 @@ class EthRpc {
             else
                 price = price * gasEstimate;
             var gas = parseFloat(web3.utils.fromWei(price.toString(), 'ether'));
-            var op = await this.send(publicKey, userPublicKey, (amount + gas));
+            var finalAmount = parseFloat(amount) + gas;
+            var op = await this.send(sender, receiver, finalAmount);
             return op;
         } catch (ex) {
             return { error: ex.message };

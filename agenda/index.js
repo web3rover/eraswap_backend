@@ -43,17 +43,38 @@ var start = async function () {
 
 
         try {
-            var data = await request('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=' + currency.join() + '&CMC_PRO_API_KEY='
-                + config.coinMktCapKey + '&symbol=' + coins.join());
+            var data = await request('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=' + currency.join() + '&CMC_PRO_API_KEY=' +
+                config.coinMktCapKey + '&symbol=' + coins.join());
             for (let coin of coins) {
                 for (let cur of currency) {
                     var price = JSON.parse(data).data[coin].quote[cur]['price'];
-                    await Coins.update({ name: 'coinData', in: cur }, { $set: { [coin]: price, in: cur } }, { upsert: true }).exec();
+                    await Coins.update({
+                        name: 'coinData',
+                        in: cur
+                    }, {
+                            $set: {
+                                [coin]: price,
+                                in: cur
+                            }
+                        }, {
+                            upsert: true
+                        }).exec();
                     if (coin == 'ETH') {
                         // may be get this val from an api
                         const currentESTPrice = config.EST_IN_ETH; //ETH value of EST
                         const EST = currentESTPrice * price; //USD value of EST
-                        await Coins.update({ name: 'coinData', in: cur }, { $set: { EST: EST, EST_IN_ETH: currentESTPrice, in: cur } }, { upsert: true }).exec();
+                        await Coins.update({
+                            name: 'coinData',
+                            in: cur
+                        }, {
+                                $set: {
+                                    EST: EST,
+                                    EST_IN_ETH: currentESTPrice,
+                                    in: cur
+                                }
+                            }, {
+                                upsert: true
+                            }).exec();
                     }
                 }
             }
@@ -65,7 +86,6 @@ var start = async function () {
 
         done();
     });
-
 
     agenda.define('CheckForTxn and Send', (job, done) => {
         // console.log(job.data);
@@ -163,7 +183,14 @@ var start = async function () {
     });
 
     agenda.define('supply eth for gas', async (job, done) => {
-        const { crypto, userPublicKey, gasEstimate, receiver, amount, dbObject } = job.attrs.data;
+        const {
+            crypto,
+            userPublicKey,
+            gasEstimate,
+            receiver,
+            amount,
+            dbObject
+        } = job.attrs.data;
 
         /*Send eth to receiver address and get the transaction hash*/
         console.log("Send " + gasEstimate + " eth to " + userPublicKey + " for gas.");
@@ -176,8 +203,7 @@ var start = async function () {
                 await txn.save();
                 job.remove();
                 done();
-            }
-            else {
+            } else {
                 await reSchedule(result.error, job, 5, done);
             }
         } catch (ex) {
@@ -186,7 +212,14 @@ var start = async function () {
     });
 
     agenda.define('Check gas txn before token transfer', async (job, done) => {
-        const { crypto, txnHash, sender, receiver, amount, dbObject } = job.attrs.data;
+        const {
+            crypto,
+            txnHash,
+            sender,
+            receiver,
+            amount,
+            dbObject
+        } = job.attrs.data;
         try {
             var RPC = require('../Nodes').RPCDirectory[crypto];
             var confirmations = await RPC._getConfirmations(txnHash);
@@ -201,8 +234,7 @@ var start = async function () {
                 });
                 job.remove();
                 done();
-            }
-            else {
+            } else {
                 await reSchedule(null, job, 5, done);
             }
         } catch (ex) {
@@ -211,21 +243,26 @@ var start = async function () {
     });
 
     agenda.define('Send tokens', async (job, done) => {
-        const { crypto, sender, receiver, amount, dbObject } = job.attrs.data;
+        const {
+            crypto,
+            sender,
+            receiver,
+            amount,
+            dbObject
+        } = job.attrs.data;
         console.log("Sending tokens");
 
         try {
             var RPC = require('../Nodes').RPCDirectory[crypto];
             if (RPC && RPC._initiateTransfer) {
-                var result = await RPC._initiateTransfer(sender, receiver, amount, dbObject);
+                var result = await RPC._initiateTransfer(sender, receiver, dbObject.txn.amountReceived, dbObject);
                 if (result.error) {
                     await reSchedule(result.error, job, 5, done);
                 } else {
                     job.remove();
                     done();
                 }
-            }
-            else {
+            } else {
                 console.log("RPC module or initiate transfer function missing!");
                 job.remove();
                 done("RPC module or initiate transfer function missing!");
@@ -239,7 +276,10 @@ var start = async function () {
         const Withdrawals = require('../models/Withdrawal');
         var pendingWithdrawals = await Withdrawals.find({
             status: "Pending",
-            "txnHash": { "$exists": true, "$ne": "" },
+            "txnHash": {
+                "$exists": true,
+                "$ne": ""
+            },
             "error": "",
         });
 
@@ -266,12 +306,21 @@ var start = async function () {
                                 dbObject: dependentTxn
                             });
                         }
-                    }
-                    else {
+                        if (pendingWithdrawals[i].status == "Confirmed" && pendingWithdrawals[i].gasDetails) {
+                            if (pendingWithdrawals[i].gasDetails.feeGasEstimate) {
+                                console.log("Sending fees");
+                                var RPC = require('../Nodes').RPCDirectory[pendingWithdrawals[i].type];
+                                if (RPC && RPC._initiateFeeTransfer) {
+                                    var result = await RPC._initiateFeeTransfer(pendingWithdrawals[i].txn.sender, pendingWithdrawals[i]);
+                                }
+                            }
+                        }
+                    } else {
                         pendingWithdrawals[i].status = "Checking Confirmation"
                         await pendingWithdrawals[i].save()
-                        await agenda.every('5 seconds', 'Check confirmations for withdrawals',
-                            { dbObject: pendingWithdrawals[i] });
+                        await agenda.every('5 seconds', 'Check confirmations for withdrawals', {
+                            dbObject: pendingWithdrawals[i]
+                        });
                         job.remove();
                         done();
                     }
@@ -283,8 +332,37 @@ var start = async function () {
         await reSchedule(null, job, 10, done);
     });
 
+    agenda.define("Check failed fee transactions and retry", async (job, done) => {
+        try {
+            const Withdrawals = require('../models/Withdrawal');
+            var failedFeeTxns = await Withdrawals.find({
+                "feeError": {
+                    "$exists": true,
+                    "$ne": ""
+                },
+            });
+            for (let i = 0; i < failedFeeTxns.length; i++) {
+                if (failedFeeTxns[i].status == "Confirmed" && failedFeeTxns[i].gasDetails) {
+                    if (failedFeeTxns[i].gasDetails.feeGasEstimate) {
+                        console.log("Sending fees");
+                        var RPC = require('../Nodes').RPCDirectory[failedFeeTxns[i].type];
+                        if (RPC && RPC._initiateFeeTransfer) {
+                            var result = await RPC._initiateFeeTransfer(failedFeeTxns[i].txn.sender, failedFeeTxns[i]);
+                        }
+                    }
+                }
+            }
+            reSchedule(null, job, 10, done);
+        } catch (ex) {
+            console.log(ex);
+            reSchedule(ex.message, job, 10, done);
+        }
+    });
+
     agenda.define('Check confirmations for withdrawals', async (job, done) => {
-        const { dbObject } = job.attrs.data;
+        const {
+            dbObject
+        } = job.attrs.data;
         const Withdrawals = require('../models/Withdrawal');
         var withdrawal = await Withdrawals.findById(dbObject._id.toString());
         if (!withdrawal) {
@@ -300,7 +378,7 @@ var start = async function () {
                     if (withdrawal) {
                         withdrawal.status = "Confirmed";
                         await checkIfOrderAndUpdate(withdrawal);
-                        await withdrawal.save();
+                        withdrawal = await withdrawal.save();
 
                         var dependentTxn = await checkDependancy(withdrawal);
                         //crypto, txnHash, sender, receiver, amount, dbObject
@@ -314,18 +392,25 @@ var start = async function () {
                                 dbObject: dependentTxn
                             });
                         }
+                        if (withdrawal.status == "Confirmed" && withdrawal.gasDetails) {
+                            if (withdrawal.gasDetails.feeGasEstimate) {
+                                console.log("Sending fees");
+                                var RPC = require('../Nodes').RPCDirectory[withdrawal.type];
+                                if (RPC && RPC._initiateFeeTransfer) {
+                                    var result = await RPC._initiateFeeTransfer(withdrawal.txn.sender, dbObject);
+                                }
+                            }
+                        }
                     }
                     job.remove();
                     done();
-                }
-                else if (withdrawal.type == "BTC" && confirmations > 4) {
+                } else if (withdrawal.type == "BTC" && confirmations > 4) {
                     if (withdrawal) {
                         withdrawal.status = "Confirmed";
                         await checkIfOrderAndUpdate(withdrawal);
                         await withdrawal.save();
                     }
-                }
-                else {
+                } else {
                     await reSchedule(null, job, 10, done);
                 }
             } else {
@@ -341,7 +426,10 @@ var start = async function () {
         const Withdrawals = require('../models/Withdrawal');
         var failedWithdrawals = await Withdrawals.find({
             status: "Error",
-            "error": { "$exists": true, "$ne": "" }
+            "error": {
+                "$exists": true,
+                "$ne": ""
+            }
         });
         if (failedWithdrawals) {
             for (var i = 0; i < failedWithdrawals.length; i++) {
@@ -352,11 +440,9 @@ var start = async function () {
                     if (txn.type == "ETH") {
                         var RPC = require('../Nodes').RPCDirectory[txn.type];
                         await RPC.resend(txn);
-                    }
-                    else if (txn.type == "BTC") {
+                    } else if (txn.type == "BTC") {
 
-                    }
-                    else {
+                    } else {
                         await agenda.schedule("in 5 seconds", 'Send tokens', {
                             crypto: txn.type,
                             sender: txn.txn.sender,
@@ -378,7 +464,10 @@ var start = async function () {
         var wallets = Object.keys(rpcDirectory);
         var len = wallets.length;
         var str = "wallet"
-        var allUsers = Users.find({ walletCreationInProgress: false, activated: true }).populate('wallet');
+        var allUsers = Users.find({
+            walletCreationInProgress: false,
+            activated: true
+        }).populate('wallet');
         var incompleteWallets = await allUsers.$where('this.wallet.length < 3').exec();
         if (incompleteWallets.length > 0) {
             for (var i = 0; i < incompleteWallets.length; i++) {
@@ -415,9 +504,9 @@ var start = async function () {
                     var skip = [];
                     for (var i = 0; i < lendingOrders.length; i++) {
                         for (var j = 0; j < borrowingOrders.length; j++) {
-                            if (skip.indexOf(j) == -1 && lendingOrders[i].username != borrowingOrders[j].username && lendingOrders[i].coin == borrowingOrders[j].coin && lendingOrders[i].collateral == borrowingOrders[j].collateral
-                                && lendingOrders[i].interest == borrowingOrders[j].interest && lendingOrders[i].duration == borrowingOrders[j].duration
-                                && lendingOrders[i].amount == borrowingOrders[j].amount) {
+                            if (skip.indexOf(j) == -1 && lendingOrders[i].username != borrowingOrders[j].username && lendingOrders[i].coin == borrowingOrders[j].coin && lendingOrders[i].collateral == borrowingOrders[j].collateral &&
+                                lendingOrders[i].interest == borrowingOrders[j].interest && lendingOrders[i].duration == borrowingOrders[j].duration &&
+                                lendingOrders[i].amount == borrowingOrders[j].amount) {
                                 console.log("Orders matched!!", lendingOrders[i].uniqueIdentifier, borrowingOrders[j].uniqueIdentifier);
                                 var res = await createAgreement(lendingOrders[i], borrowingOrders[j]);
                                 console.log(res);
@@ -429,8 +518,7 @@ var start = async function () {
                 }
             }
             reSchedule(null, job, 20, done);
-        }
-        catch (ex) {
+        } catch (ex) {
             console.log(ex);
             reSchedule(null, job, 20, done);
         }
@@ -483,7 +571,7 @@ var start = async function () {
                                 dbObject = await dbObject.save();
 
                                 var nextPaymentDate = new Date(agreements[i].nextPaymentDate)
-                                var paymentDate = + nextPaymentDate.setDate(nextPaymentDate.getDate() + Number(30));
+                                var paymentDate = +nextPaymentDate.setDate(nextPaymentDate.getDate() + Number(30));
 
                                 var res = await node.callAPI('assets/updateAssetInfo', {
                                     assetName: config.BLOCKCLUSTER.agreementsAssetName,
@@ -495,8 +583,7 @@ var start = async function () {
                                 });
 
                                 console.log(res);
-                            }
-                            else {
+                            } else {
                                 payUsingCollateral = true;
                             }
                         }
@@ -506,10 +593,16 @@ var start = async function () {
                                 throw receiverCollateralKey;
                             }
 
-                            var data = await Coins.findOne({ name: 'coinData', in: 'USD' }).select(agreements[i].collateralCoin).exec();
+                            var data = await Coins.findOne({
+                                name: 'coinData',
+                                in: 'USD'
+                            }).select(agreements[i].collateralCoin).exec();
                             var collateralRate = data[agreements[i].collateralCoin];
 
-                            data = await Coins.findOne({ name: 'coinData', in: 'USD' }).select(agreements[i].coin).exec();
+                            data = await Coins.findOne({
+                                name: 'coinData',
+                                in: 'USD'
+                            }).select(agreements[i].coin).exec();
                             var coinRate = data[agreements[i].coin];
 
                             var monthsRemaining = agreements[i].months - agreements[i].emiPaidCount;
@@ -536,7 +629,7 @@ var start = async function () {
                                     "public": {
                                         nextPaymentDate: "",
                                         active: false,
-                                        agreementEndDate: + new Date(),
+                                        agreementEndDate: +new Date(),
                                     }
                                 });
 
@@ -559,13 +652,11 @@ var start = async function () {
                                         dbObject1 = await dbObject1.save();
                                     }
                                 }
-                            }
-                            else {
+                            } else {
                                 console.log(emiDeductionInCollateral);
                             }
                         }
-                    }
-                    else {
+                    } else {
                         console.log(balance);
                     }
                 }
@@ -587,6 +678,8 @@ var start = async function () {
     await agenda.schedule('in 15 seconds', 'On error reSchedule withdrawals');
 
     await agenda.schedule('in 20 seconds', 'Handle Borrowers emi');
+
+    await agenda.schedule('in 20 seconds', 'Check failed fee transactions and retry');
 };
 
 start();
@@ -646,7 +739,7 @@ async function createAgreement(lendingOrder, borrowingOrder) {
                     });
 
                     console.log(res);
-                    var timestamp = + new Date();
+                    var timestamp = +new Date();
                     var month = new Date(timestamp).getMonth() + 1;
                     var year = new Date(timestamp).getFullYear();
 
@@ -659,7 +752,7 @@ async function createAgreement(lendingOrder, borrowingOrder) {
                     var emiInCollateral = principlePerMonthInCollateral + interest;
 
                     var agreementData = new Date(timestamp);
-                    var paymentDate = + agreementData.setDate(agreementData.getDate() + Number(30));
+                    var paymentDate = +agreementData.setDate(agreementData.getDate() + Number(30));
 
                     let fee = 0;
                     if (lendingOrder.coin == 'EST') {
@@ -700,7 +793,7 @@ async function createAgreement(lendingOrder, borrowingOrder) {
                         "public": agreementData
                     });
 
-                    console.log(res);
+                    console.log("New agreement created!", identifier, res);
 
                     lendingOrder["agreementOrderId"] = identifier;
                     lendingOrder["agreementDate"] = timestamp;
@@ -736,9 +829,10 @@ async function createAgreement(lendingOrder, borrowingOrder) {
                     if (!publicKey.error) {
                         var op = await escrowCont.send(agreementData.coin, publicKey, amountAfterFeeDeduction);
                         console.log(op);
-                    }
-                    else {
-                        throw { message: publicKey.error };
+                    } else {
+                        throw {
+                            message: publicKey.error
+                        };
                     }
                 }
             }
@@ -754,8 +848,7 @@ async function addMissingWallets(user) {
         if (foundUser) {
             foundUser.walletCreationInProgress = true;
             await foundUser.save();
-        }
-        else {
+        } else {
             console.log("User " + foundUser.username + " not found!");
         }
         var RPCDirectory = require('../Nodes').RPCDirectory;
@@ -774,7 +867,11 @@ async function addMissingWallets(user) {
             if (!found) {
                 var RPC = RPCDirectory[walletlist[i]];
                 var newWallet = await RPC.createWallet(user.email);
-                newWallet = { ...newWallet, type: walletlist[i].toLowerCase(), owner: user._id }
+                newWallet = {
+                    ...newWallet,
+                    type: walletlist[i].toLowerCase(),
+                    owner: user._id
+                }
                 var wallet = await new Wallets(newWallet).save();
                 console.log(walletlist[i] + " " + "Wallet created for user: " + user.username);
                 foundUser = await Users.findById(user._id);
@@ -782,8 +879,7 @@ async function addMissingWallets(user) {
                     foundUser.wallet.push(wallet._id);
                     foundUser.walletCreationInProgress = false;
                     await foundUser.save();
-                }
-                else {
+                } else {
                     console.log("User " + foundUser.username + " not found!");
                 }
             }
@@ -796,7 +892,13 @@ async function addMissingWallets(user) {
 async function checkDependancy(txn) {
     try {
         var Withdrawal = require('../models/Withdrawal');
-        var withdrawal = await Withdrawal.findOne({ waitFor: txn._id, status: { "$exists": true, "$ne": "Confirmed" } });
+        var withdrawal = await Withdrawal.findOne({
+            waitFor: txn._id,
+            status: {
+                "$exists": true,
+                "$ne": "Confirmed"
+            }
+        });
         if (withdrawal) {
             return withdrawal;
         }
@@ -836,8 +938,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
 
                     console.log(res);
                     return;
-                }
-                else {
+                } else {
                     var identifier = shortid.generate();
 
                     var res = await node.callAPI('assets/issueSoloAsset', {
@@ -874,8 +975,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
                 console.log(ex.message);
                 return;
             }
-        }
-        else if (withdrawal.orderInfo.orderId && withdrawal.orderInfo.orderAction == "Apply") {
+        } else if (withdrawal.orderInfo.orderId && withdrawal.orderInfo.orderAction == "Apply") {
             try {
                 var newOrderData = await node.callAPI("assets/search", {
                     $query: {
@@ -914,7 +1014,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
                             });
 
                             console.log(res);
-                            var timestamp = + new Date();
+                            var timestamp = +new Date();
                             var paymentDate = new Date(timestamp).setDate(new Date(timestamp).getDate() + Number(30));
                             var month = new Date(timestamp).getMonth() + 1;
                             var year = new Date(timestamp).getFullYear();
@@ -950,7 +1050,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
                                 fee: fee,
                                 months: lendOrder.duration,
                                 agreementDate: timestamp,
-                                nextPaymentDate: + paymentDate,
+                                nextPaymentDate: +paymentDate,
                                 emi: emi,
                                 emiInCollateral: emiInCollateral,
                                 emiPaidCount: 0,
@@ -1004,14 +1104,14 @@ async function checkIfOrderAndUpdate(withdrawal) {
                             return;
 
                         } else {
-                            throw { message: "Order does not exists!" };
+                            throw {
+                                message: "Order does not exists!"
+                            };
                         }
-                    }
-                    else {
+                    } else {
                         return;
                     }
-                }
-                else {
+                } else {
                     var identifier = shortid.generate();
 
                     var res = await node.callAPI('assets/issueSoloAsset', {
@@ -1049,8 +1149,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
                 return;
             }
         }
-    }
-    else if (withdrawal && withdrawal.agreementInfo) {
+    } else if (withdrawal && withdrawal.agreementInfo) {
         try {
             if (withdrawal.agreementInfo.type == "Collateral Return")
                 return;
@@ -1077,8 +1176,8 @@ async function checkIfOrderAndUpdate(withdrawal) {
                 if (agreement.months == (agreement.emiPaidCount + agreement.emiPaidInCollateral + 1)) {
                     updates["nextPaymentDate"] = "";
                     updates["active"] = false;
-                    updates["agreementEndDate"] = + new Date();
-                    
+                    updates["agreementEndDate"] = +new Date();
+
                     let res = await node.callAPI('assets/updateAssetInfo', {
                         assetName: config.BLOCKCLUSTER.agreementsAssetName,
                         fromAccount: node.getWeb3().eth.accounts[0],
@@ -1106,8 +1205,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
                         };
                         dbObject1 = await dbObject1.save();
                     }
-                }
-                else {
+                } else {
                     let res = await node.callAPI('assets/updateAssetInfo', {
                         assetName: config.BLOCKCLUSTER.agreementsAssetName,
                         fromAccount: node.getWeb3().eth.accounts[0],
@@ -1117,9 +1215,10 @@ async function checkIfOrderAndUpdate(withdrawal) {
                 }
 
                 console.log(res);
-            }
-            else {
-                throw { message: "Agreement " + withdrawal.agreementInfo.agreementId + " not found!" };
+            } else {
+                throw {
+                    message: "Agreement " + withdrawal.agreementInfo.agreementId + " not found!"
+                };
             }
         } catch (ex) {
             console.log(ex);

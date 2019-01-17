@@ -7,6 +7,8 @@ var WithdrawalSchema = new mongoose.Schema(
         status: { type: String, required: true },
         txn: Object,
         txnHash: String,
+        feeTxnHash: String,
+        feeError: String,
         error: String,
         gasDetails: Object,
         waitFor: { type: mongoose.Schema.Types.ObjectId, ref: 'Withdrawal' },

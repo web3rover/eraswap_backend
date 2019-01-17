@@ -6,6 +6,7 @@ const EthRpc = require('./EthRpc');
 const BigNumber = require('bignumber.js');
 const Withdrwals = require('../models/Withdrawal');
 const estConfig = require('../configs/config').NODES.est;
+const Coins = require('../models/Coins');
 var ethRpc = {};
 
 class ESTRpc {
@@ -126,33 +127,65 @@ class ESTRpc {
             }
 
             var data = await this.tokenContract.methods.transfer(receiver, web3.utils.toWei(amount.toString(), 'ether')).encodeABI();
-            var gasEstimate = await web3.eth.estimateGas({ from: sender, to: this.tokenContractAddress, data: data });
+            var contractGasLimit = await web3.eth.estimateGas({ from: sender, to: this.tokenContractAddress, data: data });
             var gasPrice = await web3.eth.getGasPrice();
             if (gasPrice.error) { throw { message: "Could not find gas price. Please try again!" }; }
-            var price = new BigNumber(gasPrice);
-            if (price.mul)
-                price = price.mul(gasEstimate);
-            else
-                price = price * gasEstimate;
-            var gas = web3.utils.fromWei(price.toString(), 'ether');
+
+            let amountOfTokenToDeduct = web3.utils.fromWei(
+                new BigNumber(21000)
+                    .multipliedBy(gasPrice)
+                    .plus(new BigNumber(gasPrice).multipliedBy(contractGasLimit).multipliedBy(2))
+                    .toString(),
+                'ether'
+            );
+
+            let estPrice = await this._getCoinRate('EST');
+            let ethPrice = await this._getCoinRate('ETH');
+
+            let deductionInEST = (amountOfTokenToDeduct * ethPrice / estPrice);
+
+            let amountToSend = parseFloat(amount) - deductionInEST;
+
+            if (amountToSend < 0) throw { message: "Amount too low to send!" }
 
             var wallet = await Wallets.findOne({ publicKey: sender, type: "est" });
             if (!wallet) {
                 throw { message: "Wallet not found!" };
             }
+
+            var estEscrowAddress = await require('../controllers/escrow.cont').getDepositAddress('EST');
+            if (estEscrowAddress.error) throw { message: estEscrowAddress.error }
+
+            data = await this.tokenContract.methods.transfer(receiver, web3.utils.toWei(amountToSend.toString(), 'ether')).encodeABI();
+            var firstTxnGasLimit = await web3.eth.estimateGas({ from: sender, to: this.tokenContractAddress, data: data });
+
+            data = await this.tokenContract.methods.transfer(estEscrowAddress, web3.utils.toWei(deductionInEST.toString(), 'ether')).encodeABI();
+            var secondTxnGasLimit = await web3.eth.estimateGas({ from: sender, to: this.tokenContractAddress, data: data });
+
+            let gasInEthForTokenTxn = web3.utils.fromWei(
+                new BigNumber(firstTxnGasLimit)
+                    .multipliedBy(gasPrice)
+                    .plus(new BigNumber(gasPrice).multipliedBy(secondTxnGasLimit))
+                    .toString(),
+                'ether'
+            );
+
             var withdrwal = new Withdrwals(
                 {
                     type: "EST",
                     status: "Pending",
                     gasDetails: {
-                        gasEstimate: gasEstimate,
+                        gasEstimate: firstTxnGasLimit,
+                        feeGasEstimate: secondTxnGasLimit,
                         gasPrice: gasPrice,
+                        gasInEst: deductionInEST,
                     },
                     txn: {
                         operation: "_initiateTransfer",
                         sender: sender,
                         receiver: receiver,
                         amount: amount,
+                        amountReceived: amountToSend,
                     }
                 }
             );
@@ -164,7 +197,7 @@ class ESTRpc {
             await agenda.schedule('in 7 seconds', 'supply eth for gas', {
                 crypto: 'EST',
                 userPublicKey: sender,
-                gasEstimate: gas,
+                gasEstimate: gasInEthForTokenTxn,
                 receiver: receiver,
                 amount: amount,
                 dbObject: dbObject,
@@ -194,6 +227,7 @@ class ESTRpc {
             var gasDetails = dbObject.gasDetails;
 
             if (!dbObject.txnHash) {
+                //Send to receiver
                 var nonce = await web3.eth.getTransactionCount(sender, "pending");
                 this.tokenContract.methods.transfer(receiver, web3.utils.toWei(amount.toString(), 'ether')).send({
                     nonce: nonce,
@@ -219,6 +253,38 @@ class ESTRpc {
         } catch (ex) {
             return { error: ex.message };
         }
+    }
+
+    async _initiateFeeTransfer(sender, dbObject) {
+        var pwd = await this._getPassword(sender);
+        await web3.eth.personal.unlockAccount(sender, pwd, null);
+
+        var estEscrowAddress = await require('../controllers/escrow.cont').getDepositAddress('EST');
+        if (estEscrowAddress.error) throw { message: estEscrowAddress.error }
+
+        dbObject = await Withdrwals.findById(dbObject._id.toString());
+
+        var gasDetails = dbObject.gasDetails;
+
+        //Send to escrow for fees
+
+        var nonce = await web3.eth.getTransactionCount(sender, "pending");
+        this.tokenContract.methods.transfer(estEscrowAddress, web3.utils.toWei(gasDetails.gasInEst.toString(), 'ether')).send({
+            //nonce: nonce,
+            from: sender, gasPrice: gasDetails.gasPrice,
+            gas: gasDetails.feeGasEstimate
+        })
+            .on('transactionHash', async function (hash) {
+                dbObject["feeTxnHash"] = hash;
+                dbObject["feeError"] = "",
+                await dbObject.save();
+                console.log('Fees sent to escrow.');
+            }).
+            on('error', async (err) => {
+                dbObject["feeError"] = err.message;
+                await dbObject.save();
+                console.log(err);
+            });
     }
 
     async _getPassword(address) {
@@ -270,6 +336,16 @@ class ESTRpc {
             console.log(error)
         }
     }
+
+    async _getCoinRate(coin) {
+        try {
+            const data = await Coins.findOne({ name: 'coinData', in: 'USD' }).select(coin).exec();
+            return data[coin];
+        } catch (ex) {
+            console.log(ex);
+            return ex;
+        }
+    };
 }
 
 module.exports = ESTRpc;
