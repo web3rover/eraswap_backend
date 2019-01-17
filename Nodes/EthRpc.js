@@ -98,6 +98,9 @@ class EthRpc {
                 price = price * gasEstimate;
             var gas = web3.utils.fromWei(price.toString(), 'ether');
             let amountToSend = amount - parseFloat(gas);
+            if (amountToSend < 0) {
+                throw { message: "Amount is too low!" };
+            }
             if (balance < amount) {
                 console.log("Insufficient balance in the wallet!");
                 return { error: "Insufficient balance in the wallet" };
