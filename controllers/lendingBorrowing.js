@@ -6,6 +6,7 @@ const rpcDirectory = require('../Nodes').RPCDirectory;
 const Withdrawals = require('../models/Withdrawal');
 const Users = require('../models/Users');
 const Coins = require('../models/Coins');
+const LBOrders = require('../models/LBOrders');
 
 var Blockcluster = require('blockcluster');
 const shortid = require("shortid");
@@ -80,9 +81,7 @@ const deleteOrder = async (user, orderId) => {
                         }
                     });
 
-                    //if()
-
-                    //escrow.send(;
+                    res = await LBOrders.deleteOne({ identifier: orderId });
 
                     console.log(res);
                     return { success: true };
@@ -99,7 +98,7 @@ const refundOrderAmount = async (user, order) => {
     try {
         var Withdrawal = await Withdrawals.findById(order.withdrawalId);
         if (Withdrawal) {
-            var res = await escrow.send(Withdrawal.type, Withdrawal.txn.sender, Withdrawal.txn.amountReceived);
+            var res = await escrow.send(Withdrawal.type, Withdrawal.txn.sender, order.amountReceived);
             return res;
         }
         return { message: "Withdrawals transaction not found in database to make a refund." };
@@ -164,6 +163,13 @@ const saveRecord = async (user, body, withdrawal) => {
             identifier: identifier,
             "public": data
         });
+
+        console.log(res);
+        if (show) {
+            res = await (new LBOrders({
+                identifier: identifier
+            })).save();
+        }
 
         console.log(res);
 
@@ -340,6 +346,8 @@ const apply = async (user, orderId) => {
                         show: false,
                     }
                 });
+
+                res = await LBOrders.deleteOne({ identifier: orderId });
 
                 var withdrawal = await walletCont.sendToEscrow(user.email, coinAmtRequired, coinToescrow);
 
