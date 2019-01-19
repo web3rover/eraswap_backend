@@ -9,6 +9,7 @@ var Users = require('../models/Users');
 var Wallets = require('../models/Wallets');
 var Coins = require('../models/Coins');
 var Currency = require('../models/Currency');
+const LBOrders = require('../models/LBOrders');
 var ethRpc = null;
 
 var Blockcluster = require('blockcluster');
@@ -517,7 +518,7 @@ var start = async function () {
                     }
                 }
             }
-            reSchedule(null, job, 20, done);
+            reSchedule(null, job, 300, done);
         } catch (ex) {
             console.log(ex);
             reSchedule(null, job, 20, done);
@@ -686,7 +687,10 @@ start();
 
 async function createAgreement(lendingOrder, borrowingOrder) {
     try {
-        if (lendingOrder && borrowingOrder) {
+        var lendingOrderExists = await LBOrders.findOne({ identifier: lendingOrder.uniqueIdentifier });
+        var borrowingOrderExists = await LBOrders.findOne({ identifier: borrowingOrder.uniqueIdentifier });
+
+        if (lendingOrder && borrowingOrder && lendingOrder && borrowingOrder) {
 
             lendingOrder = await node.callAPI("assets/search", {
                 $query: {
@@ -717,6 +721,8 @@ async function createAgreement(lendingOrder, borrowingOrder) {
                         }
                     });
 
+                    res = await LBOrders.deleteOne({ identifier: orderId });
+
                     console.log(res);
 
                     res = await node.callAPI('assets/updateAssetInfo', {
@@ -727,6 +733,8 @@ async function createAgreement(lendingOrder, borrowingOrder) {
                             show: false,
                         }
                     });
+
+                    res = await LBOrders.deleteOne({ identifier: orderId });
 
                     console.log(res);
 
@@ -936,6 +944,12 @@ async function checkIfOrderAndUpdate(withdrawal) {
                         }
                     });
 
+                    res = await (new LBOrders({
+                        identifier: withdrawal.orderInfo.orderId
+                    })).save();
+
+                    console.log(res);
+
                     console.log(res);
                     return;
                 } else {
@@ -966,6 +980,10 @@ async function checkIfOrderAndUpdate(withdrawal) {
                     var dbObj = await Withdrawals.findById(withdrawal._id);
                     dbObj.orderInfo.orderId = identifier;
                     await dbObj.save();
+
+                    res = await (new LBOrders({
+                        identifier: identifier
+                    })).save();
                 }
             } catch (ex) {
                 var dbObj = await Withdrawals.findById(withdrawal._id);
