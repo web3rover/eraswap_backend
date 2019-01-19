@@ -50,8 +50,13 @@ let kuCoinGetWithdrawals = coin => {
 const getAllCurrency = async () => {
   let allCurs = [];
   for (ele of Exchanges) {
-    // await ele.loadMarkets();
+    try{
+    await ele.loadMarkets();
     allCurs.push(Object.keys(ele.currencies));
+    }catch(error){
+      console.log(error)
+    }
+   
   }
   const allArr = [].concat.apply([], allCurs);
   let finalArr = [];
