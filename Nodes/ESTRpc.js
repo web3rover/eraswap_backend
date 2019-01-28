@@ -111,6 +111,7 @@ class ESTRpc {
                     txnHash: history[i].txnHash ? history[i].txnHash : "",
                 });
             }
+            list.reverse();
             return list;
         } catch (ex) {
             return ex;
