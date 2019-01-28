@@ -22,7 +22,7 @@ const checkEscrow = async () => {
                 var RPC = RPCDirectory[walletlist[i]];
                 var escrow = await RPC.createEscrow();
 
-                var wallet = await new Wallets(escrow).save();
+                await new Wallets(escrow).save();
                 console.log("Escrow wallet created", walletlist[i]);
             }
         }
