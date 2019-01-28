@@ -85,7 +85,7 @@ router.post('/add_sell_listing', (req, res, next) => {
 router.get('/search_listing', (req, res, next) => {
   console.log(req.query);
   currencyCont
-    .searchListing(req.query)
+    .searchListing(req.query, req.user._id)
     .then(data => {
       return res.json(data);
     })
@@ -117,7 +117,7 @@ router.get('/my_listings_count', (req, res, next) => {
 
 router.get('/get_count', (req, res, next) => {
   currencyCont
-    .getCount(req.query)
+    .getCount(req.query, req.user._id)
     .then(data => {
       return res.json({ count: data });
     })
