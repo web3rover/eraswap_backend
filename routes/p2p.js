@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const currencyCont = require('../controllers/p2p.cont');
 const Coins = require('../models/Coins');
+const walletCont = require('../controllers/wallets');
 const config = require('../configs/config');
 
 router.post('/add_buy_listing', (req, res, next) => {
@@ -28,7 +29,7 @@ router.post('/add_sell_listing', (req, res, next) => {
         // await Coins.update({ name: 'coinData', in: 'USD' }, { $set: {  [req.query.currency]: price,in:'USD' } }, { upsert: true }).exec();
         data = { ...data, [req.body.cryptoCur]: price };
       }
-      if (req.query.platform === 'EST') {
+      if (req.query.feeCoin === 'EST') {
         walletCont
           .getBalance(req.user.email, 'EST')
           .then(balanceData => {
@@ -52,9 +53,9 @@ router.post('/add_sell_listing', (req, res, next) => {
           .catch(error => {
             return next(error);
           });
-      } else if (req.query.platform == 'source') {
+      } else {
         walletCont
-          .getBalance(req.user.email, req.body.cryptoCur)
+          .getBalance(req.user.email, req.body.feeCoin)
           .then(balanceData => {
             const deductableAmount = (Number(req.body.maxAmt) * config.P2P_FEE) / 100;
 
@@ -74,8 +75,6 @@ router.post('/add_sell_listing', (req, res, next) => {
           .catch(error => {
             return next(error);
           });
-      } else {
-        return res.json(data);
       }
     })
     .catch(error => {
