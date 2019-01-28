@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const currencyCont = require('../controllers/p2p.cont');
+const Coins = require('../models/Coins');
+const config = require('../configs/config');
 
 router.post('/add_buy_listing', (req, res, next) => {
   currencyCont
@@ -13,10 +15,68 @@ router.post('/add_buy_listing', (req, res, next) => {
     });
 });
 router.post('/add_sell_listing', (req, res, next) => {
-  currencyCont
-    .addListing({ show: true, wantsToSell: true, email: req.user.email, username: req.user.username, userId: req.user._id, ...req.body })
-    .then(data => {
-      return res.json(data);
+  return Coins.findOne({ name: 'coinData', in: 'USD' })
+    .select({ [req.body.cryptoCur]: 1, EST: 1 })
+    .lean()
+    .exec()
+    .then(async data => {
+      if (!data[req.body.cryptoCur]) {
+        var capdata = await request(
+          'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=USD&CMC_PRO_API_KEY=' + config.coinMktCapKey + '&symbol=' + req.query.currency
+        );
+        var price = JSON.parse(capdata).data[req.body.cryptoCur].quote['USD']['price'];
+        // await Coins.update({ name: 'coinData', in: 'USD' }, { $set: {  [req.query.currency]: price,in:'USD' } }, { upsert: true }).exec();
+        data = { ...data, [req.body.cryptoCur]: price };
+      }
+      if (req.query.platform === 'EST') {
+        walletCont
+          .getBalance(req.user.email, 'EST')
+          .then(balanceData => {
+            const fromCurVal = Number(req.body.maxAmt) * data[req.body.cryptoCur];
+            const eqvEstVal = fromCurVal / data['EST'];
+            const deductableAmount = (eqvEstVal * (config.P2P_FEE / 2)) / 100; //usually for EST it will be half.
+
+            if (balanceData && Number(balanceData.balance) >= deductableAmount) {
+              currencyCont
+                .addListing({ show: true, wantsToSell: true, email: req.user.email, username: req.user.username, userId: req.user._id, ...req.body })
+                .then(data => {
+                  return res.json(data);
+                })
+                .catch(error => {
+                  return next(error);
+                });
+            } else {
+              return next({ status: 400, message: 'User Does not have enough amount to payoff fee. required fee is ' + deductableAmount + 'EST' });
+            }
+          })
+          .catch(error => {
+            return next(error);
+          });
+      } else if (req.query.platform == 'source') {
+        walletCont
+          .getBalance(req.user.email, req.body.cryptoCur)
+          .then(balanceData => {
+            const deductableAmount = (Number(req.body.maxAmt) * config.P2P_FEE) / 100;
+
+            if (balanceData && Number(balanceData.balance) >= deductableAmount) {
+              currencyCont
+                .addListing({ show: true, wantsToSell: true, email: req.user.email, username: req.user.username, userId: req.user._id, ...req.body })
+                .then(data => {
+                  return res.json(data);
+                })
+                .catch(error => {
+                  return next(error);
+                });
+            } else {
+              return next({ status: 400, message: 'User Does not have enough amount to payoff fee. required fee is ' + deductableAmount + 'EST' });
+            }
+          })
+          .catch(error => {
+            return next(error);
+          });
+      } else {
+        return res.json(data);
+      }
     })
     .catch(error => {
       return next(error);
@@ -104,14 +164,14 @@ router.post('/showInterest', (req, res, next) => {
     amount: req.body.askAmount,
     message: req.body.specialMessage,
     sellerEmail: req.body.wantsToBuy ? req.body.email : req.user.email,
-    sellerFeeCoin:req.body.feeCoin
+    sellerFeeCoin: req.body.feeCoin,
   };
 
   currencyCont
-    .recordRequest(req.body.uniqueIdentifier, req.body.wantsToBuy ? 'Sell' : 'Buy', savableData)
+    .recordRequest(req.body.uniqueIdentifier, req.body.wantsToBuy ? 'Buy' : 'Sell', savableData)
     .then(loggedData => {
       return currencyCont
-        .showInterestMailSender(req.body, message,req.user.email)
+        .showInterestMailSender(req.body, message, req.user.email)
         .then(data => {
           return res.json(data);
         })
@@ -185,31 +245,37 @@ router.get('/getMyOwnInterests', (req, res, next) => {
     });
 });
 
-router.get('/getMyrequests',(req,res,next)=>{
-  currencyCont.getSentInterests(req.user._id).then(data => {
-    return res.json(data);
-  })
-  .catch(error => {
-    return next(error);
-  });
+router.get('/getMyrequests', (req, res, next) => {
+  currencyCont
+    .getSentInterests(req.user._id)
+    .then(data => {
+      return res.json(data);
+    })
+    .catch(error => {
+      return next(error);
+    });
 });
 
-router.post('/change_status_paid',(req,res,next)=>{
-  currencyCont.change_status_paid(req.body.id).then(data => {
-    return res.json(data);
-  })
-  .catch(error => {
-    return next(error);
-  });
+router.post('/change_status_paid', (req, res, next) => {
+  currencyCont
+    .change_status_paid(req.body.id)
+    .then(data => {
+      return res.json(data);
+    })
+    .catch(error => {
+      return next(error);
+    });
 });
 
-router.post('/finishDeal',(req,res,next)=>{
-  currencyCont.finishDeal(req.body.id,req.body.record,req.body.item).then(data => {
-    return res.json(data);
-  })
-  .catch(error => {
-    return next(error);
-  });
+router.post('/finishDeal', (req, res, next) => {
+  currencyCont
+    .finishDeal(req.body.id, req.body.record, req.body.item)
+    .then(data => {
+      return res.json(data);
+    })
+    .catch(error => {
+      return next(error);
+    });
 });
 
 module.exports = router;
