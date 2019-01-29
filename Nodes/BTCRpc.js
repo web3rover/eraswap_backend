@@ -6,9 +6,11 @@ const Wallets = require('../models/Wallets');
 class BTCRpc {
     constructor(host, port, username, password) {
         if (!host || !port || !username || !password) {
-            throw { status: 200, message: "Please provide all parameters!" };
-        }
-        else {
+            throw {
+                status: 200,
+                message: "Please provide all parameters!"
+            };
+        } else {
             this.host = host;
             this.port = port;
             this.username = username;
@@ -20,7 +22,10 @@ class BTCRpc {
         return new Promise((resolve, reject) => {
             this._btcRpcCall("createwallet", [email]).then((res) => {
                 this._getNewAddressForWallet(email).then(res => {
-                    var wallet = { publicKey: res.result, password: email };
+                    var wallet = {
+                        publicKey: res.result,
+                        password: email
+                    };
                     this._getPrivateKey(email, res.result).then(op => {
                         wallet["privateKey"] = op.result;
                         resolve(wallet);
@@ -31,9 +36,9 @@ class BTCRpc {
             }).catch(err => {
                 if (err.message.toString().indexOf("already exists") != -1) {
                     this.recoverWallet(email).then(res => {
-                        console.log(res);
-                        resolve(res);
-                    })
+                            console.log(res);
+                            resolve(res);
+                        })
                         .catch(err => reject(err));
                 } else {
                     reject(err);
@@ -45,7 +50,10 @@ class BTCRpc {
     async recoverWallet(email) {
         return new Promise((resolve, reject) => {
             this._getNewAddressForWallet(email).then(res => {
-                var wallet = { publicKey: res.result, password: email };
+                var wallet = {
+                    publicKey: res.result,
+                    password: email
+                };
                 this._getPrivateKey(email, res.result).then(op => {
                     wallet["privateKey"] = op.result;
                     resolve(wallet);
@@ -56,9 +64,31 @@ class BTCRpc {
         });
     }
 
+    async importPrivateKey(email) {
+        var privateKeyFromDb = await this.getPrivateKey(email);
+        if (privateKeyFromDb.error) {
+            console.log(privateKeyFromDb);
+            return privateKeyFromDb;
+        } else {
+            privateKeyFromDb = privateKeyFromDb.data;
+        }
+        return new Promise((resolve, reject) => {
+            this._btcRpcCall("importprivkey", [privateKeyFromDb, email, false]).then((res) => {
+                console.log(res);
+                resolve(res);
+            }).catch(err => {
+                console.log(err);
+                reject(err);
+            });
+        });
+    }
+
     async getHistory(email) {
         try {
-            var history = await Withdrwals.find({ 'txn.sender': email, type: "BTC" });
+            var history = await Withdrwals.find({
+                'txn.sender': email,
+                type: "BTC"
+            });
             var list = [];
             for (var i = 0; i < history.length; i++) {
                 list.push({
@@ -68,6 +98,7 @@ class BTCRpc {
                     txnHash: history[i].txnHash ? history[i].txnHash : "",
                 });
             }
+            list.reverse();
             return list;
         } catch (ex) {
             return ex;
@@ -108,7 +139,9 @@ class BTCRpc {
             var balance = await this.getBalance(sendingWallet);
             if (balance < amount) {
                 console.log("Insufficient balance in the wallet!");
-                return { error: "Insufficient balance in the wallet" };
+                return {
+                    error: "Insufficient balance in the wallet"
+                };
             }
 
             if (dbObject) {
@@ -162,7 +195,9 @@ class BTCRpc {
 
     async getAddress(email) {
         try {
-            var user = await Users.findOne({ email: email }).populate('wallet');
+            var user = await Users.findOne({
+                email: email
+            }).populate('wallet');
             var address = "";
             for (var i = 0; i < user.wallet.length; i++) {
                 if (user.wallet[i].type == 'btc') {
@@ -171,11 +206,17 @@ class BTCRpc {
                 }
             }
             if (address == "") {
-                return { error: "ETH wallet not found!" };
+                return {
+                    error: "ETH wallet not found!"
+                };
             }
-            return { data: address };
+            return {
+                data: address
+            };
         } catch (ex) {
-            return { error: ex.message };
+            return {
+                error: ex.message
+            };
         }
     }
 
@@ -202,7 +243,9 @@ class BTCRpc {
 
     async _getTransaction(txnHash) {
         try {
-            var withdrwal = await Withdrwals.findOne({ txnHash: txnHash });
+            var withdrwal = await Withdrwals.findOne({
+                txnHash: txnHash
+            });
             if (withdrwal) {
 
                 return new Promise((resolve, reject) => {
@@ -212,8 +255,7 @@ class BTCRpc {
                         reject(err);
                     });
                 });
-            }
-            else {
+            } else {
                 throw "Database entry for transaction not found.";
             }
         } catch (error) {
@@ -223,7 +265,9 @@ class BTCRpc {
 
     async getPrivateKey(email) {
         try {
-            var user = await Users.findOne({ email: email }).populate('wallet');
+            var user = await Users.findOne({
+                email: email
+            }).populate('wallet');
             var address = "";
             for (var i = 0; i < user.wallet.length; i++) {
                 if (user.wallet[i].type == 'btc') {
@@ -232,18 +276,24 @@ class BTCRpc {
                 }
             }
             if (!address) {
-                return { error: "EST token wallet not found!" };
+                return {
+                    error: "EST token wallet not found!"
+                };
             }
-            return { data: address };
+            return {
+                data: address
+            };
         } catch (ex) {
-            return { error: ex.message };
+            return {
+                error: ex.message
+            };
         }
     }
 
     async _getPrivateKey(email, publicKey) {
         return new Promise((resolve, reject) => {
             this._btcRpcCall("dumpprivkey", [publicKey], '/wallet/' + email).
-                then(res => resolve(res))
+            then(res => resolve(res))
                 .catch(err => reject(err));
         });
     }
@@ -251,24 +301,33 @@ class BTCRpc {
     async _btcRpcCall(command, params = [], path = "") {
 
         if (!params instanceof Array) {
-            throw { error: true, message: "params must an array" };
-        }
-        else if (!command) {
-            throw { error: true, message: "Command can not be null" };
+            throw {
+                error: true,
+                message: "params must an array"
+            };
+        } else if (!command) {
+            throw {
+                error: true,
+                message: "Command can not be null"
+            };
         }
 
         let options = {
             url: "http://" + this.host + ":" + this.port + path,
             method: "post",
-            headers:
-                {
-                    "content-type": "text/plain"
-                },
+            headers: {
+                "content-type": "text/plain"
+            },
             auth: {
                 user: this.username,
                 pass: this.password
             },
-            body: JSON.stringify({ "jsonrpc": "1.0", "id": "curltest", "method": command, "params": params })
+            body: JSON.stringify({
+                "jsonrpc": "1.0",
+                "id": "curltest",
+                "method": command,
+                "params": params
+            })
         };
 
         return new Promise((resolve, reject) => {
@@ -283,8 +342,7 @@ class BTCRpc {
                         let resJSON = JSON.parse(result);
                         if (resJSON.error) {
                             reject(resJSON.error);
-                        }
-                        else {
+                        } else {
                             resolve(resJSON);
                         }
                     } catch (ex) {
