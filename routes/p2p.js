@@ -22,18 +22,22 @@ router.post('/add_sell_listing', (req, res, next) => {
     .exec()
     .then(async data => {
       if (!data[req.body.cryptoCur]) {
-        var capdata = await request(
-          'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=USD&CMC_PRO_API_KEY=' + config.coinMktCapKey + '&symbol=' + req.query.currency
-        );
-        var price = JSON.parse(capdata).data[req.body.cryptoCur].quote['USD']['price'];
-        // await Coins.update({ name: 'coinData', in: 'USD' }, { $set: {  [req.query.currency]: price,in:'USD' } }, { upsert: true }).exec();
-        data = { ...data, [req.body.cryptoCur]: price };
+        try {
+          var capdata = await request(
+            'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=USD&CMC_PRO_API_KEY=' + config.coinMktCapKey + '&symbol=' + req.query.currency
+          );
+          var price = JSON.parse(capdata).data[req.body.cryptoCur].quote['USD']['price'];
+          // await Coins.update({ name: 'coinData', in: 'USD' }, { $set: {  [req.query.currency]: price,in:'USD' } }, { upsert: true }).exec();
+          data = { ...data, [req.body.cryptoCur]: price };
+        } catch (error) {
+          return next({ status: 400, message: 'unable to calculate fees!' });
+        }
       }
-      if (req.query.feeCoin === 'EST') {
+      if (req.body.feeCoin === 'EST') {
         walletCont
           .getBalance(req.user.email, 'EST')
           .then(balanceData => {
-            const fromCurVal = Number(req.body.maxAmt) * data[req.body.cryptoCur];
+            const fromCurVal = Number(req.body.maximum) * data[req.body.cryptoCur];
             const eqvEstVal = fromCurVal / data['EST'];
             const deductableAmount = (eqvEstVal * (config.P2P_FEE / 2)) / 100; //usually for EST it will be half.
 
@@ -57,7 +61,7 @@ router.post('/add_sell_listing', (req, res, next) => {
         walletCont
           .getBalance(req.user.email, req.body.feeCoin)
           .then(balanceData => {
-            const deductableAmount = (Number(req.body.maxAmt) * config.P2P_FEE) / 100;
+            const deductableAmount = (Number(req.body.maximum) * config.P2P_FEE) / 100;
 
             if (balanceData && Number(balanceData.balance) >= deductableAmount) {
               currencyCont
@@ -69,7 +73,7 @@ router.post('/add_sell_listing', (req, res, next) => {
                   return next(error);
                 });
             } else {
-              return next({ status: 400, message: 'User Does not have enough amount to payoff fee. required fee is ' + deductableAmount + 'EST' });
+              return next({ status: 400, message: 'User Does not have enough amount to payoff fee. required fee is ' + deductableAmount + ' ' + req.body.feeCoin });
             }
           })
           .catch(error => {
