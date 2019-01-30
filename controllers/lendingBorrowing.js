@@ -243,6 +243,7 @@ const getOrderBook = async (user) => {
             if (data[i].username == user.username) {
                 data[i]["selfOrder"] = true;
             }
+            data[i]["collateralAmount"] = data[i]["amount"] * 2;
             result.push(data[i]);
         }
         return result;
