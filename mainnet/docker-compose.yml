@@ -3,6 +3,7 @@ version: '3.0'
 services:
 
   eth_node:
+    image: 652913482229.dkr.ecr.us-west-2.amazonaws.com/eth_node
     build: eth
     restart: always
     ports:
@@ -19,4 +20,4 @@ services:
       - "8555:8555"
     command: -rpcport=8555 -printtoconsole -rpcuser=foo -rpcpassword=bar -rpcallowip='0.0.0.0/0' -rpcbind='0.0.0.0' -wallet
     volumes:
-      - ~/BtcData_main:/home/bitcoin
+      - ~/BtcData_main:/home/bitcoin/.bitcoin
