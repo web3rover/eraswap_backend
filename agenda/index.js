@@ -80,8 +80,8 @@ var start = async function () {
                 }
             }
         } catch (ex) {
-            console.log(cur);
-            done(cur);
+            console.log(ex);
+            done(ex.message);
         }
 
 

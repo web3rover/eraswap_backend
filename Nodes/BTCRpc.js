@@ -3,6 +3,7 @@ const Users = require('../models/Users');
 const Withdrwals = require('../models/Withdrawal');
 const Wallets = require('../models/Wallets');
 const moment = require('moment');
+const cryptr = require('../helpers/encrypterDecrypter');
 
 class BTCRpc {
     constructor(host, port, username, password) {
@@ -28,7 +29,8 @@ class BTCRpc {
                         password: email
                     };
                     this._getPrivateKey(email, res.result).then(op => {
-                        wallet["privateKey"] = op.result;
+                        var encryptedPrivateKey = cryptr.cryptr.encrypt(op.result);
+                        wallet["privateKey"] = encryptedPrivateKey;
                         resolve(wallet);
                     }).catch(err =>
                         reject(err));
@@ -292,8 +294,9 @@ class BTCRpc {
                     error: "EST token wallet not found!"
                 };
             }
+            var decryptedPrivateKey = cryptr.cryptr.decrypt(address);
             return {
-                data: address
+                data: decryptedPrivateKey
             };
         } catch (ex) {
             return {

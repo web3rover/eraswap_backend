@@ -8,6 +8,7 @@ const Withdrwals = require('../models/Withdrawal');
 const estConfig = require('../configs/config').NODES.est;
 const Coins = require('../models/Coins');
 const moment = require('moment');
+const cryptr = require('../helpers/encrypterDecrypter');
 var ethRpc = {};
 
 class ESTRpc {
@@ -327,7 +328,8 @@ class ESTRpc {
             if (!address) {
                 return { error: "EST token wallet not found!" };
             }
-            return { data: address };
+            var decryptedPrivateKey = cryptr.cryptr.decrypt(address);
+            return { data: decryptedPrivateKey };
         } catch (ex) {
             return { error: ex.message };
         }

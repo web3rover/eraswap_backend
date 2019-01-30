@@ -7,6 +7,7 @@ const Withdrwals = require('../models/Withdrawal');
 const BigNumber = require('bignumber.js');
 const keythereum = require('keythereum');
 const moment = require('moment');
+const cryptr = require('../helpers/encrypterDecrypter');
 
 class EthRpc {
     constructor(host, port) {
@@ -200,8 +201,8 @@ class EthRpc {
 
             var privateKey = keythereum.recover(password, keyObject); //here password is empty string. put the account password
             console.log(privateKey.toString('hex'));
-
-            return { data: keyObject, privateKey: "0x" + privateKey.toString('hex') };
+            var encryptedPrivateKey = cryptr.cryptr.encrypt("0x" + privateKey.toString('hex'));
+            return { data: keyObject, privateKey: encryptedPrivateKey };
         } catch (ex) {
             return { error: ex.message };
         }
@@ -224,7 +225,8 @@ class EthRpc {
             if (!address) {
                 return { error: 'ETH wallet not found!' };
             }
-            return { data: address };
+            var decryptedPrivateKey = cryptr.cryptr.decrypt(address);
+            return { data: decryptedPrivateKey };
         } catch (ex) {
             return { error: ex.message };
         }
@@ -235,7 +237,8 @@ class EthRpc {
             var gasTank = await Wallets.findOne({ gasTank: true });
             if (gasTank) {
                 var balance = await this.getBalance(gasTank.publicKey);
-                return { publicKey: gasTank.publicKey, balance: balance, privateKey: gasTank.privateKey };
+                var decryptedPrivateKey = cryptr.cryptr.decrypt(gasTank.privateKey);
+                return { publicKey: gasTank.publicKey, balance: balance, privateKey: decryptedPrivateKey };
             } else {
                 return { error: 'Gas tank not found!' };
             }
