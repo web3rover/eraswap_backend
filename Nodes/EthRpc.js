@@ -6,6 +6,7 @@ const Wallets = require('../models/Wallets');
 const Withdrwals = require('../models/Withdrawal');
 const BigNumber = require('bignumber.js');
 const keythereum = require('keythereum');
+const moment = require('moment');
 
 class EthRpc {
     constructor(host, port) {
@@ -329,12 +330,23 @@ class EthRpc {
                     amount: history[i].txn ? history[i].txn.amount : "",
                     status: history[i].status,
                     txnHash: history[i].txnHash ? history[i].txnHash : "",
+                    timeStamp: this.getTimeStamp(new Date(history[i]._id.getTimestamp())),
                 });
             }
             list.reverse();
             return list;
         } catch (ex) {
             return ex;
+        }
+    }
+
+    getTimeStamp(date){
+        var momentStr = moment(date).fromNow();
+        if(new Date(date).getDate() != new Date().getDate()){
+            return new Date(date).toUTCString();
+        }
+        else {
+            return momentStr;
         }
     }
 
