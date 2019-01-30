@@ -7,6 +7,7 @@ const BigNumber = require('bignumber.js');
 const Withdrwals = require('../models/Withdrawal');
 const estConfig = require('../configs/config').NODES.est;
 const Coins = require('../models/Coins');
+const moment = require('moment');
 var ethRpc = {};
 
 class ESTRpc {
@@ -109,12 +110,23 @@ class ESTRpc {
                     amount: history[i].txn ? history[i].txn.amount : "",
                     status: history[i].status,
                     txnHash: history[i].txnHash ? history[i].txnHash : "",
+                    timeStamp: this.getTimeStamp(new Date(history[i]._id.getTimestamp())),
                 });
             }
             list.reverse();
             return list;
         } catch (ex) {
             return ex;
+        }
+    }
+
+    getTimeStamp(date){
+        var momentStr = moment(date).fromNow();
+        if(new Date(date).getDate() != new Date().getDate()){
+            return new Date(date).toUTCString();
+        }
+        else {
+            return momentStr;
         }
     }
 

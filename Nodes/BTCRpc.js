@@ -2,6 +2,7 @@ const request = require('request');
 const Users = require('../models/Users');
 const Withdrwals = require('../models/Withdrawal');
 const Wallets = require('../models/Wallets');
+const moment = require('moment');
 
 class BTCRpc {
     constructor(host, port, username, password) {
@@ -96,12 +97,23 @@ class BTCRpc {
                     amount: history[i].txn ? history[i].txn.amount : "",
                     status: history[i].status,
                     txnHash: history[i].txnHash ? history[i].txnHash : "",
+                    timeStamp: this.getTimeStamp(new Date(history[i]._id.getTimestamp())),
                 });
             }
             list.reverse();
             return list;
         } catch (ex) {
             return ex;
+        }
+    }
+
+    getTimeStamp(date){
+        var momentStr = moment(date).fromNow();
+        if(new Date(date).getDate() != new Date().getDate()){
+            return new Date(date).toUTCString();
+        }
+        else {
+            return momentStr;
         }
     }
 
