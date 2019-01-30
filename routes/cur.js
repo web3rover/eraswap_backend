@@ -30,23 +30,31 @@ router.get('/get_exchange_values', (req, res, next) => {
       return next(error);
     });
 });
-router.get('/checkFee',async(req,res,next)=>{
-  if(!req.query.amount || !req.query.fromSymbol){
+router.get('/checkFee', async (req, res, next) => {
+  if (!req.query.amount || !req.query.fromSymbol) {
     return next({
-      status:400,
-      message:'Invalid request.'
-    })
-  }
-  const fromCurMarketVal = await request('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=USD&CMC_PRO_API_KEY='+config.coinMktCapKey+'&symbol=' + req.query.fromSymbol);
-     const fromCurVal = req.query.amount*JSON.parse(fromCurMarketVal).data[req.query.fromSymbol].quote.USD.price;
-     const EST_VAL = await Coins.findOne({name:'coinData',in:'USD'}).select('EST').exec();
-     const eqvEstVal = fromCurVal/EST_VAL['EST'];
-    const ESTfeeAmt = (eqvEstVal * (config.PLATFORM_FEE / 2)) / 100;
-    const SourcefeeAmt = (req.query.amount * config.PLATFORM_FEE)/100
-    return res.json({
-      EST:ESTfeeAmt.toFixed(3),
-      [req.query.fromSymbol]:SourcefeeAmt.toFixed(3)
+      status: 400,
+      message: 'Invalid request.',
     });
+  }
+  try {
+    const fromCurMarketVal = await request(
+      'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=USD&CMC_PRO_API_KEY=' + config.coinMktCapKey + '&symbol=' + req.query.fromSymbol
+    );
+    const fromCurVal = req.query.amount * JSON.parse(fromCurMarketVal).data[req.query.fromSymbol].quote.USD.price;
+    const EST_VAL = await Coins.findOne({ name: 'coinData', in: 'USD' })
+      .select('EST')
+      .exec();
+    const eqvEstVal = fromCurVal / EST_VAL['EST'];
+    const ESTfeeAmt = (eqvEstVal * (config.PLATFORM_FEE / 2)) / 100;
+    const SourcefeeAmt = (req.query.amount * config.PLATFORM_FEE) / 100;
+    return res.json({
+      EST: ESTfeeAmt.toFixed(3),
+      [req.query.fromSymbol]: SourcefeeAmt.toFixed(3),
+    });
+  } catch (error) {
+    return next({ status: 400, message: 'unable to calculate fee' });
+  }
 });
 router.get('/checkVal', (req, res, next) => {
   if (!req.query.currency) {
@@ -86,7 +94,7 @@ router.get('/checkVal', (req, res, next) => {
           .catch(error => {
             return next(error);
           });
-      } 
+      }
       // else if (req.query.platform == "source") {
       //   walletCont
       //     .getBalance(req.user.email, req.query.currency)
@@ -103,7 +111,7 @@ router.get('/checkVal', (req, res, next) => {
       //     .catch(error => {
       //       return next(error);
       //     });
-      // } 
+      // }
       else {
         return res.json(data);
       }
