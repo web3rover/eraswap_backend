@@ -8,6 +8,7 @@ const BigNumber = require('bignumber.js');
 const keythereum = require('keythereum');
 const moment = require('moment');
 const cryptr = require('../helpers/encrypterDecrypter');
+const config = require('../configs/config');
 
 class EthRpc {
     constructor(host, port) {
@@ -28,7 +29,12 @@ class EthRpc {
 
             if (!keyFile.error) {
                 //return { publicKey: op, privateKey: "0x" + privKey.privateKey, password: email };
-                return { publicKey: op, keyObject: keyFile.data, password: email, privateKey: keyFile.privateKey };
+                return {
+                    publicKey: op,
+                    keyObject: keyFile.data,
+                    password: email,
+                    privateKey: keyFile.privateKey
+                };
             } else return keyFile;
         } catch (ex) {
             return ex;
@@ -50,9 +56,13 @@ class EthRpc {
 
     async getAddress(email) {
         try {
-            var user = await Users.findOne({ email: email }).populate('wallet');
+            var user = await Users.findOne({
+                email: email
+            }).populate('wallet');
             if (!user) {
-                return { error: "User not found!" };
+                return {
+                    error: "User not found!"
+                };
             }
             var address = '';
             for (var i = 0; i < user.wallet.length; i++) {
@@ -62,11 +72,17 @@ class EthRpc {
                 }
             }
             if (address == '') {
-                return { error: 'ETH wallet not found!' };
+                return {
+                    error: 'ETH wallet not found!'
+                };
             }
-            return { data: address };
+            return {
+                data: address
+            };
         } catch (ex) {
-            return { error: ex.message };
+            return {
+                error: ex.message
+            };
         }
     }
 
@@ -77,12 +93,15 @@ class EthRpc {
                 var balance = await web3.eth.getBalance(address, latestBlock - 15);
 
                 return web3.utils.fromWei(balance, 'ether');
-            }
-            else {
-                throw { message: "Latest block not found!" };
+            } else {
+                throw {
+                    message: "Latest block not found!"
+                };
             }
         } catch (ex) {
-            return { error: ex.message };
+            return {
+                error: ex.message
+            };
         }
     }
 
@@ -90,9 +109,16 @@ class EthRpc {
         try {
 
             var balance = await this.getBalance(sender);
-            var gasEstimate = await web3.eth.estimateGas({ from: sender, to: receiver });
+            var gasEstimate = await web3.eth.estimateGas({
+                from: sender,
+                to: receiver
+            });
             var gasPrice = await web3.eth.getGasPrice();
-            if (gasPrice.error) { throw { message: "Could not find gas price. Please try again!" }; }
+            if (gasPrice.error) {
+                throw {
+                    message: "Could not find gas price. Please try again!"
+                };
+            }
             var price = new BigNumber(gasPrice);
             if (price.mul)
                 price = price.mul(gasEstimate);
@@ -101,11 +127,15 @@ class EthRpc {
             var gas = web3.utils.fromWei(price.toString(), 'ether');
             let amountToSend = amount - parseFloat(gas);
             if (amountToSend < 0) {
-                throw { message: "Amount is too low!" };
+                throw {
+                    message: "Amount is too low!"
+                };
             }
             if (balance < amount) {
                 console.log("Insufficient balance in the wallet!");
-                return { error: "Insufficient balance in the wallet" };
+                return {
+                    error: "Insufficient balance in the wallet"
+                };
             }
 
             var pwd = await this._getPassword(sender);
@@ -149,9 +179,14 @@ class EthRpc {
                     console.log(err);
                 });
 
-            return { success: true, dbObject: dbObject };
+            return {
+                success: true,
+                dbObject: dbObject
+            };
         } catch (ex) {
-            return { error: ex.message };
+            return {
+                error: ex.message
+            };
         }
     }
 
@@ -185,12 +220,9 @@ class EthRpc {
                             await withdrwal.save();
                             console.log(err);
                         });
-                } else {
-                }
-            } else {
-            }
-        } else {
-        }
+                } else {}
+            } else {}
+        } else {}
     }
 
     //Get private key while user account creation
@@ -202,9 +234,14 @@ class EthRpc {
             var privateKey = keythereum.recover(password, keyObject); //here password is empty string. put the account password
             console.log(privateKey.toString('hex'));
             var encryptedPrivateKey = cryptr.cryptr.encrypt("0x" + privateKey.toString('hex'));
-            return { data: keyObject, privateKey: encryptedPrivateKey };
+            return {
+                data: keyObject,
+                privateKey: encryptedPrivateKey
+            };
         } catch (ex) {
-            return { error: ex.message };
+            return {
+                error: ex.message
+            };
         }
 
         // var privateKey = keythereum.recover(password, keyObject);
@@ -214,7 +251,9 @@ class EthRpc {
     //Get private key of registered user from database
     async getPrivateKey(email) {
         try {
-            var user = await Users.findOne({ email: email }).populate('wallet');
+            var user = await Users.findOne({
+                email: email
+            }).populate('wallet');
             var address = '';
             for (var i = 0; i < user.wallet.length; i++) {
                 if (user.wallet[i].type == 'eth') {
@@ -223,27 +262,43 @@ class EthRpc {
                 }
             }
             if (!address) {
-                return { error: 'ETH wallet not found!' };
+                return {
+                    error: 'ETH wallet not found!'
+                };
             }
             var decryptedPrivateKey = cryptr.cryptr.decrypt(address);
-            return { data: decryptedPrivateKey };
+            return {
+                data: decryptedPrivateKey
+            };
         } catch (ex) {
-            return { error: ex.message };
+            return {
+                error: ex.message
+            };
         }
     }
 
     async _getGasTank() {
         try {
-            var gasTank = await Wallets.findOne({ gasTank: true });
+            var gasTank = await Wallets.findOne({
+                gasTank: true
+            });
             if (gasTank) {
                 var balance = await this.getBalance(gasTank.publicKey);
                 var decryptedPrivateKey = cryptr.cryptr.decrypt(gasTank.privateKey);
-                return { publicKey: gasTank.publicKey, balance: balance, privateKey: decryptedPrivateKey };
+                return {
+                    publicKey: gasTank.publicKey,
+                    balance: balance,
+                    privateKey: decryptedPrivateKey
+                };
             } else {
-                return { error: 'Gas tank not found!' };
+                return {
+                    error: 'Gas tank not found!'
+                };
             }
         } catch (ex) {
-            return { error: ex.message };
+            return {
+                error: ex.message
+            };
         }
     }
 
@@ -258,19 +313,30 @@ class EthRpc {
 
                     return op;
                 } else {
-                    return { error: 'Insufficient balance in gasTank to send the transaction.' };
+                    return {
+                        error: 'Insufficient balance in gasTank to send the transaction.'
+                    };
                 }
             }
         } catch (ex) {
-            return { error: ex.message };
+            return {
+                error: ex.message
+            };
         }
     }
 
     async _supplyGasForTransaction(sender, privateKey, receiver, amount) {
         try {
-            var gasEstimate = await web3.eth.estimateGas({ from: sender, to: receiver });
+            var gasEstimate = await web3.eth.estimateGas({
+                from: sender,
+                to: receiver
+            });
             var gasPrice = await web3.eth.getGasPrice();
-            if (gasPrice.error) { throw { message: "Could not find gas price. Please try again!" }; }
+            if (gasPrice.error) {
+                throw {
+                    message: "Could not find gas price. Please try again!"
+                };
+            }
             var price = new BigNumber(gasPrice);
             if (price.mul)
                 price = price.mul(gasEstimate);
@@ -281,7 +347,9 @@ class EthRpc {
             var op = await this.send(sender, receiver, finalAmount);
             return op;
         } catch (ex) {
-            return { error: ex.message };
+            return {
+                error: ex.message
+            };
         }
     }
 
@@ -325,39 +393,120 @@ class EthRpc {
             if (address.error) {
                 throw "Address not found for email " + email;
             }
-            var history = await Withdrwals.find({ 'txn.sender': address.data, type: "ETH" });
+            var history = await Withdrwals.find({
+                'txn.sender': address.data,
+                type: "ETH"
+            });
             var list = [];
             for (var i = 0; i < history.length; i++) {
                 list.push({
-                    receiver: history[i].txn ? history[i].txn.receiver : "",
+                    type: "send",
+                    address: history[i].txn ? history[i].txn.receiver : "",
                     amount: history[i].txn ? history[i].txn.amount : "",
                     status: history[i].status,
                     txnHash: history[i].txnHash ? history[i].txnHash : "",
-                    timeStamp: this.getTimeStamp(new Date(history[i]._id.getTimestamp())),
+                    timeStamp: +new Date(history[i]._id.getTimestamp()),
                 });
             }
             list.reverse();
+            var incommingTxn = await this.getIncommingTxn(email);
+            if (!incommingTxn.error)
+                list = list.concat(incommingTxn);
+            if (list.length >= 2) {
+                list = list.sort((a, b) => (new Date(b.timeStamp) - new Date(a.timeStamp)));
+            }
+            for (var i = 0; i < list.length; i++) {
+                list[i].timeStamp = this.getTimeStamp(new Date(list[i].timeStamp));
+            }
             return list;
         } catch (ex) {
             return ex;
         }
     }
 
-    getTimeStamp(date){
-        var momentStr = moment(date).fromNow();
-        if(new Date(date).getDate() != new Date().getDate()){
-            return new Date(date).toUTCString();
+    async getIncommingTxn(email) {
+        try {
+            let publicKey = await this.getAddress(email);
+            if (publicKey.data) {
+                let options = {
+                    url: config.ETHERSCAN.URL + "?module=account&action=txlist&address=" + publicKey.data + "&startblock=0&endblock=99999999&sort=asc&apikey=" + config.ETHERSCAN.ApiKey,
+                    method: 'get',
+                    headers: {
+                        'content-type': 'application/json',
+                    },
+                };
+
+                return new Promise((resolve, reject) => {
+                    request(options, (error, response, body) => {
+                        if (error) {
+                            reject({
+                                error: resJSON.error
+                            });
+                        } else {
+                            let result = body;
+
+                            try {
+                                let resJSON = JSON.parse(result).result;
+                                if (resJSON.error) {
+                                    reject(resJSON.error);
+                                } else {
+                                    var op = [];
+                                    for (var i = 0; i < resJSON.length; i++) {
+                                        if (resJSON[i].to == publicKey.data.toLowerCase() && resJSON[i].contractAddress == "") {
+                                            op.push({
+                                                type: "receive",
+                                                address: resJSON[i].from,
+                                                amount: web3.utils.fromWei(resJSON[i].value),
+                                                status: resJSON[i].confirmations > 14 ? "Confirmed" : "Pending",
+                                                txnHash: resJSON[i].hash,
+                                                timeStamp: parseInt(resJSON[i].timeStamp) * 1000,
+                                            });
+                                        }
+                                    }
+                                    resolve(op);
+                                }
+                            } catch (ex) {
+                                reject({
+                                    error: true,
+                                    result: result,
+                                    message: ex,
+                                });
+                            }
+                        }
+                    });
+                });
+
+                console.log(op);
+            } else {
+                throw publicKey;
+            }
+
+        } catch (ex) {
+            console.log(ex);
+            return ex;
         }
-        else {
+    }
+
+    getTimeStamp(date) {
+        var momentStr = moment(date).fromNow();
+        if (new Date(date).getDate() != new Date().getDate()) {
+            return new Date(date).toUTCString();
+        } else {
             return momentStr;
         }
     }
 
     async _parityRpcCall(command, params = [], path = '') {
         if (!params instanceof Array) {
-            throw { error: true, message: 'params must an array' };
+            throw {
+                error: true,
+                message: 'params must an array'
+            };
         } else if (!command) {
-            throw { error: true, message: 'Command can not be null' };
+            throw {
+                error: true,
+                message: 'Command can not be null'
+            };
         }
 
         let options = {
@@ -366,7 +515,12 @@ class EthRpc {
             headers: {
                 'content-type': 'application/json',
             },
-            body: JSON.stringify({ jsonrpc: '2.0', id: 'curltest', method: command, params: params }),
+            body: JSON.stringify({
+                jsonrpc: '2.0',
+                id: 'curltest',
+                method: command,
+                params: params
+            }),
         };
 
         return new Promise((resolve, reject) => {
@@ -398,7 +552,10 @@ class EthRpc {
 
     async _getPassword(address) {
         try {
-            var wallet = await Wallets.find({ publicKey: address, type: 'eth' });
+            var wallet = await Wallets.find({
+                publicKey: address,
+                type: 'eth'
+            });
             if (wallet.length >= 1) {
                 return wallet[0].password;
             }

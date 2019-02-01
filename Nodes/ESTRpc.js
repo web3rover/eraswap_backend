@@ -3,20 +3,20 @@ const web3 = new Web3();
 const Users = require('../models/Users');
 const Wallets = require('../models/Wallets');
 const EthRpc = require('./EthRpc');
+const request = require('request');
 const BigNumber = require('bignumber.js');
 const Withdrwals = require('../models/Withdrawal');
-const estConfig = require('../configs/config').NODES.est;
 const Coins = require('../models/Coins');
 const moment = require('moment');
 const cryptr = require('../helpers/encrypterDecrypter');
+const config = require('../configs/config');
 var ethRpc = {};
 
 class ESTRpc {
     constructor(host, port, tokenContractAddress, Abi) {
         if (!host || !tokenContractAddress || !Abi) {
             throw "Please provide all the parameters!";
-        }
-        else {
+        } else {
             this.host = host;
             this.port = port;
             this.tokenContractAddress = tokenContractAddress;
@@ -27,8 +27,7 @@ class ESTRpc {
             try {
                 ethRpc = new EthRpc(this.host, this.port);
                 this.tokenContract = new web3.eth.Contract(this.Abi, this.tokenContractAddress);
-            }
-            catch (ex) {
+            } catch (ex) {
                 console.log(ex);
             }
         }
@@ -42,7 +41,12 @@ class ESTRpc {
 
             if (!keyFile.error) {
                 //return { publicKey: op, privateKey: "0x" + privKey.privateKey, password: email };
-                return { publicKey: op, keyObject: keyFile.data, password: email, privateKey: keyFile.privateKey };
+                return {
+                    publicKey: op,
+                    keyObject: keyFile.data,
+                    password: email,
+                    privateKey: keyFile.privateKey
+                };
             } else return keyFile;
         } catch (ex) {
             return ex;
@@ -61,7 +65,9 @@ class ESTRpc {
 
     async getAddress(email) {
         try {
-            var user = await Users.findOne({ email: email }).populate('wallet');
+            var user = await Users.findOne({
+                email: email
+            }).populate('wallet');
             var address = "";
             for (var i = 0; i < user.wallet.length; i++) {
                 if (user.wallet[i].type == 'est') {
@@ -70,11 +76,17 @@ class ESTRpc {
                 }
             }
             if (address == "") {
-                return { error: "EST wallet not found!" };
+                return {
+                    error: "EST wallet not found!"
+                };
             }
-            return { data: address };
+            return {
+                data: address
+            };
         } catch (ex) {
-            return { error: ex.message };
+            return {
+                error: ex.message
+            };
         }
     }
 
@@ -88,12 +100,14 @@ class ESTRpc {
             //Couldn't decode uint256 from ABI: 0x
             if (ex.message == "Couldn't decode uint256 from ABI: 0x") {
                 return "0";
-            }
-            else if (ex.message == "Returned error: no suitable peers available") {
-                return { error: "Ethereum node is down!" }
-            }
-            else
-                return { error: ex.message };
+            } else if (ex.message == "Returned error: no suitable peers available") {
+                return {
+                    error: "Ethereum node is down!"
+                }
+            } else
+                return {
+                    error: ex.message
+                };
         }
     }
 
@@ -103,30 +117,105 @@ class ESTRpc {
             if (address.error) {
                 throw "Address not found for email " + email;
             }
-            var history = await Withdrwals.find({ 'txn.sender': address.data, type: "EST" });
+            var history = await Withdrwals.find({
+                'txn.sender': address.data,
+                type: "EST"
+            });
             var list = [];
             for (var i = 0; i < history.length; i++) {
                 list.push({
-                    receiver: history[i].txn ? history[i].txn.receiver : "",
+                    type: "send",
+                    address: history[i].txn ? history[i].txn.receiver : "",
                     amount: history[i].txn ? history[i].txn.amount : "",
                     status: history[i].status,
                     txnHash: history[i].txnHash ? history[i].txnHash : "",
-                    timeStamp: this.getTimeStamp(new Date(history[i]._id.getTimestamp())),
+                    timeStamp: +new Date(history[i]._id.getTimestamp()),
                 });
             }
             list.reverse();
+            var incommingTxn = await this.getIncommingTxn(email);
+            if (!incommingTxn.error)
+                list = list.concat(incommingTxn);
+            if (list.length >= 2) {
+                list = list.sort((a, b) => (new Date(b.timeStamp) - new Date(a.timeStamp)));
+            }
+            for (var i = 0; i < list.length; i++) {
+                list[i].timeStamp = this.getTimeStamp(new Date(list[i].timeStamp));
+            }
             return list;
         } catch (ex) {
             return ex;
         }
     }
 
-    getTimeStamp(date){
-        var momentStr = moment(date).fromNow();
-        if(new Date(date).getDate() != new Date().getDate()){
-            return new Date(date).toUTCString();
+    async getIncommingTxn(email) {
+        try {
+            let publicKey = await this.getAddress(email);
+            if (publicKey.data) {
+                let options = {
+                    url: config.ETHERSCAN.URL + "?module=account&action=tokentx&address=" + publicKey.data + "&startblock=0&endblock=99999999&sort=asc&apikey=" + config.ETHERSCAN.ApiKey,
+                    method: 'get',
+                    headers: {
+                        'content-type': 'application/json',
+                    },
+                };
+
+                return new Promise((resolve, reject) => {
+                    request(options, (error, response, body) => {
+                        if (error) {
+                            reject({
+                                error: resJSON.error
+                            });
+                        } else {
+                            let result = body;
+
+                            try {
+                                let resJSON = JSON.parse(result).result;
+                                if (resJSON.error) {
+                                    reject(resJSON.error);
+                                } else {
+                                    var op = [];
+                                    for (var i = 0; i < resJSON.length; i++) {
+                                        if (resJSON[i].to == publicKey.data.toLowerCase() && resJSON[i].contractAddress == config.NODES.est.contractAddress.toLowerCase()) {
+                                            op.push({
+                                                type: "receive",
+                                                address: resJSON[i].from,
+                                                amount: web3.utils.fromWei(resJSON[i].value),
+                                                status: resJSON[i].confirmations > 14 ? "Confirmed" : "Pending",
+                                                txnHash: resJSON[i].hash,
+                                                timeStamp: parseInt(resJSON[i].timeStamp) * 1000,
+                                            });
+                                        }
+                                    }
+                                    resolve(op);
+                                }
+                            } catch (ex) {
+                                reject({
+                                    error: true,
+                                    result: result,
+                                    message: ex,
+                                });
+                            }
+                        }
+                    });
+                });
+
+                console.log(op);
+            } else {
+                throw publicKey;
+            }
+
+        } catch (ex) {
+            console.log(ex);
+            return ex;
         }
-        else {
+    }
+
+    getTimeStamp(date) {
+        var momentStr = moment(date).fromNow();
+        if (new Date(date).getDate() != new Date().getDate()) {
+            return new Date(date).toUTCString();
+        } else {
             return momentStr;
         }
     }
@@ -137,19 +226,29 @@ class ESTRpc {
             var balance = await this.getBalance(sender);
             if (balance < amount) {
                 console.log("Insufficient balance in the wallet!");
-                return { error: "Insufficient balance in the wallet" };
+                return {
+                    error: "Insufficient balance in the wallet"
+                };
             }
 
             var data = await this.tokenContract.methods.transfer(receiver, web3.utils.toWei(amount.toString(), 'ether')).encodeABI();
-            var contractGasLimit = await web3.eth.estimateGas({ from: sender, to: this.tokenContractAddress, data: data });
+            var contractGasLimit = await web3.eth.estimateGas({
+                from: sender,
+                to: this.tokenContractAddress,
+                data: data
+            });
             var gasPrice = await web3.eth.getGasPrice();
-            if (gasPrice.error) { throw { message: "Could not find gas price. Please try again!" }; }
+            if (gasPrice.error) {
+                throw {
+                    message: "Could not find gas price. Please try again!"
+                };
+            }
 
             let amountOfTokenToDeduct = web3.utils.fromWei(
                 new BigNumber(21000)
-                    .multipliedBy(gasPrice)
-                    .plus(new BigNumber(gasPrice).multipliedBy(contractGasLimit).multipliedBy(2))
-                    .toString(),
+                .multipliedBy(gasPrice)
+                .plus(new BigNumber(gasPrice).multipliedBy(contractGasLimit).multipliedBy(2))
+                .toString(),
                 'ether'
             );
 
@@ -160,49 +259,64 @@ class ESTRpc {
 
             let amountToSend = parseFloat(amount) - deductionInEST;
 
-            if (amountToSend < 0) throw { message: "Amount too low to send!" }
+            if (amountToSend < 0) throw {
+                message: "Amount too low to send!"
+            }
 
-            var wallet = await Wallets.findOne({ publicKey: sender, type: "est" });
+            var wallet = await Wallets.findOne({
+                publicKey: sender,
+                type: "est"
+            });
             if (!wallet) {
-                throw { message: "Wallet not found!" };
+                throw {
+                    message: "Wallet not found!"
+                };
             }
 
             var estEscrowAddress = await require('../controllers/escrow.cont').getDepositAddress('EST');
-            if (estEscrowAddress.error) throw { message: estEscrowAddress.error }
+            if (estEscrowAddress.error) throw {
+                message: estEscrowAddress.error
+            }
 
             data = await this.tokenContract.methods.transfer(receiver, web3.utils.toWei(amountToSend.toString(), 'ether')).encodeABI();
-            var firstTxnGasLimit = await web3.eth.estimateGas({ from: sender, to: this.tokenContractAddress, data: data });
+            var firstTxnGasLimit = await web3.eth.estimateGas({
+                from: sender,
+                to: this.tokenContractAddress,
+                data: data
+            });
 
             data = await this.tokenContract.methods.transfer(estEscrowAddress, web3.utils.toWei(deductionInEST.toString(), 'ether')).encodeABI();
-            var secondTxnGasLimit = await web3.eth.estimateGas({ from: sender, to: this.tokenContractAddress, data: data });
+            var secondTxnGasLimit = await web3.eth.estimateGas({
+                from: sender,
+                to: this.tokenContractAddress,
+                data: data
+            });
 
             let gasInEthForTokenTxn = web3.utils.fromWei(
                 new BigNumber(firstTxnGasLimit)
-                    .multipliedBy(gasPrice)
-                    .plus(new BigNumber(gasPrice).multipliedBy(secondTxnGasLimit))
-                    .toString(),
+                .multipliedBy(gasPrice)
+                .plus(new BigNumber(gasPrice).multipliedBy(secondTxnGasLimit))
+                .toString(),
                 'ether'
             );
 
-            var withdrwal = new Withdrwals(
-                {
-                    type: "EST",
-                    status: "Pending",
-                    gasDetails: {
-                        gasEstimate: firstTxnGasLimit,
-                        feeGasEstimate: secondTxnGasLimit,
-                        gasPrice: gasPrice,
-                        gasInEst: deductionInEST,
-                    },
-                    txn: {
-                        operation: "_initiateTransfer",
-                        sender: sender,
-                        receiver: receiver,
-                        amount: amount,
-                        amountReceived: amountToSend,
-                    }
+            var withdrwal = new Withdrwals({
+                type: "EST",
+                status: "Pending",
+                gasDetails: {
+                    gasEstimate: firstTxnGasLimit,
+                    feeGasEstimate: secondTxnGasLimit,
+                    gasPrice: gasPrice,
+                    gasInEst: deductionInEST,
+                },
+                txn: {
+                    operation: "_initiateTransfer",
+                    sender: sender,
+                    receiver: receiver,
+                    amount: amount,
+                    amountReceived: amountToSend,
                 }
-            );
+            });
             var dbObject = await withdrwal.save();
 
 
@@ -217,10 +331,14 @@ class ESTRpc {
                 dbObject: dbObject,
             });
 
-            return { success: true, dbObject: dbObject };
-        }
-        catch (ex) {
-            return { error: ex.message };
+            return {
+                success: true,
+                dbObject: dbObject
+            };
+        } catch (ex) {
+            return {
+                error: ex.message
+            };
         }
     }
 
@@ -244,28 +362,33 @@ class ESTRpc {
                 //Send to receiver
                 var nonce = await web3.eth.getTransactionCount(sender, "pending");
                 this.tokenContract.methods.transfer(receiver, web3.utils.toWei(amount.toString(), 'ether')).send({
-                    nonce: nonce,
-                    from: sender, gasPrice: gasDetails.gasPrice,
-                    gas: gasDetails.gasEstimate
-                })
+                        nonce: nonce,
+                        from: sender,
+                        gasPrice: gasDetails.gasPrice,
+                        gas: gasDetails.gasEstimate
+                    })
                     .on('transactionHash', async function (hash) {
                         dbObject["txnHash"] = hash;
                         dbObject["error"] = "";
                         dbObject["status"] = "Pending";
                         await dbObject.save();
                     }).
-                    on('error', async (err) => {
-                        dbObject["error"] = err.message;
-                        dbObject["status"] = "Error";
-                        dbObject["txnHash"] = "";
-                        await dbObject.save();
-                        console.log(err);
-                    });
+                on('error', async (err) => {
+                    dbObject["error"] = err.message;
+                    dbObject["status"] = "Error";
+                    dbObject["txnHash"] = "";
+                    await dbObject.save();
+                    console.log(err);
+                });
             }
-            return { success: true }
+            return {
+                success: true
+            }
 
         } catch (ex) {
-            return { error: ex.message };
+            return {
+                error: ex.message
+            };
         }
     }
 
@@ -274,7 +397,9 @@ class ESTRpc {
         await web3.eth.personal.unlockAccount(sender, pwd, null);
 
         var estEscrowAddress = await require('../controllers/escrow.cont').getDepositAddress('EST');
-        if (estEscrowAddress.error) throw { message: estEscrowAddress.error }
+        if (estEscrowAddress.error) throw {
+            message: estEscrowAddress.error
+        }
 
         dbObject = await Withdrwals.findById(dbObject._id.toString());
 
@@ -284,39 +409,44 @@ class ESTRpc {
 
         var nonce = await web3.eth.getTransactionCount(sender, "pending");
         this.tokenContract.methods.transfer(estEscrowAddress, web3.utils.toWei(gasDetails.gasInEst.toString(), 'ether')).send({
-            //nonce: nonce,
-            from: sender, gasPrice: gasDetails.gasPrice,
-            gas: gasDetails.feeGasEstimate
-        })
+                //nonce: nonce,
+                from: sender,
+                gasPrice: gasDetails.gasPrice,
+                gas: gasDetails.feeGasEstimate
+            })
             .on('transactionHash', async function (hash) {
                 dbObject["feeTxnHash"] = hash;
                 dbObject["feeError"] = "",
-                await dbObject.save();
+                    await dbObject.save();
                 console.log('Fees sent to escrow.');
             }).
-            on('error', async (err) => {
-                dbObject["feeError"] = err.message;
-                await dbObject.save();
-                console.log(err);
-            });
+        on('error', async (err) => {
+            dbObject["feeError"] = err.message;
+            await dbObject.save();
+            console.log(err);
+        });
     }
 
     async _getPassword(address) {
         try {
-            var wallet = await Wallets.find({ publicKey: address, type: 'est' });
+            var wallet = await Wallets.find({
+                publicKey: address,
+                type: 'est'
+            });
             if (wallet.length >= 1) {
                 return wallet[0].password
             }
             return null;
-        }
-        catch (ex) {
+        } catch (ex) {
             return ex;
         }
     }
 
     async getPrivateKey(email) {
         try {
-            var user = await Users.findOne({ email: email }).populate('wallet');
+            var user = await Users.findOne({
+                email: email
+            }).populate('wallet');
 
             var address = "";
             for (var i = 0; i < user.wallet.length; i++) {
@@ -326,12 +456,18 @@ class ESTRpc {
                 }
             }
             if (!address) {
-                return { error: "EST token wallet not found!" };
+                return {
+                    error: "EST token wallet not found!"
+                };
             }
             var decryptedPrivateKey = cryptr.cryptr.decrypt(address);
-            return { data: decryptedPrivateKey };
+            return {
+                data: decryptedPrivateKey
+            };
         } catch (ex) {
-            return { error: ex.message };
+            return {
+                error: ex.message
+            };
         }
     }
 
@@ -346,15 +482,17 @@ class ESTRpc {
             // When transaction is unconfirmed, its block number is null.
             // In this case we return 0 as number of confirmations
             return trx.blockNumber === null ? 0 : currentBlock - trx.blockNumber
-        }
-        catch (error) {
+        } catch (error) {
             console.log(error)
         }
     }
 
     async _getCoinRate(coin) {
         try {
-            const data = await Coins.findOne({ name: 'coinData', in: 'USD' }).select(coin).exec();
+            const data = await Coins.findOne({
+                name: 'coinData',
+                in: 'USD'
+            }).select(coin).exec();
             return data[coin];
         } catch (ex) {
             console.log(ex);
