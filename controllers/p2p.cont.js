@@ -1,5 +1,6 @@
 var Blockcluster = require('blockcluster');
 const shortid = require('shortid');
+const request = require('request-promise');
 
 const mailHelper = require('../helpers/mailHelper');
 const RequestLog = require('../models/RequestLog');
@@ -158,8 +159,23 @@ const matchingHandler = async (listingId, sellerEmail, ownerUserId, requester, a
   const feeAddress = await escrowCont.getDepositAddress(feeCoin);
 
   let fee;
+  const data = await Coins.findOne({ name: 'coinData', in: 'USD' })
+    .select({ cryptoCurrency: 1, EST: 1 })
+    .lean()
+    .exec();
+  if (!data[cryptoCurrency]) {
+    var capdata = await request(
+      'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=USD&CMC_PRO_API_KEY=' + config.coinMktCapKey + '&symbol=' + req.query.currency
+    );
+    var price = JSON.parse(capdata).data[cryptoCurrency].quote['USD']['price'];
+    // await Coins.update({ name: 'coinData', in: 'USD' }, { $set: {  [req.query.currency]: price,in:'USD' } }, { upsert: true }).exec();
+    data = { ...data, [cryptoCurrency]: price };
+  }
   if (feeCoin == 'EST') {
-    fee = (amount * (config.P2P_FEE / 2)) / 100;
+    const fromCurVal = amount * data[cryptoCurrency];
+    const eqvEstVal = fromCurVal / data['EST'];
+
+    fee = (eqvEstVal * (config.P2P_FEE / 2)) / 100;
     //deduct 0.125% from user wallet and send to escrow
     await walletCont.send(sellerEmail, fee, feeAddress, 'EST'); //let it transfer or incase error it will exit from here.
   } else {

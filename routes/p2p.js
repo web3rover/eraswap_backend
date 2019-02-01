@@ -4,6 +4,7 @@ const currencyCont = require('../controllers/p2p.cont');
 const Coins = require('../models/Coins');
 const walletCont = require('../controllers/wallets');
 const config = require('../configs/config');
+const request = require('request-promise');
 
 router.post('/add_buy_listing', (req, res, next) => {
   currencyCont
