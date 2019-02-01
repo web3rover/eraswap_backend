@@ -1,9 +1,10 @@
 const request = require('request');
 const Users = require('../models/Users');
 const Withdrwals = require('../models/Withdrawal');
-const Wallets = require('../models/Wallets');
+const config = require('../configs/config');
 const moment = require('moment');
 const cryptr = require('../helpers/encrypterDecrypter');
+
 
 class BTCRpc {
     constructor(host, port, username, password) {
@@ -95,26 +96,107 @@ class BTCRpc {
             var list = [];
             for (var i = 0; i < history.length; i++) {
                 list.push({
-                    receiver: history[i].txn ? history[i].txn.receiver : "",
+                    type: "send",
+                    address: history[i].txn ? history[i].txn.receiver : "",
                     amount: history[i].txn ? history[i].txn.amount : "",
                     status: history[i].status,
                     txnHash: history[i].txnHash ? history[i].txnHash : "",
-                    timeStamp: this.getTimeStamp(new Date(history[i]._id.getTimestamp())),
+                    timeStamp: +new Date(history[i]._id.getTimestamp()),
                 });
             }
             list.reverse();
+            var incommingTxn = await this.getIncommingTxn(email);
+            if (!incommingTxn.error)
+                list = list.concat(incommingTxn);
+            if (list.length >= 2) {
+                list = list.sort((a, b) => (new Date(b.timeStamp) - new Date(a.timeStamp)));
+            }
+            for (var i = 0; i < list.length; i++) {
+                list[i].timeStamp = this.getTimeStamp(new Date(list[i].timeStamp));
+            }
             return list;
         } catch (ex) {
             return ex;
         }
     }
 
-    getTimeStamp(date){
-        var momentStr = moment(date).fromNow();
-        if(new Date(date).getDate() != new Date().getDate()){
-            return new Date(date).toUTCString();
+    async getIncommingTxn(email) {
+        try {
+            var publicKey = await this.getAddress(email);
+            if (publicKey.data) {
+                publicKey = publicKey.data;
+            } else {
+                throw publicKey;
+            }
+            return new Promise((resolve, reject) => {
+                var options = {
+                    url: config.BLOCKCYPHER.URL + "addrs/" + publicKey + "/full",
+                    method: 'get',
+                    headers: {
+                        'content-type': 'application/json',
+                    },
+                }
+                request(options, (error, response, body) => {
+                    if (error) {
+                        reject(error);
+                    } else {
+                        let result = body;
+
+                        try {
+                            let resJSON = JSON.parse(result);
+                            if (resJSON.error) {
+                                reject({
+                                    error: resJSON.error
+                                });
+                            } else {
+                                var txn = resJSON.txs;
+                                var addr = resJSON.address;
+                                if (txn.length > 0) {
+                                    var op = [];
+                                    for (var i = 0; i < txn.length; i++) {
+                                        let outputs = txn[i].outputs;
+                                        for (var j = 0; j < outputs.length; j++) {
+                                            let addresses = outputs[j].addresses;
+                                            for (var k = 0; k < addresses.length; k++) {
+                                                if (addresses[k] == addr) {
+                                                    op.push({
+                                                        timeStamp: +new Date(txn[i].confirmed),
+                                                        type: "receive",
+                                                        address: txn[i].inputs[0].addresses[0],
+                                                        amount: outputs[j].value / 1e8,
+                                                        status: txn[i].confirmations > 6 ? "Confirmed" : "Pending",
+                                                        txnHash: txn[i].hash,
+                                                    });
+                                                }
+                                            }
+                                        }
+                                    }
+                                    resolve(op);
+                                } else {
+                                    resolve([]);
+                                }
+                            }
+                        } catch (ex) {
+                            reject({
+                                error: true,
+                                result: result,
+                                message: ex,
+                            });
+                        }
+                    }
+                });
+            });
+        } catch (ex) {
+            console.log(ex);
+            return ex;
         }
-        else {
+    }
+
+    getTimeStamp(date) {
+        var momentStr = moment(date).fromNow();
+        if (new Date(date).getDate() != new Date().getDate()) {
+            return new Date(date).toUTCString();
+        } else {
             return momentStr;
         }
     }
@@ -255,23 +337,25 @@ class BTCRpc {
         }
     }
 
-    async _getTransaction(txnHash) {
+    async _getTransaction(txnHash, sender) {
         try {
-            var withdrwal = await Withdrwals.findOne({
-                txnHash: txnHash
-            });
-            if (withdrwal) {
-
-                return new Promise((resolve, reject) => {
-                    this._btcRpcCall("gettransaction", [txnHash], "/wallet/" + withdrwal.txn.sender).then((res) => {
-                        resolve(res.result);
-                    }).catch(err => {
-                        reject(err);
-                    });
+            if (!sender) {
+                var withdrwal = await Withdrwals.findOne({
+                    txnHash: txnHash
                 });
-            } else {
-                throw "Database entry for transaction not found.";
+                if (!withdrwal) {
+                    throw "Database entry for transaction not found.";
+                }
+                sender = withdrwal.txn.sender;
             }
+            return new Promise((resolve, reject) => {
+                this._btcRpcCall("gettransaction", [txnHash], "/wallet/" + sender).then((res) => {
+                    resolve(res.result);
+                }).catch(err => {
+                    reject(err);
+                });
+            });
+
         } catch (error) {
             console.log(error);
         }
