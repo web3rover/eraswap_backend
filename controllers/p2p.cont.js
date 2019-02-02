@@ -187,7 +187,7 @@ const matchingHandler = async (listingId, sellerEmail, ownerUserId, requester, a
   await walletCont.send(sellerEmail, amount, escrowAddress, cryptoCurrency); //let it transfer or incase error it will exit from here.
 
   //do this after sending to escrow;
-  const data = {
+  const dataSTB = {
     cryptoCurrency: cryptoCurrency,
     listingId: listingId,
     ownerUserId: ownerUserId,
@@ -212,7 +212,7 @@ const matchingHandler = async (listingId, sellerEmail, ownerUserId, requester, a
     assetName: config.BLOCKCLUSTER.matchAssetName,
     fromAccount: node.getWeb3().eth.accounts[0],
     identifier: identifier,
-    public: data,
+    public: dataSTB,
   });
 };
 
