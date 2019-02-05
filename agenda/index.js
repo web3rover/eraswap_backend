@@ -198,6 +198,7 @@ var start = async function () {
         try {
             ethRpc = ethRpc ? ethRpc : require('../Nodes').RPCDirectory['ETH'];
             var result = await ethRpc._getGasForTokenTransfer(gasEstimate, userPublicKey);
+            console.log(result);
             if (!result.error && result.dbObject) {
                 var txn = await require('../models/Withdrawal').findById(dbObject._id);
                 txn["waitFor"] = result.dbObject._id;
@@ -208,6 +209,7 @@ var start = async function () {
                 await reSchedule(result.error, job, 5, done);
             }
         } catch (ex) {
+            console.log(ex);
             await reSchedule(ex.message, job, 5, done);
         }
     });

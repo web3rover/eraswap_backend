@@ -284,7 +284,7 @@ class EthRpc {
             });
             if (gasTank) {
                 var balance = await this.getBalance(gasTank.publicKey);
-                var decryptedPrivateKey = cryptr.cryptr.decrypt(gasTank.privateKey);
+                var decryptedPrivateKey = gasTank.privateKey ? cryptr.cryptr.decrypt(gasTank.privateKey) : "";
                 return {
                     publicKey: gasTank.publicKey,
                     balance: balance,
