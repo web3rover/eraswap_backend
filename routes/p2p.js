@@ -6,6 +6,28 @@ const walletCont = require('../controllers/wallets');
 const config = require('../configs/config');
 const request = require('request-promise');
 
+router.get('/feeParams', async (req, res, next) => {
+  const EST_VAL = await Coins.findOne({ name: 'coinData', in: 'USD' })
+    .select('EST BTC ETH')
+    .exec();
+  return res.json(EST_VAL);
+  try {
+    const fromCurVal = req.query.amount * JSON.parse(fromCurMarketVal).data[req.query.fromSymbol].quote.USD.price;
+    const EST_VAL = await Coins.findOne({ name: 'coinData', in: 'USD' })
+      .select('EST')
+      .exec();
+    const eqvEstVal = fromCurVal / EST_VAL['EST'];
+    const ESTfeeAmt = (eqvEstVal * (config.PLATFORM_FEE / 2)) / 100;
+    const SourcefeeAmt = (req.query.amount * config.PLATFORM_FEE) / 100;
+    return res.json({
+      EST: ESTfeeAmt.toFixed(3),
+      [req.query.fromSymbol]: SourcefeeAmt.toFixed(3),
+    });
+  } catch (error) {
+    return next({ status: 400, message: 'unable to calculate fee' });
+  }
+});
+
 router.post('/add_buy_listing', (req, res, next) => {
   currencyCont
     .addListing({ show: true, wantsToSell: true, email: req.user.email, username: req.user.username, userId: req.user._id, ...req.body })
