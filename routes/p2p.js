@@ -11,26 +11,11 @@ router.get('/feeParams', async (req, res, next) => {
     .select('EST BTC ETH')
     .exec();
   return res.json(EST_VAL);
-  try {
-    const fromCurVal = req.query.amount * JSON.parse(fromCurMarketVal).data[req.query.fromSymbol].quote.USD.price;
-    const EST_VAL = await Coins.findOne({ name: 'coinData', in: 'USD' })
-      .select('EST')
-      .exec();
-    const eqvEstVal = fromCurVal / EST_VAL['EST'];
-    const ESTfeeAmt = (eqvEstVal * (config.PLATFORM_FEE / 2)) / 100;
-    const SourcefeeAmt = (req.query.amount * config.PLATFORM_FEE) / 100;
-    return res.json({
-      EST: ESTfeeAmt.toFixed(3),
-      [req.query.fromSymbol]: SourcefeeAmt.toFixed(3),
-    });
-  } catch (error) {
-    return next({ status: 400, message: 'unable to calculate fee' });
-  }
 });
 
 router.post('/add_buy_listing', (req, res, next) => {
   currencyCont
-    .addListing({ show: true, wantsToSell: true, email: req.user.email, username: req.user.username, userId: req.user._id, ...req.body })
+    .addListing({ show: true, wantsToBuy: true, email: req.user.email, username: req.user.username, userId: req.user._id, ...req.body })
     .then(data => {
       return res.json(data);
     })
@@ -66,7 +51,7 @@ router.post('/add_sell_listing', (req, res, next) => {
 
             if (balanceData && Number(balanceData.balance) >= deductableAmount) {
               currencyCont
-                .addListing({ show: true, wantsToBuy: true, email: req.user.email, username: req.user.username, userId: req.user._id, ...req.body })
+                .addListing({ show: true, wantsToSell: true, email: req.user.email, username: req.user.username, userId: req.user._id, ...req.body })
                 .then(data => {
                   return res.json(data);
                 })
@@ -176,7 +161,7 @@ router.post('/showInterest', (req, res, next) => {
                 <br />
                 ${req.user.username} Just showed You interest on your listing.
                 <br />
-                he/she Interested to ${req.body.wantsToBuy ? 'buy your' : 'sell to you'} the listed asset,
+                he/she Interested to ${req.body.wantsToBuy ? 'sell to you' : 'buy your'} the listed asset,
                 <br />
                 Special Message from user: <i><b>${req.body.specialMessage || '-'}</b></i>
                 <br />
