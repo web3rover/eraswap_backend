@@ -395,7 +395,8 @@ class EthRpc {
             }
             var history = await Withdrwals.find({
                 'txn.sender': address.data,
-                type: "ETH"
+                type: "ETH",
+                status: { $ne: "Error" },
             });
             var list = [];
             for (var i = 0; i < history.length; i++) {
