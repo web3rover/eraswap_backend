@@ -91,7 +91,8 @@ class BTCRpc {
         try {
             var history = await Withdrwals.find({
                 'txn.sender': email,
-                type: "BTC"
+                type: "BTC",
+                status: { $ne: "Error" },
             });
             var list = [];
             for (var i = 0; i < history.length; i++) {

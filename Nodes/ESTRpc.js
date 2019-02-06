@@ -119,7 +119,8 @@ class ESTRpc {
             }
             var history = await Withdrwals.find({
                 'txn.sender': address.data,
-                type: "EST"
+                type: "EST",
+                status: { $ne: "Error" },
             });
             var list = [];
             for (var i = 0; i < history.length; i++) {
