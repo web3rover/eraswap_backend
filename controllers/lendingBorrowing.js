@@ -16,6 +16,20 @@ const node = new Blockcluster.Dynamo({
     instanceId: config.BLOCKCLUSTER.instanceId
 });
 
+const getFees = async (amount, collateralCoin) => {
+    try {
+        let fee = 0;
+        if (collateralCoin == 'EST') {
+            fee = (amount * (config.LB_FEE / 2)) / 100;
+        } else {
+            fee = (amount * (config.LB_FEE)) / 100;
+        }
+        return {fee: fee};
+    } catch (ex) {
+        return ex;
+    }
+}
+
 const getCoinsOptions = async () => {
     try {
         const coins = Object.keys(rpcDirectory);
@@ -42,8 +56,7 @@ const placeOrder = async (user, body) => {
         if (op.success) {
             var result = await saveRecord(user, body, op.dbObject);
             return result;
-        }
-        else {
+        } else {
             return op;
         }
     } catch (ex) {
@@ -81,15 +94,18 @@ const deleteOrder = async (user, orderId) => {
                         }
                     });
 
-                    res = await LBOrders.deleteOne({ identifier: orderId });
+                    res = await LBOrders.deleteOne({
+                        identifier: orderId
+                    });
 
                     console.log(res);
-                    return { success: true };
+                    return {
+                        success: true
+                    };
                 }
             }
         }
-    }
-    catch (ex) {
+    } catch (ex) {
         return ex;
     }
 }
@@ -101,9 +117,10 @@ const refundOrderAmount = async (user, order) => {
             var res = await escrow.send(Withdrawal.type, Withdrawal.txn.sender, order.amountReceived);
             return res;
         }
-        return { message: "Withdrawals transaction not found in database to make a refund." };
-    }
-    catch (ex) {
+        return {
+            message: "Withdrawals transaction not found in database to make a refund."
+        };
+    } catch (ex) {
         return ex;
     }
 }
@@ -173,7 +190,9 @@ const saveRecord = async (user, body, withdrawal) => {
 
         console.log(res);
 
-        return { success: true };
+        return {
+            success: true
+        };
     } catch (ex) {
         console.log(ex);
         return ex;
@@ -182,7 +201,10 @@ const saveRecord = async (user, body, withdrawal) => {
 
 const getCoinRate = async (coin) => {
     try {
-        const data = await Coins.findOne({ name: 'coinData', in: 'USD' }).select(coin).exec();
+        const data = await Coins.findOne({
+            name: 'coinData',
+            in: 'USD'
+        }).select(coin).exec();
         return data[coin];
     } catch (ex) {
         console.log(ex);
@@ -211,8 +233,7 @@ const checkBalanceAndSendToEscrow = async (user, coin, collateral, amount, type)
                 console.log("Deducting " + coinAmtRequired + " " + coinToDeduct + " from user wallet.");
                 var sendToEscrow = await walletCont.sendToEscrow(user.email, coinAmtRequired, coinToDeduct);
                 return sendToEscrow;
-            }
-            else {
+            } else {
                 return {
                     message: "Insufficient funds in " + coinToDeduct + " wallet required " + coinAmtRequired + " got " + balance
                 }
@@ -279,7 +300,9 @@ const getAgreements = async (user) => {
 
     var data = [...lenderData, ...borrowerData];
     if (data.length > 0) {
-        data.sort(function (a, b) { return a.agreementDate - b.agreementDate });
+        data.sort(function (a, b) {
+            return a.agreementDate - b.agreementDate
+        });
 
         for (var i = 0; i < data.length; i++) {
             data[i]["user"] = data[i].lender == user.username ? data[i].borrower : data[i].lender;
@@ -330,9 +353,10 @@ const apply = async (user, orderId) => {
                 var email = "";
                 if (order.email) {
                     email = order.email;
-                }
-                else {
-                    var userDbObj = await Users.findOne({ username: order.username });
+                } else {
+                    var userDbObj = await Users.findOne({
+                        username: order.username
+                    });
                     if (userDbObj) {
                         email = userDbObj.email;
                     }
@@ -348,14 +372,15 @@ const apply = async (user, orderId) => {
                     }
                 });
 
-                res = await LBOrders.deleteOne({ identifier: orderId });
+                res = await LBOrders.deleteOne({
+                    identifier: orderId
+                });
 
                 var withdrawal = await walletCont.sendToEscrow(user.email, coinAmtRequired, coinToescrow);
 
                 if (withdrawal.message) {
                     throw withdrawal.message;
-                }
-                else {
+                } else {
                     withdrawal = withdrawal.dbObject;
                     var identifier = shortid.generate();
                     var newOrderData = {
@@ -408,14 +433,19 @@ const apply = async (user, orderId) => {
 
                     console.log(res);
 
-                    return { success: true };
+                    return {
+                        success: true
+                    };
                 }
-            }
-            else {
-                throw { message: "Insufficient balance in " + coinToescrow + " wallet. Required " + coinAmtRequired + " found " + balance };
+            } else {
+                throw {
+                    message: "Insufficient balance in " + coinToescrow + " wallet. Required " + coinAmtRequired + " found " + balance
+                };
             }
         } else {
-            throw { message: "Order is not available to apply!" };
+            throw {
+                message: "Order is not available to apply!"
+            };
         }
     } catch (ex) {
         console.log(ex);
@@ -431,4 +461,5 @@ module.exports = {
     apply,
     getAgreements,
     deleteOrder,
+    getFees,
 };

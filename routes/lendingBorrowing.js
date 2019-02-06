@@ -10,6 +10,14 @@ router.get('/getCoinsOptions', async (req, res, next) => {
     });
 });
 
+router.get('/getFees', async (req, res, next) => {
+    LBController.getFees(req.query.amount, req.query.collateralCoin).then(data => {
+        return res.json(data);
+    }).catch(error => {
+        return next(error);
+    });
+});
+
 router.get('/getCollateralCoinsOptions', async (req, res, next) => {
     LBController.getCollateralCoinsOptions(req.query.crypto).then(data => {
         return res.json(data);
