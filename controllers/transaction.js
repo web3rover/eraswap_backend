@@ -146,6 +146,25 @@ const saveTxn = data => {
     });
   });
 };
+
+const updateTxnAmount = async (lctxid, receivedAmount) => {
+            try {
+                var txn = await Txn.updateOne({
+                    _id: lctxid
+                }, {
+                    $set: {
+                        exchFromCurrencyAmt: receivedAmount
+                    }
+                });
+                return {
+                    success: true,
+                    txn: txn,
+                }
+            } catch (ex) {
+                return ex;
+            }
+}
+
 const getMytxn = user => {
   return Txn.find({ userId: user })
     .sort({ createdAt: -1 })
@@ -255,4 +274,5 @@ module.exports = {
   converTdata,
   verifyConvertion,
   cancelAndRefundExistingOrder,
+  updateTxnAmount,
 };
