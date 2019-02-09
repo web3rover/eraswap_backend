@@ -467,11 +467,28 @@ var start = async function () {
         var wallets = Object.keys(rpcDirectory);
         var len = wallets.length;
         var str = "wallet"
-        var allUsers = Users.find({
-            walletCreationInProgress: false,
+        var allUsers = await Users.find({
             activated: true
         }).populate('wallet');
-        var incompleteWallets = await allUsers.$where('this.wallet.length < 3').exec();
+        var incompleteWallets = [];
+
+        var found = false;
+        for (var j = 0; j < allUsers.length; j++) {
+            for (var l = 0; l < wallets.length; l++) {
+                found = false;
+                for (var k = 0; k < allUsers[j].wallet.length; k++) {
+                    if(allUsers[j].wallet[k].type == wallets[l].toLowerCase()){
+                        found = true;
+                        break;
+                    }
+                }
+                if(!found){
+                    incompleteWallets.push(allUsers[j]);
+                    break;
+                }
+            }
+        }
+        
         if (incompleteWallets.length > 0) {
             for (var i = 0; i < incompleteWallets.length; i++) {
                 await addMissingWallets(incompleteWallets[i]);
