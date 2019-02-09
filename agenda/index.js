@@ -463,6 +463,7 @@ var start = async function () {
     });
 
     agenda.define('Check missing wallets and add', async (job, done) => {
+        console.log("checking missing wallets");
         var rpcDirectory = require('../Nodes').RPCDirectory;
         var wallets = Object.keys(rpcDirectory);
         var len = wallets.length;
@@ -488,7 +489,7 @@ var start = async function () {
                 }
             }
         }
-        
+
         if (incompleteWallets.length > 0) {
             for (var i = 0; i < incompleteWallets.length; i++) {
                 await addMissingWallets(incompleteWallets[i]);
