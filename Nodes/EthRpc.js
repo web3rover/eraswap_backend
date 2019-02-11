@@ -154,7 +154,7 @@ class EthRpc {
             }
 
             var nonce = await web3.eth.getTransactionCount(sender, "pending");
-            await web3.eth.personal.unlockAccount(sender, pwd);
+            await web3.eth.personal.unlockAccount(sender, pwd, null);
             web3.eth
                 .sendTransaction({
                     nonce: nonce,
