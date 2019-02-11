@@ -346,7 +346,7 @@ class ESTRpc {
     async _initiateTransfer(sender, receiver, amount, dbObject) {
         try {
             var pwd = await this._getPassword(sender);
-            await web3.eth.personal.unlockAccount(sender, pwd, null);
+            await web3.eth.personal.unlockAccount(sender, pwd, 4000);
 
             dbObject = await Withdrwals.findById(dbObject._id.toString());
             dbObject["txn"] = {

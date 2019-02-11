@@ -152,7 +152,7 @@ class EthRpc {
                 },
             });
             var dbObject = await withdrwal.save();
-            await web3.eth.personal.unlockAccount(sender, pwd, null);
+            await web3.eth.personal.unlockAccount(sender, pwd, 4000);
             var nonce = await web3.eth.getTransactionCount(sender, "pending");
             let roundOffAmt = Math.round(amountToSend * 10 ** 18) / 10 ** 18;
             let amtInWei = web3.utils.toWei(roundOffAmt.toString(), 'ether');
