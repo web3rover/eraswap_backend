@@ -127,7 +127,7 @@ class EthRpc {
                     message: "Amount is too low!"
                 };
             }
-            if (balance < amount) {
+            if (new BigNumber(amount.toString()).isGreaterThan(BigNumber(balance.toString()))) {
                 console.log("Insufficient balance in the wallet!");
                 return {
                     error: "Insufficient balance in the wallet"
@@ -153,8 +153,8 @@ class EthRpc {
                 dbObject = dbTxn;
             }
 
-            await web3.eth.personal.unlockAccount(sender, pwd, 4000);
             var nonce = await web3.eth.getTransactionCount(sender, "pending");
+            await web3.eth.personal.unlockAccount(sender, pwd, 600);
             web3.eth
                 .sendTransaction({
                     nonce: nonce,
