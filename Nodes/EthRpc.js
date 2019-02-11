@@ -105,7 +105,7 @@ class EthRpc {
         }
     }
 
-    async send(sender, receiver, amount) {
+    async send(sender, receiver, amount, resend, dbTxn) {
         try {
 
             var balance = await this.getBalance(sender);
@@ -119,13 +119,9 @@ class EthRpc {
                     message: "Could not find gas price. Please try again!"
                 };
             }
-            var price = new BigNumber(gasPrice);
-            if (price.mul)
-                price = price.mul(gasEstimate);
-            else
-                price = price * gasEstimate;
-            var gas = web3.utils.fromWei(price.toString(), 'ether');
-            let amountToSend = amount - parseFloat(gas);
+            var price = new BigNumber(gasPrice).multipliedBy(gasEstimate);
+            let amountToSend = new BigNumber(web3.utils.toWei(amount.toString(), 'ether')).minus(price.toString());
+
             if (amountToSend < 0) {
                 throw {
                     message: "Amount is too low!"
@@ -139,29 +135,32 @@ class EthRpc {
             }
 
             var pwd = await this._getPassword(sender);
+            var dbObject = {};
+            if (!resend) {
+                var withdrwal = new Withdrwals({
+                    type: 'ETH',
+                    status: 'Pending',
+                    txn: {
+                        operation: 'send',
+                        sender: sender,
+                        receiver: receiver,
+                        amount: amount,
+                        amountReceived: web3.utils.fromWei(amount.toString(), 'ether'),
+                    },
+                });
+                dbObject = await withdrwal.save();
+            } else {
+                dbObject = dbTxn;
+            }
 
-            var withdrwal = new Withdrwals({
-                type: 'ETH',
-                status: 'Pending',
-                txn: {
-                    operation: 'send',
-                    sender: sender,
-                    receiver: receiver,
-                    amount: amount,
-                    amountReceived: amountToSend,
-                },
-            });
-            var dbObject = await withdrwal.save();
             await web3.eth.personal.unlockAccount(sender, pwd, 4000);
             var nonce = await web3.eth.getTransactionCount(sender, "pending");
-            let roundOffAmt = Math.round(amountToSend * 10 ** 18) / 10 ** 18;
-            let amtInWei = web3.utils.toWei(roundOffAmt.toString(), 'ether');
             web3.eth
                 .sendTransaction({
                     nonce: nonce,
                     from: sender,
                     to: receiver,
-                    value: amtInWei,
+                    value: amountToSend.toString(),
                     gas: gasEstimate,
                     gasPrice: gasPrice,
                 })
@@ -196,30 +195,8 @@ class EthRpc {
                 var withdrwal = await Withdrwals.findById(dbObject._id);
                 if (withdrwal) {
                     var txn = withdrwal.txn;
-                    var pwd = await this._getPassword(txn.sender);
-
-                    await web3.eth.personal.unlockAccount(txn.sender, pwd, null);
-                    var nonce = await web3.eth.getTransactionCount(txn.sender, "pending");
-                    web3.eth
-                        .sendTransaction({
-                            nonce: nonce,
-                            from: txn.sender,
-                            to: txn.receiver,
-                            value: web3.utils.toWei(txn.amount.toString(), 'ether'),
-                        })
-                        .on('transactionHash', async function (hash) {
-                            withdrwal['txnHash'] = hash;
-                            withdrwal['error'] = '';
-                            withdrwal['status'] = 'Pending';
-                            await withdrwal.save();
-                        })
-                        .on('error', async err => {
-                            withdrwal['error'] = err.message;
-                            withdrwal['status'] = 'Error';
-                            withdrwal['txnHash'] = '';
-                            await withdrwal.save();
-                            console.log(err);
-                        });
+                    var op = await this.send(txn.sender, txn.receiver, txn.amount, true, withdrwal);
+                    return op;
                 } else {}
             } else {}
         } else {}
@@ -396,7 +373,9 @@ class EthRpc {
             var history = await Withdrwals.find({
                 'txn.sender': address.data,
                 type: "ETH",
-                status: { $ne: "Error" },
+                status: {
+                    $ne: "Error"
+                },
             });
             var list = [];
             for (var i = 0; i < history.length; i++) {
