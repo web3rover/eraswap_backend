@@ -122,7 +122,7 @@ class EthRpc {
             var price = new BigNumber(gasPrice).multipliedBy(gasEstimate);
             let amountToSend = new BigNumber(web3.utils.toWei(amount.toString(), 'ether')).minus(price.toString());
 
-            if (amountToSend < 0) {
+            if (!amountToSend.isGreaterThan(BigNumber(0))) {
                 throw {
                     message: "Amount is too low!"
                 };
@@ -145,7 +145,7 @@ class EthRpc {
                         sender: sender,
                         receiver: receiver,
                         amount: amount,
-                        amountReceived: web3.utils.fromWei(amount.toString(), 'ether'),
+                        amountReceived: web3.utils.fromWei(amountToSend.toString(), 'ether'),
                     },
                 });
                 dbObject = await withdrwal.save();
