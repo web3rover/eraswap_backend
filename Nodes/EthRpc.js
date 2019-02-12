@@ -107,7 +107,7 @@ class EthRpc {
 
     async send(sender, receiver, amount, resend, dbTxn) {
         try {
-
+            receiver = receiver.toLowerCase();
             var balance = await this.getBalance(sender);
             var gasEstimate = await web3.eth.estimateGas({
                 from: sender,

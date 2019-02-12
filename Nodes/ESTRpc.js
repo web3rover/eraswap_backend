@@ -223,7 +223,7 @@ class ESTRpc {
 
     async send(sender, receiver, amount) {
         try {
-
+            receiver = receiver.toLowerCase();
             var balance = await this.getBalance(sender);
             if (balance < amount) {
                 console.log("Insufficient balance in the wallet!");
