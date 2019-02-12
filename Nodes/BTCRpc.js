@@ -232,7 +232,7 @@ class BTCRpc {
 
     async send(sendingWallet, address, amount, dbObject) {
         try {
-
+            console.log(address);
             var balance = await this.getBalance(sendingWallet);
             if (balance < amount) {
                 console.log("Insufficient balance in the wallet!");
