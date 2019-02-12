@@ -21,6 +21,8 @@ mongoose.connect(
     { useNewUrlParser: true }
 );
 
+console.log(config.mongo.url);
+
 // enable the use of request body parsing middleware
 app.use(bodyParser.json());
 app.use(
