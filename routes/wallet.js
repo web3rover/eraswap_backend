@@ -89,7 +89,7 @@ router.post('/send', (req, res, next) => {
       message: 'all keys are required.',
     });
   }
-  const receiver = req.body.receiver.toLowerCase();
+  const receiver = req.body.receiver;
   walletController
     .send(req.user.email, req.body.amount, receiver, req.body.crypto)
     .then(data => {
