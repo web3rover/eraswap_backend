@@ -177,15 +177,23 @@ const matchingHandler = async (listingId, sellerEmail, ownerUserId, requester, a
 
     fee = (eqvEstVal * (config.P2P_FEE / 2)) / 100;
     //deduct 0.125% from user wallet and send to escrow
-    await walletCont.send(sellerEmail, fee, feeAddress, 'EST'); //let it transfer or incase error it will exit from here.
+    const sendStatus = await walletCont.send(sellerEmail, fee, feeAddress, 'EST'); //let it transfer or incase error it will exit from here.
+    if (!sendStatus.success) {
+      throw sendStatus;
+    }
   } else {
     // 0.25% deduct and place order
     fee = (amount * config.P2P_FEE) / 100;
-    await walletCont.send(sellerEmail, fee, feeAddress, feeCoin);
+    const sendStatus = await walletCont.send(sellerEmail, fee, feeAddress, feeCoin);
+    if (!sendStatus.success) {
+      throw sendStatus;
+    }
   }
 
-  await walletCont.send(sellerEmail, amount, escrowAddress, cryptoCurrency); //let it transfer or incase error it will exit from here.
-
+  const sendStatusO = await walletCont.send(sellerEmail, amount, escrowAddress, cryptoCurrency); //let it transfer or incase error it will exit from here.
+  if (!sendStatusO.success) {
+    throw sendStatusO;
+  }
   //do this after sending to escrow;
   const dataSTB = {
     cryptoCurrency: cryptoCurrency,
@@ -305,7 +313,10 @@ const finishDeal = async (id, record, item) => {
       .select('email')
       .exec();
     const buyeraddress = await walletCont.getAddress(buyeremail.email, record.cryptoCur);
-    await escrowCont.send(record.cryptoCur, buyeraddress, item.amount); //send it
+    const sendStatusEs = await escrowCont.send(record.cryptoCur, buyeraddress, item.amount); //send it
+    if (!sendStatusEs.success) {
+      throw sendStatusEs;
+    }
     const data = await node.callAPI('assets/updateAssetInfo', {
       assetName: config.BLOCKCLUSTER.matchAssetName,
       fromAccount: node.getWeb3().eth.accounts[0],
@@ -319,7 +330,10 @@ const finishDeal = async (id, record, item) => {
     //its a buy listing
     //requester should be seller
     const buyeraddress = await walletCont.getAddress(record.email, record.cryptoCur);
-    await escrowCont.send(record.cryptoCur, buyeraddress, item.amount);
+    const sendStatusEsO = await escrowCont.send(record.cryptoCur, buyeraddress, item.amount);
+    if (!sendStatusEsO.success) {
+      throw sendStatusEsO;
+    }
     const data = await node.callAPI('assets/updateAssetInfo', {
       assetName: config.BLOCKCLUSTER.matchAssetName,
       fromAccount: node.getWeb3().eth.accounts[0],
