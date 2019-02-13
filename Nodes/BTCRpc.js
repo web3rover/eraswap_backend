@@ -258,6 +258,18 @@ class BTCRpc {
                 dbObject = await withdrwal.save();
             }
 
+            // var currentFeeRate = await this._btcRpcCall("estimatesmartfee", [6]);
+            // console.log("Current FeeRate: ", currentFeeRate.result.feerate);
+
+            // var modifiedFeeRate = currentFeeRate.result.feerate * config.NODES.btc.feeIncreaseFactor;
+            // modifiedFeeRate = Math.round((modifiedFeeRate * 1e6)) / 1e6;
+            // console.log("Modified FeeRate: ", modifiedFeeRate);
+
+            // if (!isNaN(modifiedFeeRate)){
+            //     op = await this._btcRpcCall("settxfee", [modifiedFeeRate], '/wallet/' + sendingWallet);
+            //     console.log(op.result);
+            // }
+
             return new Promise((resolve, reject) => {
                 this._btcRpcCall("sendtoaddress", [address, amount, "", "", true], "/wallet/" + sendingWallet).then(async result => {
                     result["success"] = true;
@@ -268,7 +280,7 @@ class BTCRpc {
                     dbObject = await dbObject.save();
 
                     let txn = await this._getTransaction(result.result);
-                    let amountReceived = parseFloat(txn.amount) * -1;
+                    let amountReceived = parseFloat(amount) + parseFloat(txn.fee.toString());
 
                     dbObject.txn["amountReceived"] = amountReceived;
                     dbObject = await dbObject.save();

@@ -58,6 +58,8 @@ module.exports = {
       port: process.env.BTC_PORT || '8555',
       username: process.env.BTC_USER || 'foo',
       password: process.env.BTC_PASS || 'bar',
+      feeIncreaseFactor: 30 || process.env.feeIncreaseFactor, //The factor by which you want to increase btc txn fees for 
+                                                               //faster transaction confirmation.
     },
     eth: {
       host: process.env.ETH_HOST || '13.233.168.86',

@@ -10,7 +10,7 @@ mongoose.connect(
     }
 );
 
-let BtcNodeHost = "13.126.72.226";
+let BtcNodeHost = "13.233.168.86";
 let BtcNodePort = 8555;
 
 let username = "foo";
@@ -21,9 +21,12 @@ let btcRpc = new BtcRpc(BtcNodeHost, BtcNodePort, username, password);
 var addr = "2Msr9kCgRgc3xrQbKytVGjKZioAkLLXDxqQ";
 run = async () => {
     try {
-        await btcRpc.createWallet("qwqw");
-        var op = await btcRpc.send("qwqw", "1Ef7ngbaXmqURjVUX19WjbCTJqiBbrDyAJ", 0.1);
-        console.log(op);
+        ///await btcRpc.createWallet("qwqw");
+        //var op = await btcRpc.send("qwqw", "1Ef7ngbaXmqURjVUX19WjbCTJqiBbrDyAJ", 0.1);
+        op = await btcRpc.getBalance("ukrocks.mehta@gmail.com");
+        console.log(op.result);
+        op = await btcRpc.send("ukrocks.mehta@gmail.com", "mo4MxcuVogjdpDmqyiGfMgDmLK7UQ8tqpw", 0.0001);
+        console.log(op.dbObject.txnHash);
     } catch (ex) {
         console.log(ex);
     }
