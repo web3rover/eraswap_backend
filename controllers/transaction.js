@@ -184,6 +184,9 @@ const converTdata = async (symbol, id, platForm, fromSymbol, toSymbol, amount, p
      fee = (eqvEstVal * (config.PLATFORM_FEE / 2)) / 100;
     const depositAdd = await escrrows.getDepositAddress('EST');
     const sendStatus = await wallets.send(userEmail, fee, depositAdd, 'EST');
+    if(!sendStatus.success){
+        throw sendStatus;
+    }
     console.log(sendStatus); //maybe log this or something
     placableAmt = amount;
     //deduct 25% from user wallet and send to escrow
