@@ -1,7 +1,7 @@
 var Blockcluster = require('blockcluster');
 const shortid = require('shortid');
 const request = require('request-promise');
-
+const Coins = require('../models/Coins');
 const mailHelper = require('../helpers/mailHelper');
 const RequestLog = require('../models/RequestLog');
 const Users = require('../models/Users');
