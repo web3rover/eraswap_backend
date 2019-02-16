@@ -159,7 +159,7 @@ const matchingHandler = async (listingId, sellerEmail, ownerUserId, requester, a
   const feeAddress = await escrowCont.getDepositAddress(feeCoin);
 
   let fee;
-  const data = await Coins.findOne({ name: 'coinData', in: 'USD' })
+  let data = await Coins.findOne({ name: 'coinData', in: 'USD' })
     .select({ cryptoCurrency: 1, EST: 1 })
     .lean()
     .exec();
