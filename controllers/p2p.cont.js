@@ -164,9 +164,7 @@ const matchingHandler = async (listingId, sellerEmail, ownerUserId, requester, a
     .lean()
     .exec();
   if (!data[cryptoCurrency]) {
-    var capdata = await request(
-      'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=USD&CMC_PRO_API_KEY=' + config.coinMktCapKey + '&symbol=' + req.query.currency
-    );
+    var capdata = await request('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=USD&CMC_PRO_API_KEY=' + config.coinMktCapKey + '&symbol=USD');
     var price = JSON.parse(capdata).data[cryptoCurrency].quote['USD']['price'];
     // await Coins.update({ name: 'coinData', in: 'USD' }, { $set: {  [req.query.currency]: price,in:'USD' } }, { upsert: true }).exec();
     data = { ...data, [cryptoCurrency]: price };
