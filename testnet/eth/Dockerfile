@@ -1,4 +1,4 @@
-FROM parity/parity:v2.2.3
+FROM parity/parity:stable
 
 
 EXPOSE 30303
@@ -8,4 +8,4 @@ EXPOSE 8545
 EXPOSE 8546
 
 CMD ["--jsonrpc-interface", "all", \
- "--chain", "kovan", "--dapps-apis-all", "--jsonrpc-apis", "all", "--snapshot-peers", "16", "--warp-barrier", "9575000"]
+ "--chain", "ropsten", "--dapps-apis-all", "--jsonrpc-apis", "all", "--min-peers", "25", "--max-peers", "50"]
