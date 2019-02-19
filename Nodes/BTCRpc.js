@@ -316,7 +316,7 @@ class BTCRpc {
             }
             if (address == "") {
                 return {
-                    error: "ETH wallet not found!"
+                    error: "BTC wallet creation in progress!"
                 };
             }
             return {
@@ -388,7 +388,7 @@ class BTCRpc {
             }
             if (!address) {
                 return {
-                    error: "EST token wallet not found!"
+                    error: "BTC wallet creation in progress!"
                 };
             }
             var decryptedPrivateKey = cryptr.cryptr.decrypt(address);

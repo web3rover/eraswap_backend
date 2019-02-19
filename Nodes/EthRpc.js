@@ -73,7 +73,7 @@ class EthRpc {
             }
             if (address == '') {
                 return {
-                    error: 'ETH wallet not found!'
+                    error: 'ETH wallet creation in progress!'
                 };
             }
             return {
@@ -240,7 +240,7 @@ class EthRpc {
             }
             if (!address) {
                 return {
-                    error: 'ETH wallet not found!'
+                    error: 'ETH wallet creation in progress!'
                 };
             }
             var decryptedPrivateKey = cryptr.cryptr.decrypt(address);

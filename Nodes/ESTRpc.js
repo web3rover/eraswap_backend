@@ -77,7 +77,7 @@ class ESTRpc {
             }
             if (address == "") {
                 return {
-                    error: "EST wallet not found!"
+                    error: "EST wallet creation in progress!"
                 };
             }
             return {
@@ -270,7 +270,7 @@ class ESTRpc {
             });
             if (!wallet) {
                 throw {
-                    message: "Wallet not found!"
+                    message: "EST wallet creation in progress!"
                 };
             }
 
@@ -458,7 +458,7 @@ class ESTRpc {
             }
             if (!address) {
                 return {
-                    error: "EST token wallet not found!"
+                    error: "EST wallet creation in progress!"
                 };
             }
             var decryptedPrivateKey = cryptr.cryptr.decrypt(address);
