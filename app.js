@@ -45,6 +45,9 @@ var agenda = require('./agenda')
 var escrow = require('./controllers/escrow.cont');
 (async () => await escrow.checkEscrow())();
 
+var walletCont = require('./controllers/wallets');
+(async () => await walletCont.checkGasTank())();
+
 app.use((err, req, res, next) => {
     // set locals, only providing error in development
     // res.locals.message = err.message;

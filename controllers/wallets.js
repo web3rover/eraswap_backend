@@ -112,6 +112,7 @@ const checkGasTank = async () => {
                 password: ethWallet.password,
                 gasTank: true
             }).save();
+            console.log("Created new Gas Tank!");
         }
         return { result: true };
     } catch (ex) {
