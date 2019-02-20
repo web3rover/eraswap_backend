@@ -107,7 +107,7 @@ class EthRpc {
 
     async send(sender, receiver, amount, resend, dbTxn) {
         try {
-            receiver = receiver.toLowerCase();
+            receiver = receiver.toString().toLowerCase();
             var balance = await this.getBalance(sender);
             var gasEstimate = await web3.eth.estimateGas({
                 from: sender,
@@ -314,11 +314,7 @@ class EthRpc {
                     message: "Could not find gas price. Please try again!"
                 };
             }
-            var price = new BigNumber(gasPrice);
-            if (price.mul)
-                price = price.mul(gasEstimate);
-            else
-                price = price * gasEstimate;
+            var price = new BigNumber(gasPrice).multipliedBy(gasEstimate);
             var gas = parseFloat(web3.utils.fromWei(price.toString(), 'ether'));
             var finalAmount = parseFloat(amount) + gas;
             var op = await this.send(sender, receiver, finalAmount);

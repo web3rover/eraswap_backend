@@ -7,7 +7,7 @@ const Withdrawals = require('../models/Withdrawal');
 const Users = require('../models/Users');
 const Coins = require('../models/Coins');
 const LBOrders = require('../models/LBOrders');
-
+const BigNumber = require('bignumber.js');
 var Blockcluster = require('blockcluster');
 const shortid = require("shortid");
 
@@ -20,9 +20,9 @@ const getFees = async (amount, collateralCoin) => {
     try {
         let fee = 0;
         if (collateralCoin == 'EST') {
-            fee = (amount * (config.LB_FEE / 2)) / 100;
+            fee = new BigNumber(amount).multipliedBy(config.LB_FEE).dividedBy(2).dividedBy(100);
         } else {
-            fee = (amount * (config.LB_FEE)) / 100;
+            fee = new BigNumber(amount).multipliedBy(config.LB_FEE).dividedBy(100);
         }
         return {fee: fee};
     } catch (ex) {
@@ -224,8 +224,8 @@ const checkBalanceAndSendToEscrow = async (user, coin, collateral, amount, type)
                 var coinPrice = await getCoinRate(coin);
                 var collateralPrice = await getCoinRate(collateral);
 
-                var coinAmtReqInUSD = coinPrice * coinAmtRequired;
-                var collateralRequired = coinAmtReqInUSD / collateralPrice;
+                var coinAmtReqInUSD = new BigNumber(coinPrice).multipliedBy(coinAmtRequired);
+                var collateralRequired = new BigNumber(coinAmtReqInUSD.toNumber()).dividedBy(collateralPrice);
                 coinAmtRequired = collateralRequired;
             }
             if (balance >= coinAmtRequired) {
