@@ -6,8 +6,8 @@ var rp = require('request-promise');
 
 const config = require('../configs/config');
 
-let Cryptopia = new ccxt.cryptopia({verbose:false,...config.keys.CRYPTOPIA});
-let Kukoin = new ccxt.kucoin(config.keys.KUKOIN);
+let Cryptopia = new ccxt.cryptopia({ verbose: false, ...config.keys.CRYPTOPIA });
+let Kukoin = new ccxt.kucoin2({ verbose: false, ...config.keys.KUKOIN });
 let Bittrex = new ccxt.bittrex({ verbose: false, ...config.keys.BITTREX });
 let Polonix = new ccxt.poloniex({ verbose: false, ...config.keys.POLONIEX });
 let Binance = new ccxt.binance({ verbose: false, ...config.keys.BINANCE });
@@ -16,47 +16,46 @@ let Binance = new ccxt.binance({ verbose: false, ...config.keys.BINANCE });
 const Exchanges = [Bittrex, Binance, Cryptopia, Polonix, Kukoin];
 // const Exchanges = [Binance];
 
-const Kucoin = require('kucoin-api');
+// const Kucoin = require('kucoin-api');
 
-let kc = new Kucoin(config.keys.KUKOIN.apiKey, config.keys.KUKOIN.secret);
+// let kc = new Kucoin(config.keys.KUKOIN.apiKey, config.keys.KUKOIN.secret);
 
-const kuCoinMineWithdrawals = async (coin, page = 0) => {
-  return kc.getDepositAndWithdrawalRecords({
-    symbol: coin,
-    type: 'deposit',
-    page: page,
-  });
-};
+// const kuCoinMineWithdrawals = async (coin, page = 0) => {
+//   return kc.getDepositAndWithdrawalRecords({
+//     symbol: coin,
+//     type: 'deposit',
+//     page: page,
+//   });
+// };
 
-let kuCoinGetWithdrawals = coin => {
-  return kuCoinMineWithdrawals(coin)
-    .then(async data => {
-      const totalResults = Number(data.data.total);
-      const promiseNeeded = Math.ceil(totalResults / Number(data.data.limit));
-      let resultData = [];
-      let promiseArr = [];
-      for (i = 0; i < promiseNeeded; i++) {
-        const minedData = await kuCoinMineWithdrawals(coin, i + 1);
-        resultData = resultData.concat(minedData.data.datas);
-      }
-      console.log(JSON.stringify(resultData));
-      return resultData;
-    })
-    .catch(error => {
-      console.log(error);
-    });
-};
+// let kuCoinGetWithdrawals = coin => {
+//   return kuCoinMineWithdrawals(coin)
+//     .then(async data => {
+//       const totalResults = Number(data.data.total);
+//       const promiseNeeded = Math.ceil(totalResults / Number(data.data.limit));
+//       let resultData = [];
+//       let promiseArr = [];
+//       for (i = 0; i < promiseNeeded; i++) {
+//         const minedData = await kuCoinMineWithdrawals(coin, i + 1);
+//         resultData = resultData.concat(minedData.data.datas);
+//       }
+//       console.log(JSON.stringify(resultData));
+//       return resultData;
+//     })
+//     .catch(error => {
+//       console.log(error);
+//     });
+// };
 
 const getAllCurrency = async () => {
   let allCurs = [];
   for (ele of Exchanges) {
-    try{
-    await ele.loadMarkets();
-    allCurs.push(Object.keys(ele.currencies));
-    }catch(error){
-      console.log(error)
+    try {
+      await ele.loadMarkets();
+      allCurs.push(Object.keys(ele.currencies));
+    } catch (error) {
+      console.log(error);
     }
-   
   }
   const allArr = [].concat.apply([], allCurs);
   let finalArr = [];
@@ -86,7 +85,7 @@ const getDepositAddress = async (platform, symbol) => {
 
     //   const data = await rp(options);
     //   return data[0];
-    // } else 
+    // } else
     if (name.name.toLowerCase() == platform.toLowerCase()) {
       // await name.loadMarkets();
       let data;
@@ -143,7 +142,7 @@ const getExchangeVal = async (from, to) => {
     }
     const marketObj = {
       name: name.name,
-      sym:symbol,
+      sym: symbol,
       ask: data && data.ask ? data.ask : 0,
       bid: data && data.bid ? data.bid : 0,
     };
@@ -218,51 +217,53 @@ const verifyTxn = async (dipositTxnId, tiMeFrom, platForm, symbol, amount) => {
     //       // API call failed...
     //       console.log(err);
     //     });
-    // } else 
-    if (name.name.toLowerCase() == platForm.toLowerCase() && name.name.toLowerCase() == 'kucoin') {
-      try {
-        const kucoinDeposits = await kuCoinGetWithdrawals(symbol);
-        const a = kucoinDeposits
-          .map(i => {
-            // i={
-            //   address:"0xe4717d694c78bf8c76a52388c969eeebee384ea0"
-            //   amount:0.03504
-            //   coinType:"ETH"
-            //   confirmation:17
-            //   createdAt:1542972397000
-            //   fee:0
-            //   oid:"5bf7e3edb95e0273d50e7fd3"
-            //   outerWalletTxid:"0x36ec3aa8505d668df9ec8c8591ef08ddf16d8592f79da96887f8017890a100d2@0xe4717d694c78bf8c76a52388c969eeebee384ea0@eth"
-            //   remark:null
-            //   status:"SUCCESS"
-            //   type:"DEPOSIT"
-            //   updatedAt:1542972397000
-            // }
-            // add here :  && i.createdAt > tiMeFrom
-            if (i.type == 'DEPOSIT') {
-              return {
-                txid: i.outerWalletTxid,
-                currency: i.coinType,
-                amount: i.amount,
-                status: i.status == 'SUCCESS' ? 'ok' : 'pending',
-              };
-            }
-          })
-          .filter(i => {
-            if ((dipositTxnId ? i.txid == dipositTxnId : true) && i.currency == symbol && i.amount == amount) {
-              return i;
-            }
-          });
-        return a;
-      } catch (error_mapping) {
-        console.log(error_mapping);
-        return Promise.reject({
-          status: 400,
-          message: error_mapping.message || 'No Txn Found',
-          error: error_mapping,
-        });
-      }
-    } else if (name.name.toLowerCase() == platForm.toLowerCase()) {
+    // } else
+    // if (name.name.toLowerCase() == platForm.toLowerCase() && name.name.toLowerCase() == 'kucoin') {
+    //   try {
+    //     const kucoinDeposits = await kuCoinGetWithdrawals(symbol);
+    //     const a = kucoinDeposits
+    //       .map(i => {
+    //         // i={
+    //         //   address:"0xe4717d694c78bf8c76a52388c969eeebee384ea0"
+    //         //   amount:0.03504
+    //         //   coinType:"ETH"
+    //         //   confirmation:17
+    //         //   createdAt:1542972397000
+    //         //   fee:0
+    //         //   oid:"5bf7e3edb95e0273d50e7fd3"
+    //         //   outerWalletTxid:"0x36ec3aa8505d668df9ec8c8591ef08ddf16d8592f79da96887f8017890a100d2@0xe4717d694c78bf8c76a52388c969eeebee384ea0@eth"
+    //         //   remark:null
+    //         //   status:"SUCCESS"
+    //         //   type:"DEPOSIT"
+    //         //   updatedAt:1542972397000
+    //         // }
+    //         // add here :  && i.createdAt > tiMeFrom
+    //         if (i.type == 'DEPOSIT') {
+    //           return {
+    //             txid: i.outerWalletTxid,
+    //             currency: i.coinType,
+    //             amount: i.amount,
+    //             status: i.status == 'SUCCESS' ? 'ok' : 'pending',
+    //           };
+    //         }
+    //       })
+    //       .filter(i => {
+    //         if ((dipositTxnId ? i.txid == dipositTxnId : true) && i.currency == symbol && i.amount == amount) {
+    //           return i;
+    //         }
+    //       });
+    //     return a;
+    //   } catch (error_mapping) {
+    //     console.log(error_mapping);
+    //     return Promise.reject({
+    //       status: 400,
+    //       message: error_mapping.message || 'No Txn Found',
+    //       error: error_mapping,
+    //     });
+    //   }
+    // } else
+
+    if (name.name.toLowerCase() == platForm.toLowerCase()) {
       // await name.loadMarkets();
       let txnData;
       try {
@@ -332,8 +333,8 @@ const convertCurrency = async (symbol, platForm, fromSymbol, toSymbol, amount) =
         // }
         let toSymbolAmount;
         let side;
-        if(name.name.toLowerCase() == "cryptopia"){
-          amount = (amount - (amount*0.2)/100);
+        if (name.name.toLowerCase() == 'cryptopia') {
+          amount = amount - (amount * 0.2) / 100;
         }
         if (curMar.symbol === fromSymbol + '/' + toSymbol) {
           side = 'sell';
@@ -342,7 +343,6 @@ const convertCurrency = async (symbol, platForm, fromSymbol, toSymbol, amount) =
 
           console.log('sell order placed', symbol, fromSymbol, toSymbol);
         } else if (curMar.symbol === toSymbol + '/' + fromSymbol) {
-          
           side = 'buy';
           toSymbolAmount = (Number(amount) / Number(curMar.data.bid)).toFixed(8);
           data = await name.createOrder(curMar.symbol, 'limit', side, Number(toSymbolAmount), curMar.data.bid);
@@ -361,7 +361,7 @@ const convertCurrency = async (symbol, platForm, fromSymbol, toSymbol, amount) =
     }
   }
 };
-const sendCurrency = async (platForm, address, amount, symbol,tag) => {
+const sendCurrency = async (platForm, address, amount, symbol, tag) => {
   for (let x in Exchanges) {
     let name = Exchanges[x];
 

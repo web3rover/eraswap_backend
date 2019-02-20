@@ -1,7 +1,7 @@
 module.exports = {
   FRONTEND_HOST: process.env.FRONTEND_HOST || 'http://localhost:3000',
   mongo: {
-    url: process.env.MONGO_URL || 'mongodb://localhost:27017/test2',
+    url: process.env.MONGO_URL || 'mongodb://saikatharryc:saikat95@ds129720.mlab.com:29720/test2',
   },
   ETHERSCAN: {
     URL: process.env.ETHERSCAN_URL || 'http://api-kovan.etherscan.io/api',
@@ -36,8 +36,9 @@ module.exports = {
       secret: process.env.CRYPTOPIA_SEC || 'FmoPYYlwb1+KK8qyiZZm20fABjhSVXKb+ISBh1CU00g=',
     },
     KUKOIN: {
-      apiKey: process.env.KUKOIN_KEY || '5bf7dc5dc0391f204e8ccc5a',
-      secret: process.env.KUKOIN_SEC || 'cf3f1368-8846-46cd-8a36-94dd95bfaf92',
+      apiKey: process.env.KUKOIN_KEY || '5c6d76b91cde786a8363f637',
+      secret: process.env.KUKOIN_SEC || '4174aca5-2d4a-4216-baec-c18f5edcf31e',
+      password: process.env.KUKOIN_PASS || 'saikat95',
     },
   },
   JWT: {
@@ -51,7 +52,7 @@ module.exports = {
   LB_FEE: process.env.LB_FEE || 0.25,
   P2P_FEE: process.env.P2P_FEE || 0.25,
   EST_IN_ETH: process.env.EST_IN_ETH || 0.00005804, //in eth
-  coinMktCapKey: process.env.coinMktCapKey || '298dba8f-b0b4-4a72-8c85-a39c525781dc',
+  coinMktCapKey: process.env.coinMktCapKey || 'd5d13fac-ccfd-49d6-9d1b-8301920fe0f6',
   NODES: {
     btc: {
       host: process.env.BTC_HOST || '13.233.168.86',
