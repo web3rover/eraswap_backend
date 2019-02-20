@@ -8,6 +8,7 @@ const Users = require('../models/Users');
 const config = require('../configs/config');
 const escrowCont = require('./escrow.cont');
 const walletCont = require('./wallets');
+const BigNumber = require('bignumber.js');
 
 const node = new Blockcluster.Dynamo({
   locationDomain: config.BLOCKCLUSTER.host,
@@ -157,7 +158,14 @@ const matchingHandler = async (listingId, sellerEmail, ownerUserId, requester, a
   //send the amount to escrow wallet from seller wallet
   const escrowAddress = await escrowCont.getDepositAddress(cryptoCurrency);
   const feeAddress = await escrowCont.getDepositAddress(feeCoin);
-
+  let modifiedFeeAddress;
+  let modifiedEscAddress;
+  if (feeCoin != 'BTC') {
+    modifiedFeeAddress = feeAddress.toLocaleLowerCase();
+  }
+  if (cryptoCurrency != 'BTC') {
+    modifiedEscAddress = escrowAddress.toLocaleLowerCase();
+  }
   let fee;
   let data = await Coins.findOne({ name: 'coinData', in: 'USD' })
     .select({ cryptoCurrency: 1, EST: 1 })
@@ -175,22 +183,29 @@ const matchingHandler = async (listingId, sellerEmail, ownerUserId, requester, a
     const fromCurVal = amount * data[cryptoCurrency];
     const eqvEstVal = fromCurVal / data['EST'];
 
-    fee = (eqvEstVal * (config.P2P_FEE / 2)) / 100;
+    fee = new BigNumber(eqvEstVal)
+      .multipliedBy(config.P2P_FEE / 2)
+      .dividedBy(100)
+      .toNumber();
     //deduct 0.125% from user wallet and send to escrow
-    const sendStatus = await walletCont.send(sellerEmail, fee, feeAddress, 'EST'); //let it transfer or incase error it will exit from here.
+    const sendStatus = await walletCont.send(sellerEmail, fee, modifiedFeeAddress, 'EST'); //let it transfer or incase error it will exit from here.
     if (!sendStatus.success) {
       throw sendStatus;
     }
   } else {
     // 0.25% deduct and place order
-    fee = (amount * config.P2P_FEE) / 100;
-    const sendStatus = await walletCont.send(sellerEmail, fee, feeAddress, feeCoin);
+    fee = new BigNumber(amount)
+      .multipliedBy(config.P2P_FEE)
+      .dividedBy(100)
+      .toNumber();
+
+    const sendStatus = await walletCont.send(sellerEmail, fee, modifiedFeeAddress, feeCoin);
     if (!sendStatus.success) {
       throw sendStatus;
     }
   }
 
-  const sendStatusO = await walletCont.send(sellerEmail, amount, escrowAddress, cryptoCurrency); //let it transfer or incase error it will exit from here.
+  const sendStatusO = await walletCont.send(sellerEmail, amount, modifiedEscAddress, cryptoCurrency); //let it transfer or incase error it will exit from here.
   if (!sendStatusO.success) {
     throw sendStatusO;
   }

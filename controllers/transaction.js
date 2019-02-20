@@ -4,6 +4,7 @@ const config = require('../configs/config');
 const escrrows = require('./escrow.cont');
 const wallets = require('./wallets');
 const rp = require('request-promise');
+const BigNumber = require('bignumber.js');
 const Coins = require('../models/Coins');
 
 const verifyTxn = (eraswapSendAddress, lctxid, timeFrom, platForm, symbol, amount) => {
@@ -107,7 +108,7 @@ const sendToCustomer = (txnDocId, userId, platForm, address, amount, symbol) => 
           });
         } else {
           return cryptoHelper
-            .sendCurrency(platForm, address, amount, symbol,txndata.eraswapSendTag)
+            .sendCurrency(platForm, address, amount, symbol, txndata.eraswapSendTag)
             .then(dataOfSending => {
               console.log('Data Of sending:  ' + dataOfSending);
 
@@ -148,22 +149,25 @@ const saveTxn = data => {
 };
 
 const updateTxnAmount = async (lctxid, receivedAmount) => {
-            try {
-                var txn = await Txn.updateOne({
-                    _id: lctxid
-                }, {
-                    $set: {
-                        exchFromCurrencyAmt: receivedAmount
-                    }
-                });
-                return {
-                    success: true,
-                    txn: txn,
-                }
-            } catch (ex) {
-                return ex;
-            }
-}
+  try {
+    var txn = await Txn.updateOne(
+      {
+        _id: lctxid,
+      },
+      {
+        $set: {
+          exchFromCurrencyAmt: receivedAmount,
+        },
+      }
+    );
+    return {
+      success: true,
+      txn: txn,
+    };
+  } catch (ex) {
+    return ex;
+  }
+};
 
 const getMytxn = user => {
   return Txn.find({ userId: user })
@@ -171,34 +175,46 @@ const getMytxn = user => {
     .exec();
 };
 const converTdata = async (symbol, id, platForm, fromSymbol, toSymbol, amount, platFormFeeCoin, userEmail) => {
-  const txnData = await Txn.findOne({_id:id}).exec();
+  const txnData = await Txn.findOne({ _id: id }).exec();
   let placableAmt;
   let fee;
   //deduct 0.5% from amount  or 0.25 if its EST
-  if (!txnData.feePaid  && platFormFeeCoin == 'EST') {
-     const fromCurMarketVal = await rp('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=USD&CMC_PRO_API_KEY='+config.coinMktCapKey+'&symbol=' + fromSymbol);
-     const fromCurVal = amount*JSON.parse(fromCurMarketVal).data[fromSymbol].quote.USD.price;
-     const EST_VAL = await Coins.findOne({name:'coinData',in:'USD'}).select('EST').exec();
-     const eqvEstVal = fromCurVal/EST_VAL['EST'];
-  
-     fee = (eqvEstVal * (config.PLATFORM_FEE / 2)) / 100;
+  if (!txnData.feePaid && platFormFeeCoin == 'EST') {
+    const fromCurMarketVal = await rp(
+      'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=USD&CMC_PRO_API_KEY=' + config.coinMktCapKey + '&symbol=' + fromSymbol
+    );
+    const fromCurVal = amount * JSON.parse(fromCurMarketVal).data[fromSymbol].quote.USD.price;
+    const EST_VAL = await Coins.findOne({ name: 'coinData', in: 'USD' })
+      .select('EST')
+      .exec();
+    const eqvEstVal = fromCurVal / EST_VAL['EST'];
+
+    fee = new BigNumber(eqvEstVal)
+      .multipliedBy(config.PLATFORM_FEE / 2)
+      .dividedBy(100)
+      .toNumber();
     const depositAdd = await escrrows.getDepositAddress('EST');
     const sendStatus = await wallets.send(userEmail, fee, depositAdd, 'EST');
-    if(!sendStatus.success){
-        throw sendStatus;
+    if (!sendStatus.success) {
+      throw sendStatus;
     }
     console.log(sendStatus); //maybe log this or something
     placableAmt = amount;
     //deduct 25% from user wallet and send to escrow
-  } else if(!txnData.feePaid){
+  } else if (!txnData.feePaid) {
     // 50% deduct and place order
-    fee= (amount * config.PLATFORM_FEE) / 100;
+    fee = new BigNumber(amount)
+      .multipliedBy(config.PLATFORM_FEE)
+      .dividedBy(100)
+      .toNumber();
     placableAmt = amount - fee;
   }
   const data = await cryptoHelper.convertCurrency(symbol, platForm, fromSymbol, toSymbol, placableAmt);
   await Txn.findOneAndUpdate(
     { _id: id },
-    { $set: { feePaid:true,convertedYet: 'started',platform_fee:fee, convertionTime: data.timestamp, orderId: data.id, side: data.side, orderplacingAmt: data.orderplacingAmt } }
+    {
+      $set: { feePaid: true, convertedYet: 'started', platform_fee: fee, convertionTime: data.timestamp, orderId: data.id, side: data.side, orderplacingAmt: data.orderplacingAmt },
+    }
   ).exec();
 
   return data;
