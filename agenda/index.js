@@ -1,5 +1,6 @@
 var Agenda = require('agenda');
 const request = require('request-promise');
+const BigNumber = require('bignumber.js');
 
 var config = require('../configs/config');
 var txnCont = require('../controllers/transaction');
@@ -821,9 +822,15 @@ async function createAgreement(lendingOrder, borrowingOrder) {
 
           let fee = 0;
           if (lendingOrder.coin == 'EST') {
-            fee = (lendingOrder.amount * (config.LB_FEE / 2)) / 100;
+            fee = new BigNumber(lendingOrder.amount)
+              .multipliedBy(config.LB_FEE / 2)
+              .dividedBy(100)
+              .toNumber();
           } else {
-            fee = (lendingOrder.amount * config.LB_FEE) / 100;
+            fee = new BigNumber(lendingOrder.amount)
+              .multipliedBy(config.LB_FEE)
+              .dividedBy(100)
+              .toNumber();
           }
 
           var agreementData = {
@@ -1099,12 +1106,17 @@ async function checkIfOrderAndUpdate(withdrawal) {
               var emiInCollateral = principlePerMonthInCollateral + interest;
 
               let fee = 0;
-              if (lendOrder.coin == 'EST') {
-                fee = (lendOrder.amount * (config.LB_FEE / 2)) / 100;
+              if (lendingOrder.coin == 'EST') {
+                fee = new BigNumber(lendingOrder.amount)
+                  .multipliedBy(config.LB_FEE / 2)
+                  .dividedBy(100)
+                  .toNumber();
               } else {
-                fee = (lendOrder.amount * config.LB_FEE) / 100;
+                fee = new BigNumber(lendingOrder.amount)
+                  .multipliedBy(config.LB_FEE)
+                  .dividedBy(100)
+                  .toNumber();
               }
-
               var agreementData = {
                 lendOrderId: lendOrder.uniqueIdentifier,
                 borrowOrderId: borrowOrder.uniqueIdentifier,
