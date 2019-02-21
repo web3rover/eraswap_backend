@@ -726,7 +726,7 @@ var start = async function() {
       reSchedule(null, job, 60 * 60 * 24, done);
     } catch (ex) {
       console.log(ex);
-      reSchedule(ex.message ? ex.message : ex, job, 10, done);
+      reSchedule(ex, job, 10, done);
     }
   });
 
