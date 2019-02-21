@@ -325,7 +325,9 @@ var start = async function () {
     agenda.define('Check pending withdrawals', async (job, done) => {
         const Withdrawals = require('../models/Withdrawal');
         var pendingWithdrawals = await Withdrawals.find({
-            status: 'Pending',
+            status: {
+                $ne: 'error'
+            },
             txnHash: {
                 $exists: true,
                 $ne: '',
@@ -341,8 +343,8 @@ var start = async function () {
                     console.log('Confirmations (pending ' + pendingWithdrawals[i].type + ' transfer):', confirmations, pendingWithdrawals[i].txnHash);
                     if (confirmations >= 14) {
                         pendingWithdrawals[i]['status'] = 'Confirmed';
-                        await checkIfOrderAndUpdate(pendingWithdrawals[i]);
                         await pendingWithdrawals[i].save();
+                        await checkIfOrderAndUpdate(pendingWithdrawals[i]);
 
                         var dependentTxn = await checkDependancy(pendingWithdrawals[i]);
                         //crypto, txnHash, sender, receiver, amount, dbObject
@@ -427,8 +429,8 @@ var start = async function () {
                 if (confirmations >= 14 && withdrawal.type != 'BTC') {
                     if (withdrawal) {
                         withdrawal.status = 'Confirmed';
-                        await checkIfOrderAndUpdate(withdrawal);
                         withdrawal = await withdrawal.save();
+                        await checkIfOrderAndUpdate(withdrawal);
 
                         var dependentTxn = await checkDependancy(withdrawal);
                         //crypto, txnHash, sender, receiver, amount, dbObject
@@ -457,8 +459,8 @@ var start = async function () {
                 } else if (withdrawal.type == 'BTC' && confirmations > 4) {
                     if (withdrawal) {
                         withdrawal.status = 'Confirmed';
-                        await checkIfOrderAndUpdate(withdrawal);
                         await withdrawal.save();
+                        await checkIfOrderAndUpdate(withdrawal);
                     }
                 } else {
                     await reSchedule(null, job, 10, done);
