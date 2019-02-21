@@ -285,6 +285,17 @@ const cancelAndRefundExistingOrder = (id, platForm, fromSymbol, symbol) => {
       });
   });
 };
+
+const markAsCancel = lctxId => {
+  return Txn.update({ _id: lctxId }, { $set: { cancelled: true } })
+    .exec()
+    .then(data => {
+      return true;
+    })
+    .catch(err => {
+      return false;
+    });
+};
 module.exports = {
   saveTxn,
   verifyTxn,
@@ -294,4 +305,5 @@ module.exports = {
   verifyConvertion,
   cancelAndRefundExistingOrder,
   updateTxnAmount,
+  markAsCancel,
 };
