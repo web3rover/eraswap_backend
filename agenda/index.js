@@ -326,7 +326,7 @@ var start = async function () {
         const Withdrawals = require('../models/Withdrawal');
         var pendingWithdrawals = await Withdrawals.find({
             status: {
-                $ne: 'error'
+                $nin: ['error', 'Confirmed']
             },
             txnHash: {
                 $exists: true,
