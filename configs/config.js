@@ -4,15 +4,15 @@ module.exports = {
     url: process.env.MONGO_URL || 'mongodb://saikatharryc:saikat95@ds129720.mlab.com:29720/test2',
   },
   ETHERSCAN: {
-    URL: process.env.ETHERSCAN_URL || 'http://api-kovan.etherscan.io/api',
+    URL: process.env.ETHERSCAN_URL || 'http://api-ropsten.etherscan.io/api',
     ApiKey: process.env.ETHERSCAN_API_KEY || 'PE48KRSXDS3V1GFWH9Z91XDG5EEGAMQU8C',
   },
   BLOCKCYPHER: {
     URL: process.env.BLOCKCYPHER_URL || 'https://api.blockcypher.com/v1/btc/test3/',
   },
   BLOCKCLUSTER: {
-    host: process.env.BLOCKCLUSTER_HOST || 'app-ap-south-1b.blockcluster.io',
-    instanceId: process.env.BLOCKCLUSTER_INSTANCEID || 'hwrrhauh',
+    host: process.env.BLOCKCLUSTER_HOST || 'app-sf2.blockcluster.io',
+    instanceId: process.env.BLOCKCLUSTER_INSTANCEID || 'kojhabcq',
     assetName: 'p2pMarketplace',
     matchAssetName: 'MatchData',
     LendBorrowAssetName: 'LBOrder',
