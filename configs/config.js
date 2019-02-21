@@ -12,7 +12,7 @@ module.exports = {
   },
   BLOCKCLUSTER: {
     host: process.env.BLOCKCLUSTER_HOST || 'app-sf2.blockcluster.io',
-    instanceId: process.env.BLOCKCLUSTER_INSTANCEID || 'kojhabcq',
+    instanceId: process.env.BLOCKCLUSTER_INSTANCEID || 'gxrbffiv',
     assetName: 'p2pMarketplace',
     matchAssetName: 'MatchData',
     LendBorrowAssetName: 'LBOrder',
