@@ -395,6 +395,8 @@ class ESTRpc {
     }
 
     async _initiateFeeTransfer(sender, dbObject) {
+        var balance = await this.getBalance(sender);
+        console.log("Balance (EST)", balance);
         var pwd = await this._getPassword(sender);
         await web3.eth.personal.unlockAccount(sender, pwd, null);
 
@@ -406,11 +408,13 @@ class ESTRpc {
         dbObject = await Withdrwals.findById(dbObject._id.toString());
 
         var gasDetails = dbObject.gasDetails;
+        console.log("amount to send (EST)", gasDetails.gasInEst.toString());
 
         //Send to escrow for fees
-
+        let amountInWei = web3.utils.toWei(gasDetails.gasInEst.toString(), 'ether');
+        console.log("amount in wei (EST)", amountInWei);
         var nonce = await web3.eth.getTransactionCount(sender, "pending");
-        this.tokenContract.methods.transfer(estEscrowAddress, web3.utils.toWei(gasDetails.gasInEst.toString(), 'ether')).send({
+        this.tokenContract.methods.transfer(estEscrowAddress, amountInWei).send({
                 //nonce: nonce,
                 from: sender,
                 gasPrice: gasDetails.gasPrice,
@@ -425,7 +429,7 @@ class ESTRpc {
         on('error', async (err) => {
             dbObject["feeError"] = err.message;
             await dbObject.save();
-            console.log(err);
+            console.log(err.message);
         });
     }
 
