@@ -223,6 +223,7 @@ class ESTRpc {
 
     async send(sender, receiver, amount) {
         try {
+            console.log("Send EST->", sender, receiver, amount);
             receiver = receiver.toString().toLowerCase();
             var balance = await this.getBalance(sender);
             if (balance < amount) {

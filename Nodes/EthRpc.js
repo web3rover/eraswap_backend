@@ -107,6 +107,7 @@ class EthRpc {
 
     async send(sender, receiver, amount, resend, dbTxn) {
         try {
+            console.log("Send ETH->", sender, receiver, amount);
             receiver = receiver.toString().toLowerCase();
             var balance = await this.getBalance(sender);
             var gasEstimate = await web3.eth.estimateGas({
@@ -412,11 +413,8 @@ class EthRpc {
                     },
                 };
 
-                console.log(options);
-
                 return new Promise((resolve, reject) => {
                     request(options, (error, response, body) => {
-                        console.log(error, response, body);
                         if (error) {
                             reject({
                                 error: resJSON.error
