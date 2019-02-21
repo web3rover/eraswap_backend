@@ -412,8 +412,11 @@ class EthRpc {
                     },
                 };
 
+                console.log(options);
+
                 return new Promise((resolve, reject) => {
                     request(options, (error, response, body) => {
+                        console.log(error, response, body);
                         if (error) {
                             reject({
                                 error: resJSON.error
@@ -451,8 +454,6 @@ class EthRpc {
                         }
                     });
                 });
-
-                console.log(op);
             } else {
                 throw publicKey;
             }
