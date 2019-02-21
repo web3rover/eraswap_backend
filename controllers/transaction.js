@@ -296,6 +296,9 @@ const markAsCancel = lctxId => {
       return false;
     });
 };
+const markAsTrying = async lctxId => {
+  return await Txn.update({ _id: lctxId }, { $set: { cancelled: false } }).exec();
+};
 module.exports = {
   saveTxn,
   verifyTxn,
