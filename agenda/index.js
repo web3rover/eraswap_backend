@@ -1133,13 +1133,13 @@ async function checkIfOrderAndUpdate(withdrawal) {
                             var emiInCollateral = principlePerMonthInCollateral + interest;
 
                             let fee = 0;
-                            if (lendingOrder.coin == 'EST') {
-                                fee = new BigNumber(lendingOrder.amount)
+                            if (lendOrder.coin == 'EST') {
+                                fee = new BigNumber(lendOrder.amount)
                                     .multipliedBy(config.LB_FEE / 2)
                                     .dividedBy(100)
                                     .toNumber();
                             } else {
-                                fee = new BigNumber(lendingOrder.amount)
+                                fee = new BigNumber(lendOrder.amount)
                                     .multipliedBy(config.LB_FEE)
                                     .dividedBy(100)
                                     .toNumber();
