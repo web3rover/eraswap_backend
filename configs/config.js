@@ -1,7 +1,7 @@
 module.exports = {
   FRONTEND_HOST: process.env.FRONTEND_HOST || 'http://localhost:3000',
   mongo: {
-    url: process.env.MONGO_URL || 'mongodb://saikatharryc:saikat95@ds129720.mlab.com:29720/test2',
+    url: process.env.MONGO_URL || 'mongodb://localhost:27017/test2',
   },
   ETHERSCAN: {
     URL: process.env.ETHERSCAN_URL || 'http://api-ropsten.etherscan.io/api',
