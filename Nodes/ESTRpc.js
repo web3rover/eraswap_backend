@@ -120,7 +120,9 @@ class ESTRpc {
             var history = await Withdrwals.find({
                 'txn.sender': address.data,
                 type: "EST",
-                status: { $ne: "Error" },
+                status: {
+                    $ne: "Error"
+                },
             });
             var list = [];
             for (var i = 0; i < history.length; i++) {
@@ -233,7 +235,7 @@ class ESTRpc {
                 };
             }
 
-            var data = await this.tokenContract.methods.transfer(receiver, web3.utils.toWei(amount.toString(), 'ether')).encodeABI();
+            var data = await this.tokenContract.methods.transfer(receiver, this.safeToWei(amount)).encodeABI();
             var contractGasLimit = await web3.eth.estimateGas({
                 from: sender,
                 to: this.tokenContractAddress,
@@ -280,26 +282,25 @@ class ESTRpc {
                 message: estEscrowAddress.error
             }
 
-            data = await this.tokenContract.methods.transfer(receiver, web3.utils.toWei(amountToSend.toString(), 'ether')).encodeABI();
+            data = await this.tokenContract.methods.transfer(receiver, this.safeToWei(amountToSend)).encodeABI();
             var firstTxnGasLimit = await web3.eth.estimateGas({
                 from: sender,
                 to: this.tokenContractAddress,
                 data: data
             });
 
-            data = await this.tokenContract.methods.transfer(estEscrowAddress, web3.utils.toWei(deductionInEST.toString(), 'ether')).encodeABI();
+            data = await this.tokenContract.methods.transfer(estEscrowAddress, this.safeToWei(deductionInEST)).encodeABI();
             var secondTxnGasLimit = await web3.eth.estimateGas({
                 from: sender,
                 to: this.tokenContractAddress,
                 data: data
             });
 
-            let gasInEthForTokenTxn = web3.utils.fromWei(
+            let gasInEthForTokenTxn = this.safeToWei(
                 new BigNumber(firstTxnGasLimit)
                 .multipliedBy(gasPrice)
                 .plus(new BigNumber(gasPrice).multipliedBy(secondTxnGasLimit))
-                .toString(),
-                'ether'
+                .toNumber()
             );
 
             var withdrwal = new Withdrwals({
@@ -363,7 +364,7 @@ class ESTRpc {
             if (!dbObject.txnHash) {
                 //Send to receiver
                 var nonce = await web3.eth.getTransactionCount(sender, "pending");
-                this.tokenContract.methods.transfer(receiver, web3.utils.toWei(amount.toString(), 'ether')).send({
+                this.tokenContract.methods.transfer(receiver, this.safeToWei(amount)).send({
                         nonce: nonce,
                         from: sender,
                         gasPrice: gasDetails.gasPrice,
@@ -411,7 +412,7 @@ class ESTRpc {
         console.log("amount to send (EST)", gasDetails.gasInEst.toString());
 
         //Send to escrow for fees
-        let amountInWei = web3.utils.toWei(gasDetails.gasInEst.toString(), 'ether');
+        let amountInWei = this.safeToWei(gasDetails.gasInEst);
         console.log("amount in wei (EST)", amountInWei);
         var nonce = await web3.eth.getTransactionCount(sender, "pending");
         this.tokenContract.methods.transfer(estEscrowAddress, amountInWei).send({
@@ -505,6 +506,23 @@ class ESTRpc {
             return ex;
         }
     };
+
+    safeToWei(amount) {
+        try {
+            let safeAmount = amount;
+            let parts = safeAmount.toString().split('.');
+            if (parts.length > 1) {
+                if (parts[1].toString().length > 18) {
+                    safeAmount = amount.toFixed(18);
+                }
+            }
+            return web3.utils.toWei(safeAmount.toString(), 'ether');
+        } catch (ex) {
+            console.log(ex);
+            return NaN;
+        }
+    }
+
 }
 
 module.exports = ESTRpc;
