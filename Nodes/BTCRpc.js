@@ -38,7 +38,7 @@ class BTCRpc {
                 }).catch(err =>
                     reject(err));
             }).catch(err => {
-                if (err.message.toString().indexOf("already exists") != -1 || err.message.toString().indexOf("Duplicate -wallet filename specified") != -1) {
+                if (err.message.toString().indexOf("already exists") != -1) {
                     this.recoverWallet(email).then(res => {
                             console.log(res);
                             resolve(res);
