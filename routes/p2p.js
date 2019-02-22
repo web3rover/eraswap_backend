@@ -47,8 +47,10 @@ router.post('/add_sell_listing', (req, res, next) => {
           .then(balanceData => {
             const fromCurVal = Number(req.body.maximum) * data[req.body.cryptoCur];
             const eqvEstVal = fromCurVal / data['EST'];
-            const deductableAmount = (eqvEstVal * (config.P2P_FEE / 2)) / 100 + Number(req.body.maximum); //usually for EST it will be half.
-
+            let deductableAmount = (eqvEstVal * (config.P2P_FEE / 2)) / 100; //usually for EST it will be half.
+            if (req.body.cryptoCur == 'EST') {
+              deductableAmount = deductableAmount + Number(req.body.maximum);
+            }
             if (balanceData && Number(balanceData.balance) >= deductableAmount) {
               currencyCont
                 .addListing({ show: true, wantsToSell: true, email: req.user.email, username: req.user.username, userId: req.user._id, ...req.body })
@@ -59,7 +61,7 @@ router.post('/add_sell_listing', (req, res, next) => {
                   return next(error);
                 });
             } else {
-              return next({ status: 400, message: 'User Does not have enough amount to payoff fee. required fee is ' + deductableAmount + 'EST' });
+              return next({ status: 400, message: 'User Does not have enough balance to place order.' });
             }
           })
           .catch(error => {
@@ -81,7 +83,7 @@ router.post('/add_sell_listing', (req, res, next) => {
                   return next(error);
                 });
             } else {
-              return next({ status: 400, message: 'User Does not have enough amount to payoff fee. required fee is ' + deductableAmount + ' ' + req.body.feeCoin });
+              return next({ status: 400, message: 'User Does not have enough balance to place the order' });
             }
           })
           .catch(error => {
