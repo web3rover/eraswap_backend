@@ -309,4 +309,5 @@ module.exports = {
   cancelAndRefundExistingOrder,
   updateTxnAmount,
   markAsCancel,
+  markAsTrying,
 };
