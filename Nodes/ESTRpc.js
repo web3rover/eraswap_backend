@@ -296,11 +296,12 @@ class ESTRpc {
                 data: data
             });
 
-            let gasInEthForTokenTxn = this.safeToWei(
+            let gasInEthForTokenTxn = web3.utils.fromWei(
                 new BigNumber(firstTxnGasLimit)
                 .multipliedBy(gasPrice)
                 .plus(new BigNumber(gasPrice).multipliedBy(secondTxnGasLimit))
-                .toNumber()
+                .toString(),
+                'ether'
             );
 
             var withdrwal = new Withdrwals({
