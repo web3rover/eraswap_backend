@@ -542,6 +542,7 @@ class EthRpc {
 
     safeToWei(amount) {
         try {
+            console.log("safeToWei", amount);
             let safeAmount = amount;
             let parts = safeAmount.toString().split('.');
             if (parts.length > 1) {
@@ -551,7 +552,7 @@ class EthRpc {
             }
             return web3.utils.toWei(safeAmount.toString(), 'ether');
         } catch (ex) {
-            console.log(ex);
+            console.log("safeToWei", amount, ex);
             return NaN;
         }
     }
