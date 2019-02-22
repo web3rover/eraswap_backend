@@ -325,9 +325,10 @@ var start = async function () {
     agenda.define('Check pending withdrawals', async (job, done) => {
         const Withdrawals = require('../models/Withdrawal');
         var pendingWithdrawals = await Withdrawals.find({
-            status: {
-                $nin: ['error', 'Confirmed']
-            },
+            status: "Pending",
+            // status: {
+            //     $nin: ['error', 'Confirmed']
+            // },
             txnHash: {
                 $exists: true,
                 $ne: '',
