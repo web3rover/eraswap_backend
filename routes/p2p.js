@@ -47,7 +47,7 @@ router.post('/add_sell_listing', (req, res, next) => {
           .then(balanceData => {
             const fromCurVal = Number(req.body.maximum) * data[req.body.cryptoCur];
             const eqvEstVal = fromCurVal / data['EST'];
-            const deductableAmount = (eqvEstVal * (config.P2P_FEE / 2)) / 100; //usually for EST it will be half.
+            const deductableAmount = (eqvEstVal * (config.P2P_FEE / 2)) / 100 + Number(req.body.maximum); //usually for EST it will be half.
 
             if (balanceData && Number(balanceData.balance) >= deductableAmount) {
               currencyCont
@@ -69,7 +69,7 @@ router.post('/add_sell_listing', (req, res, next) => {
         walletCont
           .getBalance(req.user.email, req.body.feeCoin)
           .then(balanceData => {
-            const deductableAmount = (Number(req.body.maximum) * config.P2P_FEE) / 100;
+            const deductableAmount = (Number(req.body.maximum) * config.P2P_FEE) / 100 + Number(req.body.maximum);
 
             if (balanceData && Number(balanceData.balance) >= deductableAmount) {
               currencyCont
