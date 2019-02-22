@@ -595,10 +595,10 @@ var start = async function () {
                     }
                 }
             }
-            console.log("rescheduling matching order job to ", new Date().setMinutes(new Date().getMinutes + 5));
+            console.log("rescheduling matching order job to ", new Date().setMinutes(new Date().getMinutes() + 5));
             await agenda.schedule('in 5 minutes', job.attrs.name, job.attrs.data);
             job.remove();
-            done(error);
+            done(null);
         } catch (ex) {
             console.log("in Order matching agenda", ex);
             reSchedule(null, job, 20, done);
