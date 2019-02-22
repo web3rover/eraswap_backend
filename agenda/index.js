@@ -1015,6 +1015,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
     if (withdrawal && withdrawal.orderInfo) {
         if (withdrawal.orderInfo.orderId && withdrawal.orderInfo.orderAction == 'Creation') {
             try {
+                console.log("Order creation in progress", withdrawal.orderInfo.orderId);
                 var orderData = await node.callAPI('assets/search', {
                     $query: {
                         assetName: config.BLOCKCLUSTER.LendBorrowAssetName,
@@ -1023,6 +1024,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
                 });
 
                 if (orderData.length > 0) {
+                    console.log("Found order doc in blockcluster node", orderData[0]);
                     if (orderData[0].show == true) return;
                     var res = await node.callAPI('assets/updateAssetInfo', {
                         assetName: config.BLOCKCLUSTER.LendBorrowAssetName,
@@ -1033,15 +1035,16 @@ async function checkIfOrderAndUpdate(withdrawal) {
                         },
                     });
 
+                    console.log("order is visible", withdrawal.orderInfo.orderId);
+
                     res = await new LBOrders({
                         identifier: withdrawal.orderInfo.orderId,
                     }).save();
 
                     console.log(res);
-
-                    console.log(res);
                     return;
                 } else {
+                    console.log("Order doc not found!");
                     var identifier = shortid.generate();
 
                     var res = await node.callAPI('assets/issueSoloAsset', {
@@ -1050,6 +1053,8 @@ async function checkIfOrderAndUpdate(withdrawal) {
                         toAccount: node.getWeb3().eth.accounts[0],
                         identifier: identifier,
                     });
+
+                    console.log("Recreating order");
 
                     console.log(res);
 
@@ -1065,6 +1070,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
                     });
 
                     console.log(res);
+                    console.log("Recreated order is visible now");
 
                     var dbObj = await Withdrawals.findById(withdrawal._id);
                     dbObj.orderInfo.orderId = identifier;
@@ -1079,11 +1085,12 @@ async function checkIfOrderAndUpdate(withdrawal) {
                 dbObj.status = 'Pending';
                 await dbObj.save();
 
-                console.log(ex.message);
+                console.log("agenda 1088", ex ? (ex.message ? ex.message : ex) : "");
                 return;
             }
         } else if (withdrawal.orderInfo.orderId && withdrawal.orderInfo.orderAction == 'Apply') {
             try {
+                console.log("Applying to order", withdrawal.orderInfo.orderId);
                 var newOrderData = await node.callAPI('assets/search', {
                     $query: {
                         assetName: config.BLOCKCLUSTER.LendBorrowAssetName,
@@ -1092,8 +1099,10 @@ async function checkIfOrderAndUpdate(withdrawal) {
                 });
 
                 if (newOrderData.length > 0) {
+                    console.log("new order doc found", withdrawal.orderInfo.orderId);
                     var order1 = newOrderData[0];
                     if (order1['agreementDate'] == '' && order1['status'] == 'open' && order1['agreementOrderId'] == '') {
+                        console.log("new order is eligible");
                         let data1 = await node.callAPI('assets/search', {
                             $query: {
                                 assetName: config.BLOCKCLUSTER.LendBorrowAssetName,
@@ -1105,6 +1114,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
                         });
 
                         if (data1.length > 0) {
+                            console.log("order to Apply found", withdrawal.orderInfo.orderToApply);
                             var order2 = data1[0];
 
                             var lendOrder = withdrawal.orderInfo.orderType == 'lend' ? order1 : order2;
@@ -1118,18 +1128,17 @@ async function checkIfOrderAndUpdate(withdrawal) {
                                 identifier: identifier,
                             });
 
+                            console.log("Agreement asset issued", identifier);
+
                             console.log(res);
                             var timestamp = +new Date();
                             var paymentDate = new Date(timestamp).setDate(new Date(timestamp).getDate() + Number(30));
-                            var month = new Date(timestamp).getMonth() + 1;
-                            var year = new Date(timestamp).getFullYear();
 
                             var principlePerMonth = lendOrder.amount / lendOrder.duration;
                             var interest = (principlePerMonth * lendOrder.interest) / 100;
                             var emi = principlePerMonth + interest;
 
                             var principlePerMonthInCollateral = borrowOrder.collateralDeducted / lendOrder.duration;
-                            var interestInCollateral = (principlePerMonthInCollateral * lendOrder.interest) / 100;
                             var emiInCollateral = principlePerMonthInCollateral + interest;
 
                             let fee = 0;
@@ -1144,6 +1153,9 @@ async function checkIfOrderAndUpdate(withdrawal) {
                                     .dividedBy(100)
                                     .toNumber();
                             }
+
+                            console.log("fees calculated", fee);
+
                             var agreementData = {
                                 lendOrderId: lendOrder.uniqueIdentifier,
                                 borrowOrderId: borrowOrder.uniqueIdentifier,
@@ -1176,6 +1188,8 @@ async function checkIfOrderAndUpdate(withdrawal) {
                                 public: agreementData,
                             });
 
+                            console.log("Agreement data updated", agreementData);
+
                             lendOrder['agreementOrderId'] = identifier;
                             lendOrder['agreementDate'] = timestamp;
 
@@ -1189,6 +1203,8 @@ async function checkIfOrderAndUpdate(withdrawal) {
                                 public: lendOrder,
                             });
 
+                            console.log("lend order updated", lendOrder);
+
                             console.log(res);
 
                             var res = await node.callAPI('assets/updateAssetInfo', {
@@ -1198,6 +1214,8 @@ async function checkIfOrderAndUpdate(withdrawal) {
                                 public: borrowOrder,
                             });
 
+                            console.log("borrow order updated", borrowOrder);
+
                             console.log(res);
 
                             var escrowCont = require('../controllers/escrow.cont');
@@ -1205,10 +1223,16 @@ async function checkIfOrderAndUpdate(withdrawal) {
 
                             var amountAfterFeeDeduction = agreementData.amountReceived - fee;
 
+                            console.log(agreementData.amountReceived, fee);
+                            console.log("amount to be sent to borrower afater fee deduction", amountAfterFeeDeduction);
+
                             var borrowerPublicKey = await walletCont.getAddress(borrowOrder.email, agreementData.coin);
+
+                            console.log("sending", amountAfterFeeDeduction, agreementData.coin, "to borrower", borrowerPublicKey);
+
                             var op = await escrowCont.send(agreementData.coin, borrowerPublicKey, amountAfterFeeDeduction);
 
-                            console.log(op);
+                            console.log("send output", op);
 
                             return;
                         } else {
@@ -1220,6 +1244,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
                         return;
                     }
                 } else {
+                    console.log("creating order from withdrawal doc and making it visible", withdrawal.orderInfo.data);
                     var identifier = shortid.generate();
 
                     var res = await node.callAPI('assets/issueSoloAsset', {
@@ -1242,7 +1267,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
                         public: data,
                     });
 
-                    console.log(res);
+                    console.log("order visible", res);
 
                     var dbObj = await Withdrawals.findById(withdrawal._id);
                     dbObj.orderInfo.orderId = identifier;
@@ -1253,13 +1278,14 @@ async function checkIfOrderAndUpdate(withdrawal) {
                 dbObj.status = 'Pending';
                 await dbObj.save();
 
-                console.log(ex.message);
+                console.log("set the withdrawal status to pending again ", ex ? (ex.message ? ex.message : ex) : "");
                 return;
             }
         }
     } else if (withdrawal && withdrawal.agreementInfo) {
         try {
             if (withdrawal.agreementInfo.type == 'Collateral Return') return;
+            console.log("EMI payment withdrawal found!");
             let agreementData = await node.callAPI('assets/search', {
                 $query: {
                     assetName: config.BLOCKCLUSTER.agreementsAssetName,
@@ -1270,6 +1296,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
             });
 
             if (agreementData.length > 0) {
+                console.log("Found the agreement for which emi is paid.", agreementData);
                 var agreement = agreementData[0];
 
                 var updates = {};
@@ -1281,6 +1308,7 @@ async function checkIfOrderAndUpdate(withdrawal) {
 
                 //All Emis paid
                 if (agreement.months == agreement.emiPaidCount + agreement.emiPaidInCollateral + 1) {
+                    console.log("All emis paid", withdrawal.agreementInfo.agreementId);
                     updates['nextPaymentDate'] = '';
                     updates['active'] = false;
                     updates['agreementEndDate'] = +new Date();
@@ -1292,18 +1320,25 @@ async function checkIfOrderAndUpdate(withdrawal) {
                         public: updates,
                     });
 
-                    console.log(res);
+                    console.log("Agreement updated set to be finished", res);
 
                     var escrowCont = require('../controllers/escrow.cont');
                     var walletCont = require('../controllers/wallets');
 
+                    console.log("Returning collateral to borrower");
+
                     var totalCollateral = agreement.collateralReceived;
                     var borrowerCollateralAddr = await walletCont.getAddress(agreement.borrowerEmail, agreement.collateralCoin);
                     if (borrowerCollateralAddr.message) {
+                        console.log("Error getting borrowers address");
                         throw borrowerCollateralAddr;
                     }
+
+                    console.log("Sending", totalCollateral, agreement.collateralCoin, "to", borrowerCollateralAddr);
+
                     var returnCollateral = await escrowCont.send(agreement.collateralCoin, borrowerCollateralAddr, totalCollateral);
                     if (returnCollateral.success) {
+                        console.log("collateral sent!");
                         var dbObject1 = await Withdrawals.findById(returnCollateral.dbObject._id);
                         dbObject1['agreementInfo'] = {
                             agreementId: agreement.uniqueIdentifier,
@@ -1311,17 +1346,19 @@ async function checkIfOrderAndUpdate(withdrawal) {
                             mode: 'collateral',
                         };
                         dbObject1 = await dbObject1.save();
+                    } else {
+                        console.log("collateral not sent", returnCollateral);
                     }
                 } else {
-                    let res = await node.callAPI('assets/updateAssetInfo', {
+                    console.log("Still some emis are pending");
+                    let updateResult = await node.callAPI('assets/updateAssetInfo', {
                         assetName: config.BLOCKCLUSTER.agreementsAssetName,
                         fromAccount: node.getWeb3().eth.accounts[0],
                         identifier: agreement.uniqueIdentifier,
                         public: updates,
                     });
+                    console.log("Updated the agreement doc", updateResult);
                 }
-
-                console.log(res);
             } else {
                 throw {
                     message: 'Agreement ' + withdrawal.agreementInfo.agreementId + ' not found!',
