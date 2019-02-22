@@ -121,7 +121,7 @@ class EthRpc {
                 };
             }
             var price = new BigNumber(gasPrice).multipliedBy(gasEstimate);
-            let amountToSend = new BigNumber(web3.utils.toWei(amount.toString(), 'ether')).minus(price.toString());
+            let amountToSend = new BigNumber(this.safeToWei(amount)).minus(price.toString());
 
             if (!amountToSend.isGreaterThan(BigNumber(0))) {
                 throw {
@@ -537,6 +537,23 @@ class EthRpc {
             return null;
         } catch (ex) {
             return ex;
+        }
+    }
+
+    safeToWei(amount) {
+        try {
+            console.log("safeToWei", amount);
+            let safeAmount = amount;
+            let parts = safeAmount.toString().split('.');
+            if (parts.length > 1) {
+                if (parts[1].toString().length > 18) {
+                    safeAmount = amount.toFixed(18);
+                }
+            }
+            return web3.utils.toWei(safeAmount.toString(), 'ether');
+        } catch (ex) {
+            console.log("safeToWei", amount, ex);
+            return NaN;
         }
     }
 }
