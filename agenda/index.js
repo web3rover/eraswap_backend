@@ -374,8 +374,6 @@ var start = async function () {
                         await agenda.every('5 seconds', 'Check confirmations for withdrawals', {
                             dbObject: pendingWithdrawals[i],
                         });
-                        job.remove();
-                        done();
                     }
                 } catch (ex) {
                     await reSchedule(ex.message, job, 10, done);
