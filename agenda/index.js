@@ -661,8 +661,10 @@ var start = async function () {
                             }
                         }
                         if (payUsingCollateral || coinBalance < agreements[i].emi) {
+                            console.log("paying using collateral");
                             var receiverCollateralKey = await walletCont.getAddress(agreements[i].lenderEmail, agreements[i].collateralCoin);
                             if (receiverCollateralKey.message) {
+                                console.log("Receiver address not found", receiverCollateralKey.message);
                                 throw receiverCollateralKey;
                             }
 
@@ -673,6 +675,7 @@ var start = async function () {
                                 .select(agreements[i].collateralCoin)
                                 .exec();
                             var collateralRate = data[agreements[i].collateralCoin];
+                            console.log("collateral Rate", collateralRate);
 
                             data = await Coins.findOne({
                                     name: 'coinData',
@@ -681,6 +684,7 @@ var start = async function () {
                                 .select(agreements[i].coin)
                                 .exec();
                             var coinRate = data[agreements[i].coin];
+                            console.log("lending coin Rate", coinRate);
 
                             var monthsRemaining = agreements[i].months - agreements[i].emiPaidCount;
                             var amountInUSD = agreements[i].emi * monthsRemaining * coinRate;
@@ -688,8 +692,18 @@ var start = async function () {
                             var totalCollateral = agreements[i].collateralReceived;
                             var finalDeductionAmount = collateralToDeduct > totalCollateral ? totalCollateral : collateralToDeduct;
 
+                            console.log("monthsRemaining", monthsRemaining);
+                            console.log("amountInUSD", amountInUSD);
+                            console.log("collateralToDeduct", collateralToDeduct);
+                            console.log("totalCollateral", totalCollateral);
+                            console.log("finalDeductionAmount", finalDeductionAmount);
+
+                            console.log("sending emi in collateral");
                             var emiDeductionInCollateral = await escrowCont.send(agreements[i].collateralCoin, receiverCollateralKey, finalDeductionAmount);
                             if (emiDeductionInCollateral.success) {
+
+                                console.log("emi sent in the form of collateral");
+
                                 var dbObject = await Withdrawals.findById(emiDeductionInCollateral.dbObject._id);
                                 dbObject['agreementInfo'] = {
                                     agreementId: agreements[i].uniqueIdentifier,
@@ -710,16 +724,20 @@ var start = async function () {
                                     },
                                 });
 
-                                console.log(res);
+                                console.log("Agreement closed", res);
 
                                 //Send Remaining collateral to borrower
                                 if (finalDeductionAmount != totalCollateral) {
+                                    console.log("sending remaining collateral", (totalCollateral - finalDeductionAmount));
                                     var borrowerCollateralAddr = await walletCont.getAddress(agreements[i].borrowerEmail, agreements[i].collateralCoin);
                                     if (borrowerCollateralAddr.message) {
+                                        console.log("borrower collateral coin address not found", borrowerCollateralAddr.message);
                                         throw borrowerCollateralAddr;
                                     }
+                                    console.log("Sending remaining collateral");
                                     var returnCollateral = await escrowCont.send(agreements[i].collateralCoin, borrowerCollateralAddr, totalCollateral - finalDeductionAmount);
                                     if (returnCollateral.success) {
+                                        console.log("Collaterla sent", returnCollateral);
                                         var dbObject1 = await Withdrawals.findById(returnCollateral.dbObject._id);
                                         dbObject1['agreementInfo'] = {
                                             agreementId: agreements[i].uniqueIdentifier,
