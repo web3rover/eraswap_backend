@@ -595,7 +595,10 @@ var start = async function () {
                     }
                 }
             }
-            reSchedule(null, job, 300, done);
+            console.log("rescheduling matching order job to ", new Date().setMinutes(new Date().getMinutes + 5));
+            await agenda.schedule('in 5 minutes', job.attrs.name, job.attrs.data);
+            job.remove();
+            done(error);
         } catch (ex) {
             console.log("in Order matching agenda", ex);
             reSchedule(null, job, 20, done);
@@ -821,7 +824,7 @@ async function createAgreement(lendingOrder, borrowingOrder) {
                     });
 
                     res = await LBOrders.deleteOne({
-                        identifier: orderId
+                        identifier: lendingOrder.uniqueIdentifier
                     });
 
                     console.log(res);
@@ -836,7 +839,7 @@ async function createAgreement(lendingOrder, borrowingOrder) {
                     });
 
                     res = await LBOrders.deleteOne({
-                        identifier: orderId
+                        identifier: borrowingOrder.uniqueIdentifier
                     });
 
                     console.log(res);
