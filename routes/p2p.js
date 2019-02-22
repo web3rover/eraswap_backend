@@ -41,6 +41,7 @@ router.post('/add_sell_listing', (req, res, next) => {
           return next({ status: 400, message: 'unable to calculate fees!' });
         }
       }
+
       if (req.body.feeCoin === 'EST') {
         walletCont
           .getBalance(req.user.email, 'EST')
@@ -52,6 +53,13 @@ router.post('/add_sell_listing', (req, res, next) => {
               deductableAmount = deductableAmount + Number(req.body.maximum);
             }
             if (balanceData && Number(balanceData.balance) >= deductableAmount) {
+              if (req.body.cryptoCur != 'EST' && req.body.wantsToSell) {
+                walletCont.getBalance(req.user.email, req.body.cryptoCur).then(balanceData => {
+                  if (balanceData && Number(balanceData.balance) >= !req.body.amount) {
+                    return next({ status: 400, message: 'you dont have enough ' + req.body.cryptoCur + ' to place order.' });
+                  }
+                });
+              }
               currencyCont
                 .addListing({ show: true, wantsToSell: true, email: req.user.email, username: req.user.username, userId: req.user._id, ...req.body })
                 .then(data => {
