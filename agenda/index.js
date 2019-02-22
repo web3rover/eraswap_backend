@@ -546,6 +546,7 @@ var start = async function () {
 
     agenda.define('Match orders and create agreements', async (job, done) => {
         try {
+            console.log("Checking for matching orders");
             let lendingOrders = await node.callAPI('assets/search', {
                 $query: {
                     assetName: config.BLOCKCLUSTER.LendBorrowAssetName,
@@ -556,6 +557,7 @@ var start = async function () {
                     orderType: 'lend',
                 },
             });
+            console.log("found", lendingOrders.length, "lending orders");
             if (lendingOrders.length > 0) {
                 let borrowingOrders = await node.callAPI('assets/search', {
                     $query: {
@@ -567,6 +569,7 @@ var start = async function () {
                         orderType: 'borrow',
                     },
                 });
+                console.log("found", borrowingOrders.length, "lending orders");
                 if (borrowingOrders.length > 0) {
                     var skip = [];
                     for (var i = 0; i < lendingOrders.length; i++) {
@@ -585,6 +588,8 @@ var start = async function () {
                                 console.log(res);
                                 skip.push(j);
                                 break;
+                            } else {
+                                console.log("orders not matched!");
                             }
                         }
                     }
@@ -592,7 +597,7 @@ var start = async function () {
             }
             reSchedule(null, job, 300, done);
         } catch (ex) {
-            console.log(ex);
+            console.log("in Order matching agenda", ex);
             reSchedule(null, job, 20, done);
         }
     });
