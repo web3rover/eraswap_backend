@@ -788,7 +788,7 @@ async function createAgreement(lendingOrder, borrowingOrder) {
             identifier: borrowingOrder.uniqueIdentifier
         });
 
-        if (lendingOrder && borrowingOrder && lendingOrder && borrowingOrder) {
+        if (lendingOrder && borrowingOrder && lendingOrderExists && borrowingOrderExists) {
             lendingOrder = await node.callAPI('assets/search', {
                 $query: {
                     assetName: config.BLOCKCLUSTER.LendBorrowAssetName,
@@ -1222,18 +1222,26 @@ async function checkIfOrderAndUpdate(withdrawal) {
                                 public: lendOrder,
                             });
 
-                            console.log("lend order updated", lendOrder);
+                            console.log("lend order updated", lendOrder, res);
+
+                            res = await LBOrders.deleteOne({
+                                identifier: lendOrder.uniqueIdentifier
+                            });
 
                             console.log(res);
 
-                            var res = await node.callAPI('assets/updateAssetInfo', {
+                            res = await node.callAPI('assets/updateAssetInfo', {
                                 assetName: config.BLOCKCLUSTER.LendBorrowAssetName,
                                 fromAccount: node.getWeb3().eth.accounts[0],
                                 identifier: borrowOrder.uniqueIdentifier,
                                 public: borrowOrder,
                             });
 
-                            console.log("borrow order updated", borrowOrder);
+                            console.log("borrow order updated", borrowOrder, res);
+
+                            res = await LBOrders.deleteOne({
+                                identifier: borrowOrder.uniqueIdentifier
+                            });
 
                             console.log(res);
 
