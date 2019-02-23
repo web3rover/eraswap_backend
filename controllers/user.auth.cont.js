@@ -79,7 +79,7 @@ const createAccountForSocial = async (email, username, type, name) => {
       name: name,
       email: email,
       password: Date.now(),
-      username: name || username,
+      username: name ? name : email,
       is_fb: type == 'fb' ? true : false,
       is_google: type == 'google' ? true : false,
       activated: true,
