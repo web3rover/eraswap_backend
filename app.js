@@ -16,6 +16,8 @@ app.get('/ping', (req, res) => {
 
 const config = require('./configs/config');
 
+console.log("Config", config);
+
 mongoose.connect(
     config.mongo.url,
     { useNewUrlParser: true }
