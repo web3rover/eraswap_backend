@@ -184,7 +184,7 @@ router.post('/showInterest', (req, res, next) => {
     userId: req.user._id,
     amount: req.body.askAmount,
     message: req.body.specialMessage,
-    sellerEmail: req.body.wantsToBuy ? req.body.email : req.user.email,
+    sellerEmail: req.body.wantsToBuy ? req.user.email : req.body.email,
     sellerFeeCoin: req.body.feeCoin,
   };
 
