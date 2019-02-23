@@ -345,7 +345,7 @@ var start = async function () {
                     if (confirmations >= 14) {
                         pendingWithdrawals[i]['status'] = 'Confirmed';
                         await pendingWithdrawals[i].save();
-                        await checkIfOrderAndUpdate(pendingWithdrawals[i]);
+                        await checkIfAnyActionAfterConfirmation(pendingWithdrawals[i]);
 
                         var dependentTxn = await checkDependancy(pendingWithdrawals[i]);
                         //crypto, txnHash, sender, receiver, amount, dbObject
@@ -429,7 +429,7 @@ var start = async function () {
                     if (withdrawal) {
                         withdrawal.status = 'Confirmed';
                         withdrawal = await withdrawal.save();
-                        await checkIfOrderAndUpdate(withdrawal);
+                        await checkIfAnyActionAfterConfirmation(withdrawal);
 
                         var dependentTxn = await checkDependancy(withdrawal);
                         //crypto, txnHash, sender, receiver, amount, dbObject
@@ -459,7 +459,7 @@ var start = async function () {
                     if (withdrawal) {
                         withdrawal.status = 'Confirmed';
                         await withdrawal.save();
-                        await checkIfOrderAndUpdate(withdrawal);
+                        await checkIfAnyActionAfterConfirmation(withdrawal);
                     }
                 } else {
                     await reSchedule(null, job, 10, done);
@@ -1035,7 +1035,7 @@ function getLastDateOfMonth(Year, Month) {
     return new Date(new Date(Year, Month + 1, 1) - 1);
 }
 
-async function checkIfOrderAndUpdate(withdrawal) {
+async function checkIfAnyActionAfterConfirmation(withdrawal) {
     const Withdrawals = require('../models/Withdrawal');
     if (withdrawal && withdrawal.orderInfo) {
         if (withdrawal.orderInfo.orderId && withdrawal.orderInfo.orderAction == 'Creation') {
@@ -1400,6 +1400,11 @@ async function checkIfOrderAndUpdate(withdrawal) {
         } catch (ex) {
             console.log(ex);
         }
+    } else if(withdrawal && withdrawal.p2pInfo) {
+        let orderId = withdrawal.p2pInfo.orderId;
+        console.log("Transaaction confirmed for p2p", orderId);
+        const p2pCont = require('../controllers/p2p.cont');
+        await p2pCont.onTxnConfirm(orderId);
     }
 }
 
