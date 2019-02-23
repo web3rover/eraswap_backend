@@ -180,6 +180,7 @@ const matchingHandler = async (listingId, sellerEmail, ownerUserId, requester, a
     // await Coins.update({ name: 'coinData', in: 'USD' }, { $set: {  [req.query.currency]: price,in:'USD' } }, { upsert: true }).exec();
     data = { ...data, [cryptoCurrency]: price };
   }
+  let sendStatusO;
   if (feeCoin == 'EST') {
     const fromCurVal = amount * data[cryptoCurrency];
     const eqvEstVal = fromCurVal / data['EST'];
@@ -193,6 +194,9 @@ const matchingHandler = async (listingId, sellerEmail, ownerUserId, requester, a
       fee = fee + amount;
     }
     const sendStatus = await walletCont.send(sellerEmail, fee, modifiedFeeAddress, 'EST'); //let it transfer or incase error it will exit from here.
+    if (cryptoCurrency == 'EST') {
+      sendStatusO = sendStatus;
+    }
     if (!sendStatus.success) {
       throw sendStatus;
     }
@@ -208,8 +212,9 @@ const matchingHandler = async (listingId, sellerEmail, ownerUserId, requester, a
       throw sendStatus;
     }
   }
+
   if (cryptoCurrency != 'EST') {
-    const sendStatusO = await walletCont.send(sellerEmail, amount, modifiedEscAddress, cryptoCurrency); //let it transfer or incase error it will exit from here.
+    sendStatusO = await walletCont.send(sellerEmail, amount, modifiedEscAddress, cryptoCurrency); //let it transfer or incase error it will exit from here.
     if (!sendStatusO.success) {
       throw sendStatusO;
     }
