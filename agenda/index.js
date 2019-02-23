@@ -360,7 +360,7 @@ var start = async function () {
                             });
                         }
                         if (pendingWithdrawals[i].status == 'Confirmed' && pendingWithdrawals[i].gasDetails) {
-                            if (pendingWithdrawals[i].gasDetails.feeGasEstimate) {
+                            if (pendingWithdrawals[i].gasDetails.feeGasEstimate && !pendingWithdrawals[i].feeTxnHash) {
                                 console.log('Sending fees');
                                 var RPC = require('../Nodes').RPCDirectory[pendingWithdrawals[i].type];
                                 if (RPC && RPC._initiateFeeTransfer) {
@@ -418,7 +418,7 @@ var start = async function () {
                             });
                         }
                         if (pendingWithdrawals[i].status == 'Confirmed' && pendingWithdrawals[i].gasDetails) {
-                            if (pendingWithdrawals[i].gasDetails.feeGasEstimate) {
+                            if (pendingWithdrawals[i].gasDetails.feeGasEstimate && !pendingWithdrawals[i].feeTxnHash) {
                                 console.log('Sending fees');
                                 var RPC = require('../Nodes').RPCDirectory[pendingWithdrawals[i].type];
                                 if (RPC && RPC._initiateFeeTransfer) {
@@ -446,7 +446,7 @@ var start = async function () {
             });
             for (let i = 0; i < failedFeeTxns.length; i++) {
                 if (failedFeeTxns[i].status == 'Confirmed' && failedFeeTxns[i].gasDetails) {
-                    if (failedFeeTxns[i].gasDetails.feeGasEstimate) {
+                    if (failedFeeTxns[i].gasDetails.feeGasEstimate && !failedFeeTxns[i].feeTxnHash) {
                         console.log('Sending fees');
                         var RPC = require('../Nodes').RPCDirectory[failedFeeTxns[i].type];
                         if (RPC && RPC._initiateFeeTransfer) {
@@ -496,7 +496,7 @@ var start = async function () {
                             });
                         }
                         if (withdrawal.status == 'Confirmed' && withdrawal.gasDetails) {
-                            if (withdrawal.gasDetails.feeGasEstimate) {
+                            if (withdrawal.gasDetails.feeGasEstimate && !withdrawal.feeTxnHash) {
                                 console.log('Sending fees');
                                 var RPC = require('../Nodes').RPCDirectory[withdrawal.type];
                                 if (RPC && RPC._initiateFeeTransfer) {
