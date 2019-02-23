@@ -342,7 +342,7 @@ var start = async function () {
                     var RPC = require('../Nodes').RPCDirectory[pendingWithdrawals[i].type];
                     var confirmations = await RPC._getConfirmations(pendingWithdrawals[i].txnHash);
                     console.log('Confirmations (pending ' + pendingWithdrawals[i].type + ' transfer):', confirmations, pendingWithdrawals[i].txnHash);
-                    if (confirmations >= 14) {
+                    if ((confirmations >= 14 && pendingWithdrawals[i].type != "BTC") || (confirmations >= 4 && pendingWithdrawals[i].type == "BTC")) {
                         pendingWithdrawals[i]['status'] = 'Confirmed';
                         await pendingWithdrawals[i].save();
                         await checkIfAnyActionAfterConfirmation(pendingWithdrawals[i]);
@@ -381,6 +381,58 @@ var start = async function () {
             }
         }
         await reSchedule(null, job, 10, done);
+    });
+
+    agenda.define('Check stuck withdrawals', async (job, done) => {
+        const Withdrawals = require('../models/Withdrawal');
+        var pendingWithdrawals = await Withdrawals.find({
+            status: "Checking Confirmation",
+            txnHash: {
+                $exists: true,
+                $ne: '',
+            },
+            error: '',
+        });
+
+        if (pendingWithdrawals) {
+            for (var i = 0; i < pendingWithdrawals.length; i++) {
+                try {
+                    var RPC = require('../Nodes').RPCDirectory[pendingWithdrawals[i].type];
+                    var confirmations = await RPC._getConfirmations(pendingWithdrawals[i].txnHash);
+                    console.log('Confirmations (stuck ' + pendingWithdrawals[i].type + ' transfer):', confirmations, pendingWithdrawals[i].txnHash);
+                    if ((confirmations >= 22 && pendingWithdrawals[i].type != "BTC") || (confirmations >= 8 && pendingWithdrawals[i].type == "BTC")) {
+                        pendingWithdrawals[i]['status'] = 'Confirmed';
+                        await pendingWithdrawals[i].save();
+                        await checkIfAnyActionAfterConfirmation(pendingWithdrawals[i]);
+
+                        var dependentTxn = await checkDependancy(pendingWithdrawals[i]);
+                        //crypto, txnHash, sender, receiver, amount, dbObject
+                        if (dependentTxn) {
+                            await agenda.schedule('in 5 seconds', 'Check gas txn before token transfer', {
+                                crypto: dependentTxn.type,
+                                txnHash: pendingWithdrawals[i].txnHash,
+                                sender: dependentTxn.txn.sender,
+                                receiver: dependentTxn.txn.receiver,
+                                amount: dependentTxn.txn.amount,
+                                dbObject: dependentTxn,
+                            });
+                        }
+                        if (pendingWithdrawals[i].status == 'Confirmed' && pendingWithdrawals[i].gasDetails) {
+                            if (pendingWithdrawals[i].gasDetails.feeGasEstimate) {
+                                console.log('Sending fees');
+                                var RPC = require('../Nodes').RPCDirectory[pendingWithdrawals[i].type];
+                                if (RPC && RPC._initiateFeeTransfer) {
+                                    var result = await RPC._initiateFeeTransfer(pendingWithdrawals[i].txn.sender, pendingWithdrawals[i]);
+                                }
+                            }
+                        }
+                    }
+                } catch (ex) {
+                    await reSchedule(ex.message, job, 30, done);
+                }
+            }
+        }
+        await reSchedule(null, job, 30, done);
     });
 
     agenda.define('Check failed fee transactions and retry', async (job, done) => {
@@ -781,6 +833,8 @@ var start = async function () {
     await agenda.schedule('in 20 seconds', 'Handle Borrowers emi');
 
     await agenda.schedule('in 20 seconds', 'Check failed fee transactions and retry');
+
+    await agenda.schedule('in 40 seconds', 'Check stuck withdrawals');
 };
 
 start();
