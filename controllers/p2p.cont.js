@@ -189,6 +189,9 @@ const matchingHandler = async (listingId, sellerEmail, ownerUserId, requester, a
       .dividedBy(100)
       .toNumber();
     //deduct 0.125% from user wallet and send to escrow
+    if (cryptoCurrency == 'EST') {
+      fee = fee + amount;
+    }
     const sendStatus = await walletCont.send(sellerEmail, fee, modifiedFeeAddress, 'EST'); //let it transfer or incase error it will exit from here.
     if (!sendStatus.success) {
       throw sendStatus;
@@ -205,10 +208,11 @@ const matchingHandler = async (listingId, sellerEmail, ownerUserId, requester, a
       throw sendStatus;
     }
   }
-
-  const sendStatusO = await walletCont.send(sellerEmail, amount, modifiedEscAddress, cryptoCurrency); //let it transfer or incase error it will exit from here.
-  if (!sendStatusO.success) {
-    throw sendStatusO;
+  if (cryptoCurrency != 'EST') {
+    const sendStatusO = await walletCont.send(sellerEmail, amount, modifiedEscAddress, cryptoCurrency); //let it transfer or incase error it will exit from here.
+    if (!sendStatusO.success) {
+      throw sendStatusO;
+    }
   }
 
   //do this after sending to escrow;
