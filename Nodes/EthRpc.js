@@ -368,7 +368,11 @@ class EthRpc {
                 throw "Address not found for email " + email;
             }
             var history = await Withdrwals.find({
-                'txn.sender': address.data,
+                $or: [{
+                    'txn.sender': address.data
+                }, {
+                    'txn.sender': address.data.toString().toLowerCase()
+                }],
                 type: "ETH",
                 status: {
                     $ne: "Error"
