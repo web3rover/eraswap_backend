@@ -4,6 +4,7 @@ const request = require('request-promise');
 const Coins = require('../models/Coins');
 const mailHelper = require('../helpers/mailHelper');
 const RequestLog = require('../models/RequestLog');
+const Withdrawals = require('../models/Withdrawal');
 const Users = require('../models/Users');
 const config = require('../configs/config');
 const escrowCont = require('./escrow.cont');
@@ -209,6 +210,7 @@ const matchingHandler = async (listingId, sellerEmail, ownerUserId, requester, a
   if (!sendStatusO.success) {
     throw sendStatusO;
   }
+
   //do this after sending to escrow;
   const dataSTB = {
     cryptoCurrency: cryptoCurrency,
@@ -229,6 +231,13 @@ const matchingHandler = async (listingId, sellerEmail, ownerUserId, requester, a
     toAccount: node.getWeb3().eth.accounts[0],
     identifier: identifier,
   });
+
+  let withdrawal = sendStatusO.dbObject;
+  var dbObject = await Withdrawals.findById(withdrawal._id);
+  dbObject['p2pInfo'] = {
+    orderId: identifier,
+  };
+  await dbObject.save();
 
   //update agreement meta data
   return await node.callAPI('assets/updateAssetInfo', {
@@ -320,6 +329,19 @@ const change_status_paid = async id => {
   return data;
 };
 
+const onTxnConfirm = async id => {
+  const data = await node.callAPI('assets/updateAssetInfo', {
+    assetName: config.BLOCKCLUSTER.matchAssetName,
+    fromAccount: node.getWeb3().eth.accounts[0],
+    identifier: id,
+    public: {
+      txnConfirmed: true,
+    },
+  });
+
+  return data;
+};
+
 const finishDeal = async (id, record, item) => {
   if (record.wantsToSell) {
     //its a sell listing,
@@ -378,4 +400,5 @@ module.exports = {
   requesterListMatches,
   change_status_paid,
   finishDeal,
+  onTxnConfirm,
 };
