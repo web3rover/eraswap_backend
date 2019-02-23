@@ -117,8 +117,13 @@ class ESTRpc {
             if (address.error) {
                 throw "Address not found for email " + email;
             }
+            //User.find( { $or:[ {'_id':objId}, {'name':param}, {'nickname':param} ]},
             var history = await Withdrwals.find({
-                'txn.sender': address.data,
+                $or: [{
+                    'txn.sender': address.data
+                }, {
+                    'txn.sender': address.data.toString().toLowerCase()
+                }],
                 type: "EST",
                 status: {
                     $ne: "Error"
