@@ -123,7 +123,7 @@ const googleLogin = async code => {
       client_secret: config.SOCIAL.GOOGLE.CLIENT_SECRET,
       redirect_uri: config.SOCIAL.GOOGLE.REDIRECT_URI,
       grant_type: 'authorization_code',
-      code: code,
+      code: decodeURIComponent(code),
     },
     json: true,
   };
