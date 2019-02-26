@@ -92,7 +92,9 @@ class BTCRpc {
             var history = await Withdrwals.find({
                 'txn.sender': email,
                 type: "BTC",
-                status: { $ne: "Error" },
+                status: {
+                    $ne: "Error"
+                },
             });
             var list = [];
             for (var i = 0; i < history.length; i++) {
@@ -160,14 +162,16 @@ class BTCRpc {
                                             let addresses = outputs[j].addresses;
                                             for (var k = 0; k < addresses.length; k++) {
                                                 if (addresses[k] == addr) {
-                                                    op.push({
-                                                        timeStamp: +new Date(txn[i].confirmed),
-                                                        type: "receive",
-                                                        address: txn[i].inputs[0].addresses[0],
-                                                        amount: outputs[j].value / 1e8,
-                                                        status: txn[i].confirmations > 6 ? "Confirmed" : "Pending",
-                                                        txnHash: txn[i].hash,
-                                                    });
+                                                    if (txn[i].inputs[0].addresses) {
+                                                        op.push({
+                                                            timeStamp: +new Date(txn[i].confirmed),
+                                                            type: "receive",
+                                                            address: txn[i].inputs[0].addresses[0],
+                                                            amount: outputs[j].value / 1e8,
+                                                            status: txn[i].confirmations > 6 ? "Confirmed" : "Pending",
+                                                            txnHash: txn[i].hash,
+                                                        });
+                                                    }
                                                 }
                                             }
                                         }
