@@ -35,7 +35,8 @@ const resendVerification = async (email, host) => {
     const finalHTML = ejsTemplate({
       link: URL,
     });
-    await helper.SendMail({ to: user.email, subject: '[Eraswap] Activation Email', body: finalHTML });
+    let op = await helper.SendMail({ to: user.email, subject: '[Eraswap] Activation Email', body: finalHTML });
+    return op;
   } else {
     return { message: 'User not found!' };
   }
