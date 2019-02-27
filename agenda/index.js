@@ -815,7 +815,9 @@ var start = async function () {
                 }
             }
 
-            reSchedule(null, job, 60 * 60 * 24, done);
+            await agenda.schedule('in ' + 30 + ' minutes', job.attrs.name, job.attrs.data);
+            job.remove();
+            done();
         } catch (ex) {
             console.log(ex);
             reSchedule(ex, job, 10, done);
