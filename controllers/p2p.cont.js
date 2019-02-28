@@ -192,10 +192,10 @@ const matchingHandler = async (listingId, sellerEmail, ownerUserId, requester, a
     //deduct 0.125% from user wallet and send to escrow
     let feeVar = fee;
     if (cryptoCurrency == 'EST') {
-    //   fee = fee + amount;
-        feeVar = fee + amount;
+      //   fee = fee + amount;
+      feeVar = fee + amount;
     }
-    const sendStatus = await walletCont.send(sellerEmail, feeVar , modifiedFeeAddress, 'EST'); //let it transfer or incase error it will exit from here.
+    const sendStatus = await walletCont.send(sellerEmail, feeVar, modifiedFeeAddress, 'EST'); //let it transfer or incase error it will exit from here.
     if (cryptoCurrency == 'EST') {
       sendStatusO = sendStatus;
     }
@@ -234,7 +234,7 @@ const matchingHandler = async (listingId, sellerEmail, ownerUserId, requester, a
     finished: false,
     fee: fee,
     feeCoin: feeCoin,
-    createdAt: new Date(),
+    createdAt: Date.now(),
   };
   var identifier = shortid.generate();
   await node.callAPI('assets/issueSoloAsset', {
