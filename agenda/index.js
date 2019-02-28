@@ -621,7 +621,7 @@ var start = async function () {
                         orderType: 'borrow',
                     },
                 });
-                console.log("found", borrowingOrders.length, "lending orders");
+                console.log("found", borrowingOrders.length, "borrowing orders");
                 if (borrowingOrders.length > 0) {
                     var skip = [];
                     for (var i = 0; i < lendingOrders.length; i++) {
