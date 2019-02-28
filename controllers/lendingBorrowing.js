@@ -10,6 +10,7 @@ const LBOrders = require('../models/LBOrders');
 const BigNumber = require('bignumber.js');
 var Blockcluster = require('blockcluster');
 const shortid = require("shortid");
+const moment = require('moment');
 
 const node = new Blockcluster.Dynamo({
     locationDomain: config.BLOCKCLUSTER.host,
@@ -265,12 +266,23 @@ const getOrderBook = async (user) => {
             if (data[i].username == user.username) {
                 data[i]["selfOrder"] = true;
             }
+            data[i]["timeStamp"] = getTimeStamp(data[i]["timeStamp"]);
             data[i]["collateralAmount"] = data[i]["amount"] * 2;
             result.push(data[i]);
         }
         return result;
     } catch (ex) {
         console.log(ex);
+    }
+}
+
+const getTimeStamp = (date) => {
+    if(!date) return "";
+    var momentStr = moment(date).fromNow();
+    if (new Date(date).getDate() != new Date().getDate()) {
+        return new Date(date).toUTCString();
+    } else {
+        return momentStr;
     }
 }
 
