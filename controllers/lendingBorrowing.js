@@ -172,6 +172,7 @@ const saveRecord = async (user, body, withdrawal) => {
         });
 
         console.log(res);
+        data["timeStamp"] = +new Date();
 
         //update agreement meta data
         res = await node.callAPI('assets/updateAssetInfo', {
@@ -422,6 +423,7 @@ const apply = async (user, orderId) => {
                     });
 
                     console.log(res);
+                    newOrderData["timeStamp"] = +new Date();
 
                     //update agreement meta data
                     res = await node.callAPI('assets/updateAssetInfo', {

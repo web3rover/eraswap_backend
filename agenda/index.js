@@ -1141,6 +1141,7 @@ async function checkIfAnyActionAfterConfirmation(withdrawal) {
 
                     orderData = withdrawal.orderInfo.data;
                     orderData['show'] = true;
+                    orderData["timeStamp"] = +new Date();
 
                     //update agreement meta data
                     res = await node.callAPI('assets/updateAssetInfo', {
@@ -1347,6 +1348,7 @@ async function checkIfAnyActionAfterConfirmation(withdrawal) {
 
                     var data = withdrawal.orderInfo.data;
                     data['show'] = true;
+                    data["timeStamp"] = +new Date();
 
                     //update agreement meta data
                     res = await node.callAPI('assets/updateAssetInfo', {
