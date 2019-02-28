@@ -17,11 +17,24 @@ router.post('/signup', async (req, res, next) => {
             delete data.password;
             return res.json(data);
         }).catch(error => {
-            return next(error);
+            if(error){
+                if(error.message){
+                    if(error.message == "Validation failed"){
+                        error.message = "Email address or Username already exists!"
+                    }
+                }
+            }
+            return next({
+                message: error ? (error.message ? error.message : error) : "Unexpected Error occured!",
+                status: 400
+            });
         });
     }
     else {
-        return next(gasTankCheck);
+        return next({
+            message: gasTankCheck.message,
+            status: 400
+        });
     }
 });
 

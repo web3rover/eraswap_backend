@@ -117,7 +117,7 @@ const checkGasTank = async () => {
         return { result: true };
     } catch (ex) {
         console.log(ex);
-        return { result: false, error: ex };
+        return { result: false, message: ex ? (ex.message ? ex.message : ex) : "Unexpected error occured" };
     }
 }
 
