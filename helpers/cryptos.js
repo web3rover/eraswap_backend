@@ -1,8 +1,5 @@
 var ccxt = require('ccxt');
-var fs = require('fs');
 var _ = require('lodash');
-var CryptoJS = require('crypto-js');
-var rp = require('request-promise');
 
 const config = require('../configs/config');
 
@@ -11,41 +8,8 @@ let Kukoin = new ccxt.kucoin2({ verbose: false, ...config.keys.KUKOIN });
 let Bittrex = new ccxt.bittrex({ verbose: false, ...config.keys.BITTREX });
 let Polonix = new ccxt.poloniex({ verbose: false, ...config.keys.POLONIEX });
 let Binance = new ccxt.binance({ verbose: false, ...config.keys.BINANCE });
-// let Okex = new ccxt.okex({ verbose: false, ...config.keys.OKEX_V1 });
 
 const Exchanges = [Bittrex, Binance, Cryptopia, Polonix, Kukoin];
-// const Exchanges = [Binance];
-
-// const Kucoin = require('kucoin-api');
-
-// let kc = new Kucoin(config.keys.KUKOIN.apiKey, config.keys.KUKOIN.secret);
-
-// const kuCoinMineWithdrawals = async (coin, page = 0) => {
-//   return kc.getDepositAndWithdrawalRecords({
-//     symbol: coin,
-//     type: 'deposit',
-//     page: page,
-//   });
-// };
-
-// let kuCoinGetWithdrawals = coin => {
-//   return kuCoinMineWithdrawals(coin)
-//     .then(async data => {
-//       const totalResults = Number(data.data.total);
-//       const promiseNeeded = Math.ceil(totalResults / Number(data.data.limit));
-//       let resultData = [];
-//       let promiseArr = [];
-//       for (i = 0; i < promiseNeeded; i++) {
-//         const minedData = await kuCoinMineWithdrawals(coin, i + 1);
-//         resultData = resultData.concat(minedData.data.datas);
-//       }
-//       console.log(JSON.stringify(resultData));
-//       return resultData;
-//     })
-//     .catch(error => {
-//       console.log(error);
-//     });
-// };
 
 const getAllCurrency = async () => {
   let allCurs = [];
@@ -67,25 +31,7 @@ const getAllCurrency = async () => {
 const getDepositAddress = async (platform, symbol) => {
   for (let x in Exchanges) {
     let name = Exchanges[x];
-    // if (name.name.toLowerCase() == platform.toLowerCase() && name.name.toLowerCase() == 'okex') {
-    //   const path = '/api/account/v3/deposit/address?currency=' + symbol.toLowerCase();
-    //   const timestamp = new Date().toISOString();
-    //   const sign = CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA256(timestamp + 'GET' + path, config.keys.OKEX.secret));
-    //   var options = {
-    //     uri: 'https://www.okex.com' + path,
-    //     headers: {
-    //       'User-Agent': 'Request-Promise',
-    //       'OK-ACCESS-KEY': config.keys.OKEX.apiKey,
-    //       'OK-ACCESS-SIGN': sign,
-    //       'OK-ACCESS-TIMESTAMP': timestamp,
-    //       'OK-ACCESS-PASSPHRASE': config.keys.OKEX.passphrase,
-    //     },
-    //     json: true, // Automatically parses the JSON string in the response
-    //   };
 
-    //   const data = await rp(options);
-    //   return data[0];
-    // } else
     if (name.name.toLowerCase() == platform.toLowerCase()) {
       // await name.loadMarkets();
       let data;
@@ -150,118 +96,9 @@ const getExchangeVal = async (from, to) => {
   }
   return { [symbol]: allVals };
 };
-const getTransactionFee = async (orderId, symbol) => {
-  let sym = symbol.split('/').join('-');
-  const path = '/api/spot/v3/fills?order_id=' + orderId + '&instrument_id=' + sym;
-  const timestamp = new Date().toISOString();
-  const sign = CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA256(timestamp + 'GET' + path, config.keys.OKEX.secret));
-  var options = {
-    uri: 'https://www.okex.com' + path,
-    headers: {
-      'User-Agent': 'Request-Promise',
-      'OK-ACCESS-KEY': config.keys.OKEX.apiKey,
-      'OK-ACCESS-SIGN': sign,
-      'OK-ACCESS-TIMESTAMP': timestamp,
-      'OK-ACCESS-PASSPHRASE': 'saikat95',
-    },
-    json: true, // Automatically parses the JSON string in the response
-  };
-
-  const feeStruct = await rp(options);
-
-  let fee = 0;
-  feeStruct.map(i => {
-    fee = fee + Number(i.fee);
-  });
-  return fee;
-};
 const verifyTxn = async (dipositTxnId, tiMeFrom, platForm, symbol, amount) => {
   for (let x in Exchanges) {
     let name = Exchanges[x];
-    // if (name.name.toLowerCase() == platForm.toLowerCase() && name.name.toLowerCase() == 'okex') {
-    //   const path = '/api/account/v3/deposit/history/' + symbol.toLowerCase() + '?amount=' + amount;
-    //   const timestamp = new Date().toISOString();
-    //   const sign = CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA256(timestamp + 'GET' + path, config.keys.OKEX.secret));
-    //   var options = {
-    //     uri: 'https://www.okex.com' + path,
-    //     headers: {
-    //       'User-Agent': 'Request-Promise',
-    //       'OK-ACCESS-KEY': config.keys.OKEX.apiKey,
-    //       'OK-ACCESS-SIGN': sign,
-    //       'OK-ACCESS-TIMESTAMP': timestamp,
-    //       'OK-ACCESS-PASSPHRASE': config.keys.OKEX.passphrase,
-    //     },
-    //     json: true, // Automatically parses the JSON string in the response
-    //   };
-
-    //   return rp(options)
-    //     .then(function(reports) {
-    //       const a = reports
-    //         .map(i => {
-    //           return {
-    //             txid: i.txid,
-    //             currency: i.currency,
-    //             amount: i.amount,
-    //             status: i.status == 2 ? 'ok' : 'pending',
-    //           };
-    //         })
-    //         .filter(i => {
-    //           //check time also here && (new Date(i.timestamp) < new Date(tiMeFrom))
-    //           if ((dipositTxnId ? i.txid == dipositTxnId : true) && i.currency == symbol && i.amount == amount) {
-    //             return i;
-    //           }
-    //         });
-    //       return a;
-    //     })
-    //     .catch(function(err) {
-    //       // API call failed...
-    //       console.log(err);
-    //     });
-    // } else
-    // if (name.name.toLowerCase() == platForm.toLowerCase() && name.name.toLowerCase() == 'kucoin') {
-    //   try {
-    //     const kucoinDeposits = await kuCoinGetWithdrawals(symbol);
-    //     const a = kucoinDeposits
-    //       .map(i => {
-    //         // i={
-    //         //   address:"0xe4717d694c78bf8c76a52388c969eeebee384ea0"
-    //         //   amount:0.03504
-    //         //   coinType:"ETH"
-    //         //   confirmation:17
-    //         //   createdAt:1542972397000
-    //         //   fee:0
-    //         //   oid:"5bf7e3edb95e0273d50e7fd3"
-    //         //   outerWalletTxid:"0x36ec3aa8505d668df9ec8c8591ef08ddf16d8592f79da96887f8017890a100d2@0xe4717d694c78bf8c76a52388c969eeebee384ea0@eth"
-    //         //   remark:null
-    //         //   status:"SUCCESS"
-    //         //   type:"DEPOSIT"
-    //         //   updatedAt:1542972397000
-    //         // }
-    //         // add here :  && i.createdAt > tiMeFrom
-    //         if (i.type == 'DEPOSIT') {
-    //           return {
-    //             txid: i.outerWalletTxid,
-    //             currency: i.coinType,
-    //             amount: i.amount,
-    //             status: i.status == 'SUCCESS' ? 'ok' : 'pending',
-    //           };
-    //         }
-    //       })
-    //       .filter(i => {
-    //         if ((dipositTxnId ? i.txid == dipositTxnId : true) && i.currency == symbol && i.amount == amount) {
-    //           return i;
-    //         }
-    //       });
-    //     return a;
-    //   } catch (error_mapping) {
-    //     console.log(error_mapping);
-    //     return Promise.reject({
-    //       status: 400,
-    //       message: error_mapping.message || 'No Txn Found',
-    //       error: error_mapping,
-    //     });
-    //   }
-    // } else
 
     if (name.name.toLowerCase() == platForm.toLowerCase()) {
       // await name.loadMarkets();
@@ -313,24 +150,6 @@ const convertCurrency = async (symbol, platForm, fromSymbol, toSymbol, amount) =
 
         const curMar = await getCurrentMarket(platForm, symbol);
 
-        // for okex send the amount from wallet to spot A/c
-        // place the order in the usual way next with the existing function
-        // during verification step, if order closed, get the fee of TXN from the function getTransactionFee
-        // in send amount to user send that converted amount  to the wallet again
-        // transfer or start the withdrawal process [wont work with current api key, as my accounr not verified]
-        // if (name.name.toLowerCase() == 'okex') {
-        //   const sym = fromSymbol.toLowerCase() + '_usd';
-        //   const data = await name.private_post_funds_transfer({
-        //     symbol: sym, //eth_usd to transfer ETH
-        //     amount: amount, // an amount of 1 ETH is being transferred
-        //     // 1 = spot trading account, 3 = futures trading account, 6 = wallet account
-        //     from: 6, // from wallet
-        //     to: 1, // to spot
-        //   });
-        //   if (!data.result) {
-        //     return Promise.reject({ message: 'unable to transfer to the spot account' });
-        //   }
-        // }
         let toSymbolAmount;
         let side;
         if (name.name.toLowerCase() == 'cryptopia') {
@@ -368,23 +187,6 @@ const sendCurrency = async (platForm, address, amount, symbol, tag) => {
     if (name.name.toLowerCase() == platForm.toLowerCase()) {
       // await name.loadMarkets();
       try {
-        // const data={
-        //     info:"",
-        //     id:121212
-        // }
-        // if (name.name.toLowerCase() == 'okex') {
-        //   const sym = symbol.toLowerCase() + '_usd';
-        //   const data = await name.private_post_funds_transfer({
-        //     symbol: sym, //eth_usd to transfer ETH
-        //     amount: amount, // an amount of 1 ETH is being transferred
-        //     // 1 = spot trading account, 3 = futures trading account, 6 = wallet account
-        //     from: 1, // from spot
-        //     to: 6, // to wallet
-        //   });
-        //   if (!data.result) {
-        //     return Promise.reject({ message: 'unable to transfer to the spot account' });
-        //   }
-        // }
         if (name.name.toLowerCase() == 'kucoin') {
           const AllFees = name.fees;
           const fees = AllFees.funding.withdraw[symbol];
@@ -393,66 +195,6 @@ const sendCurrency = async (platForm, address, amount, symbol, tag) => {
           return data;
         }
 
-        // if (name.name.toLowerCase() == 'okex') {
-        //   const path = '/api/account/v3/withdrawal/fee?currency=' + symbol.toLowerCase();
-        //   const timestamp = new Date().toISOString();
-        //   const sign = CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA256(timestamp + 'GET' + path, config.keys.OKEX.secret));
-        //   var options = {
-        //     uri: 'https://www.okex.com' + path,
-        //     headers: {
-        //       'User-Agent': 'Request-Promise',
-        //       'OK-ACCESS-KEY': config.keys.OKEX.apiKey,
-        //       'OK-ACCESS-SIGN': sign,
-        //       'OK-ACCESS-TIMESTAMP': timestamp,
-        //       'OK-ACCESS-PASSPHRASE': config.keys.OKEX.passphrase,
-        //     },
-        //     json: true, // Automatically parses the JSON string in the response
-        //   };
-
-        //   const allFee = await rp(options);
-        //   const fee = allFee[0].min_fee;
-        //   const withdrawPath = '/api/account/v3/withdrawal';
-        //   const timestampV1 = new Date().toISOString();
-        //   const body = {
-        //     amount: amount.toString(),
-        //     currency: symbol.toLowerCase(),
-        //     destination: 4,
-        //     fee: fee.toString(),
-        //     to_address: address,
-        //     trade_pwd: config.keys.OKEX.password
-        //   };
-        //   console.log(JSON.stringify(body))
-        //   const withdrawSign = CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA256(timestampV1 + 'POST' + withdrawPath + JSON.stringify(body), config.keys.OKEX.secret));
-        //   var withdrawOptions = {
-        //     method: 'POST',
-        //     body: body,
-        //     uri: 'https://www.okex.com' + withdrawPath,
-        //     headers: {
-        //       'User-Agent': 'Request-Promise',
-        //       'OK-ACCESS-KEY': config.keys.OKEX.apiKey,
-        //       'OK-ACCESS-SIGN': withdrawSign,
-        //       'OK-ACCESS-TIMESTAMP': timestampV1,
-        //       'OK-ACCESS-PASSPHRASE': config.keys.OKEX.passphrase,
-        //       'content-type': 'application/json',
-        //     },
-        //     json: true, // Automatically parses the JSON string in the response
-        //   };
-        //   const sendingData = await rp(withdrawOptions);
-        //   if (sendingData.result) {
-        //     return {
-        //       witdrawn: sendingData.result,
-        //       id: sendingData.withdrawal_id,
-        //     };
-        //   } else {
-        //     return Promise.reject({
-        //       status: 400,
-        //       message: sendingData.error_code || 'Some Error Occured!',
-        //       error: sendingData,
-        //     });
-        //   }
-        //   // const data = await name.withdraw(symbol, amount, address, (tag = undefined), (params = {chargefee:fee,destination:4}));
-        //   //  return data;
-        // }
         const data = await name.withdraw(symbol, amount, address, (tag = undefined), (params = {}));
         return data;
       } catch (error) {
@@ -478,21 +220,7 @@ const verifyOrder = async (timeFrom, platForm, symbol, orderId, fromAmount, side
           params = { type: side.toUpperCase() };
         }
         const data = await name.fetchOrder(orderId, symbol, params);
-        // if(data.length){
-        //     const a =data.filter(i=>{
-        //         if(i.cost==amount){
-        //             return i;
-        //         }
-        //     });
-        //     return a;
-        // }
-        // if (data.status == 'closed' && name.name.toLowerCase() == 'okex') {
-        //   const fee = await getTransactionFee(orderId, symbol);
-        //   data.fee = {
-        //     cost: fee,
-        //     currency: symbol,
-        //   };
-        // }
+
         console.log(JSON.stringify(data));
         if (
           data.status == 'closed' &&
