@@ -180,28 +180,38 @@ router.post('/showInterest', (req, res, next) => {
                 Thank you!
               </body>`,
   };
-  const savableData = {
-    userId: req.user._id,
-    amount: req.body.askAmount,
-    message: req.body.specialMessage,
-    sellerEmail: req.body.wantsToBuy ? req.user.email : req.body.email,
-    sellerFeeCoin: req.body.feeCoin,
-  };
-
+  let fee;
   currencyCont
-    .recordRequest(req.body.uniqueIdentifier, req.body.wantsToBuy ? 'Buy' : 'Sell', savableData)
-    .then(loggedData => {
-      return currencyCont
-        .showInterestMailSender(req.body, message, req.user.email)
-        .then(data => {
-          return res.json(data);
+    .calculateFee(eq.body.feeCoin, req.body.askAmount, req.body.cryptoCur)
+    .then(fee => {
+      const savableData = {
+        userId: req.user._id,
+        amount: req.body.askAmount,
+        message: req.body.specialMessage,
+        sellerEmail: req.body.wantsToBuy ? req.user.email : req.body.email,
+        fee: fee,
+        sellerFeeCoin: req.body.feeCoin,
+      };
+
+      currencyCont
+        .recordRequest(req.body.uniqueIdentifier, req.body.wantsToBuy ? 'Buy' : 'Sell', savableData)
+        .then(loggedData => {
+          return currencyCont
+            .showInterestMailSender(req.body, message, req.user.email)
+            .then(data => {
+              return res.json(data);
+            })
+            .catch(error => {
+              return next(error);
+            });
         })
-        .catch(error => {
-          return next(error);
+        .catch(errorLogging => {
+          return next(errorLogging);
         });
     })
-    .catch(errorLogging => {
-      return next(errorLogging);
+    .catch(error => {
+      console.log(error);
+      return next({ status: 400, message: 'unable to calculate fee.' });
     });
 });
 
