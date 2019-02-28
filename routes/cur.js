@@ -173,7 +173,7 @@ router.get('/current_BTC', (req, res, next) => {
         const price = data[req.query.cryptoCur];
         return res.send({ data: price });
       } else {
-        return next('Error Occured');
+        return next({ status: 400, message: 'Error Occured' });
       }
     })
     .catch(error => {

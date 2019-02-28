@@ -10,7 +10,7 @@ const register = (body, host) => {
     const savable = new Users(body);
     savable.save(async (error, saved) => {
       if (error) {
-        return reject(error);
+        return reject({ status: 400, message: 'unknown error occurred, please try again later.' });
       }
       const URL = `${host}/activate?id=${savable._id}`;
       const ejsTemplate = await helper.getEJSTemplate({ fileName: 'email-verification.ejs' });
@@ -38,7 +38,7 @@ const resendVerification = async (email, host) => {
     let op = await helper.SendMail({ to: user.email, subject: '[Eraswap] Activation Email', body: finalHTML });
     return op;
   } else {
-    return { message: 'User not found!' };
+    return { status: 400, message: 'User not found!' };
   }
 };
 
