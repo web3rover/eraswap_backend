@@ -516,6 +516,7 @@ class ESTRpc {
     safeToWei(amount) {
         try {
             let safeAmount = amount;
+            console.log("safeAmount", safeAmount);
             let parts = safeAmount.toString().split('.');
             if (parts.length > 1) {
                 if (parts[1].toString().length > 18) {
