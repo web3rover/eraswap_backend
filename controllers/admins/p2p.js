@@ -20,7 +20,7 @@ const getListMatches = async params => {
     $limit: limit,
     $skip: skip,
     $sort: {
-      timestamp: -1,
+      timestamp: 1,
     },
   });
 

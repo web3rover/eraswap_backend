@@ -232,6 +232,7 @@ const matchingHandler = async (listingId, sellerEmail, ownerUserId, requester, a
     finished: false,
     fee: fee,
     feeCoin: feeCoin,
+    createdAt: new Date(),
   };
   var identifier = shortid.generate();
   await node.callAPI('assets/issueSoloAsset', {
