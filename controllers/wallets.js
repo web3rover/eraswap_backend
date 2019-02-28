@@ -1,4 +1,3 @@
-
 var fs = require('fs');
 var pdf = require('html-pdf');
 
@@ -54,7 +53,9 @@ const createWallets = async body => {
             owner: body._id
         }).save();
 
-        var users = await Users.find({ email: body.email });
+        var users = await Users.find({
+            email: body.email
+        });
         var user = {};
         if (users.length >= 1) {
             users[0].wallet.push(btcWalletDoc._id);
@@ -66,7 +67,9 @@ const createWallets = async body => {
         return user;
     } catch (ex) {
 
-        var users = await Users.find({ email: body.email });
+        var users = await Users.find({
+            email: body.email
+        });
         var user = {};
         if (users.length >= 1) {
             btcWalletDoc ? users[0].wallet.push(btcWalletDoc._id) : "";
@@ -88,19 +91,28 @@ const getHistory = async (email, crypto) => {
             if (history.message) {
                 throw history.message;
             }
-            return ({ history: history });
-        }
-        else {
-            return Promise.reject({ message: "RPC module not found!" });
+            return ({
+                history: history
+            });
+        } else {
+            console.log("RPC module not found!");
+            return Promise.reject({
+                message: "Unexpected error occured!"
+            });
         }
     } catch (ex) {
-        return Promise.reject({ message: ex.message });
+        return Promise.reject({
+            message: ex.message
+        });
     }
 }
 
 const checkGasTank = async () => {
     try {
-        var wallet = await Wallets.findOne({ gasTank: true, type: 'eth' });
+        var wallet = await Wallets.findOne({
+            gasTank: true,
+            type: 'eth'
+        });
         if (!wallet) {
             var ethWallet = await ethRpc._createGasTank();
 
@@ -114,10 +126,15 @@ const checkGasTank = async () => {
             }).save();
             console.log("Created new Gas Tank!");
         }
-        return { result: true };
+        return {
+            result: true
+        };
     } catch (ex) {
         console.log(ex);
-        return { result: false, message: ex ? (ex.message ? ex.message : ex) : "Unexpected error occured" };
+        return {
+            result: false,
+            message: ex ? (ex.message ? ex.message : ex) : "Unexpected error occured"
+        };
     }
 }
 
@@ -130,24 +147,33 @@ const getBalance = async (email, crypto) => {
             if (crypto === "BTC") {
                 balance = await rpcModule.getBalance(email);
                 balance = balance.error ? balance : "" + balance.result;
-            }
-            else {
+            } else {
                 var address = await getAddress(email, crypto);
                 if (!address.error)
                     balance = await rpcModule.getBalance(address);
                 else
-                    return Promise.reject({ message: address.error });
+                    return Promise.reject({
+                        message: address.error
+                    });
             }
             if (balance.error) {
-                return Promise.reject({ message: balance.error });
+                return Promise.reject({
+                    message: balance.error
+                });
             }
-            return ({ balance: balance });
-        }
-        else {
-            return Promise.reject({ message: "RPC module not found!" });
+            return ({
+                balance: balance
+            });
+        } else {
+            console.log("RPC module not found!");
+            return Promise.reject({
+                message: "Unexpected error occured!"
+            });
         }
     } catch (ex) {
-        return Promise.reject({ message: ex.message });
+        return Promise.reject({
+            message: ex.message
+        });
     }
 }
 
@@ -160,16 +186,23 @@ const getAddress = async (email, crypto) => {
         } catch (ex) {
             return ex;
         }
-    }
-    else {
-        return { error: "RPC module not found!" };
+    } else {
+        console.log("RPC module not found!");
+        return {
+            message: "Unexpected error occured!"
+        };
     }
 }
-function makeItPdf(finalHTML,username) {
-    return new Promise((resolve, reject) => {
-        var fileName = username+"privateKey.pdf";
 
-        pdf.create(finalHTML, { format: 'Tabloid', orientation: "landscape", timeout: '100000' }).toFile(fileName, function (err, res) {
+function makeItPdf(finalHTML, username) {
+    return new Promise((resolve, reject) => {
+        var fileName = username + "privateKey.pdf";
+
+        pdf.create(finalHTML, {
+            format: 'Tabloid',
+            orientation: "landscape",
+            timeout: '100000'
+        }).toFile(fileName, function (err, res) {
             if (err) return reject(err);
             console.log(res);
             const pdfData = fs.readFileSync(fileName);
@@ -179,24 +212,26 @@ function makeItPdf(finalHTML,username) {
         });
     })
 }
-const getPrivateKey = async (email, crypto,username) => {
+const getPrivateKey = async (email, crypto, username) => {
     var rpc = getRpcModule(crypto);
     if (rpc) {
         try {
             var address = await rpc.getPrivateKey(email);
             if (address && !address.error) {
-                const ejsTemplate = await helper.getEJSTemplate({ fileName: 'PrivateKey.ejs' });
+                const ejsTemplate = await helper.getEJSTemplate({
+                    fileName: 'PrivateKey.ejs'
+                });
                 const finalHTML = ejsTemplate({
                     key: address.data,
-                    address: await getAddress(email,crypto),
-                    currency:crypto,
-                    user:{
-                        name:username
+                    address: await getAddress(email, crypto),
+                    currency: crypto,
+                    user: {
+                        name: username
                     },
-                    date:new Date().toDateString()
+                    date: new Date().toDateString()
                 });
 
-                return await makeItPdf(finalHTML,username);
+                return await makeItPdf(finalHTML, username);
             } else {
                 return address.error;
             }
@@ -204,9 +239,11 @@ const getPrivateKey = async (email, crypto,username) => {
         } catch (ex) {
             return ex;
         }
-    }
-    else {
-        return { error: "RPC module not found!" };
+    } else {
+        console.log("RPC module not found!");
+        return {
+            message: "Unexpected error occured!"
+        };
     }
 }
 
@@ -217,30 +254,38 @@ const send = async (email, amount, receiver, crypto) => {
         var op = "";
         try {
             if (!receiver || !amount)
-                throw { message: "All parameters required!" };
+                throw {
+                    message: "All parameters required!"
+                };
             if (crypto === "BTC") {
                 op = await rpcModule.send(email, receiver, amount);
-            }
-            else {
+            } else {
                 var sender = await getAddress(email, crypto);
                 op = await rpcModule.send(sender, receiver, amount);
             }
             if (!op.error && op.success) {
                 return (op);
-            }
-            else {
-                return Promise.reject({ message: op.message ? op.message : op.error ? op.error : op });
+            } else {
+                return Promise.reject({
+                    message: op.message ? op.message : op.error ? op.error : op
+                });
             }
 
-        }
-        catch (ex) {
+        } catch (ex) {
             if (ex.code === "ENETUNREACH") {
-                return Promise.reject({ message: "connection to bitcoin node failed!" });
+                return Promise.reject({
+                    message: "connection to bitcoin node failed!"
+                });
             }
-            return Promise.reject({ message: ex.message });
+            return Promise.reject({
+                message: ex.message
+            });
         }
     } else {
-        return Promise.reject({ message: "RPC module not found!" });
+        console.log("RPC module not found!");
+        return Promise.reject({
+            message: "Unexpected error occured!"
+        });
     }
 }
 
@@ -248,7 +293,10 @@ const sendToEscrow = async (email, amount, crypto) => {
     var coin = "" + crypto;
     coin = coin.toLowerCase();
     try {
-        var escrow = await Wallets.findOne({ escrow: true, type: coin });
+        var escrow = await Wallets.findOne({
+            escrow: true,
+            type: coin
+        });
         if (escrow) {
             var op = await send(email, amount, escrow.publicKey, crypto);
             var withdrawal = await Withdrawals.findById(op.dbObject._id);
@@ -257,10 +305,13 @@ const sendToEscrow = async (email, amount, crypto) => {
                 op.dbObject = await withdrawal.save();
                 return op;
             }
-            return Promise.reject({ message: "Database entry for withdrawal not found!" });
-        }
-        else {
-            return Promise.reject({ message: "Escrow wallet for " + crypto + " not found." });
+            return Promise.reject({
+                message: "Database entry for withdrawal not found!"
+            });
+        } else {
+            return Promise.reject({
+                message: "Escrow wallet for " + crypto + " not found."
+            });
         }
     } catch (ex) {
         return ex;

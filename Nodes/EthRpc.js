@@ -184,6 +184,11 @@ class EthRpc {
                 dbObject: dbObject
             };
         } catch (ex) {
+            if(ex){
+                if(ex.message){
+                    ex.message = ex.message.toString().indexOf("address which can't be converted") != -1 ? "Invalid Address" : ex.message;
+                }
+            }
             return {
                 error: ex.message
             };
