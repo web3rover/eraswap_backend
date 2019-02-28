@@ -182,7 +182,7 @@ router.post('/showInterest', (req, res, next) => {
   };
   let fee;
   currencyCont
-    .calculateFee(eq.body.feeCoin, req.body.askAmount, req.body.cryptoCur)
+    .calculateFee(req.body.feeCoin, req.body.askAmount, req.body.cryptoCur)
     .then(fee => {
       const savableData = {
         userId: req.user._id,

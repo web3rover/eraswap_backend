@@ -153,7 +153,34 @@ const recordRequest = async (listingId, listingType, data) => {
     ).exec();
   }
 };
+const calculateFee = async (feeCoin, amount, baseCrypto) => {
+  let data = await Coins.findOne({ name: 'coinData', in: 'USD' })
+    .select({ cryptoCurrency: 1, EST: 1 })
+    .lean()
+    .exec();
+  if (!data[baseCrypto]) {
+    var capdata = await request('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?convert=USD&CMC_PRO_API_KEY=' + config.coinMktCapKey + '&symbol=' + baseCrypto);
+    var price = JSON.parse(capdata).data[baseCrypto].quote['USD']['price'];
+    // await Coins.update({ name: 'coinData', in: 'USD' }, { $set: {  [req.query.currency]: price,in:'USD' } }, { upsert: true }).exec();
+    data = { ...data, [baseCrypto]: price };
+  }
+  let fee;
+  if (feeCoin == 'EST') {
+    const fromCurVal = amount * data[baseCrypto];
+    const eqvEstVal = fromCurVal / data['EST'];
 
+    fee = new BigNumber(eqvEstVal)
+      .multipliedBy(config.P2P_FEE / 2)
+      .dividedBy(100)
+      .toNumber();
+  } else {
+    fee = new BigNumber(amount)
+      .multipliedBy(config.P2P_FEE)
+      .dividedBy(100)
+      .toNumber();
+  }
+  return fee;
+};
 //call this on match from the request received list
 const matchingHandler = async (listingId, sellerEmail, ownerUserId, requester, amount, cryptoCurrency, feeCoin) => {
   //send the amount to escrow wallet from seller wallet
@@ -396,6 +423,7 @@ const finishDeal = async (id, record, item) => {
 };
 
 module.exports = {
+  calculateFee,
   addListing,
   searchListing,
   getCount,
