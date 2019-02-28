@@ -48,17 +48,17 @@ const login = body => {
       .exec()
       .then(user => {
         if (!user) {
-          return reject(new Error('User Not found'));
+          return reject({ status: 400, message: 'User Not found' });
         }
         if (!user.activated) {
-          return reject(new Error('Account not activated'));
+          return reject({ status: 400, message: 'Account not activated' });
         }
         user.comparePassword(body.password, (error, isMatch) => {
           if (isMatch && !error) {
             var token = jwt.sign(user.toObject(), config.JWT.secret, { expiresIn: config.JWT.expire });
             return resolve({ token: token, user: user });
           } else {
-            return reject(new Error('wrong password'));
+            return reject({ status: 400, message: 'wrong password' });
           }
         });
       })
