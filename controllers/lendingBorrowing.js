@@ -25,7 +25,9 @@ const getFees = async (amount, collateralCoin) => {
         } else {
             fee = new BigNumber(amount).multipliedBy(config.LB_FEE).dividedBy(100);
         }
-        return {fee: fee};
+        return {
+            fee: fee
+        };
     } catch (ex) {
         return ex;
     }
@@ -247,6 +249,34 @@ const checkBalanceAndSendToEscrow = async (user, coin, collateral, amount, type)
     }
 }
 
+const getCollateralAmount = async (amount, coin, collateral) => {
+    try {
+        let coinAmtRequired = amount * 2;
+        var coinPrice = await getCoinRate(coin);
+        var collateralPrice = await getCoinRate(collateral);
+
+        var coinAmtReqInUSD = new BigNumber(coinPrice).multipliedBy(coinAmtRequired);
+        var collateralRequired = new BigNumber(coinAmtReqInUSD.toNumber()).dividedBy(collateralPrice);
+        let retVal = collateralRequired.toNumber();
+        let parts = retVal.toString().split('.');
+            if (parts.length > 1) {
+                if (parts[1].toString().length > 7) {
+                    retVal = retVal.toFixed(7);
+                }
+            }
+        return {
+            success: true,
+            collateral: retVal
+        };
+    } catch (ex) {
+        console.log(ex);
+        return {
+            success: false,
+            message: ex ? (ex.message ? ex.message : ex) : ""
+        }
+    }
+}
+
 const getOrderBook = async (user) => {
     try {
         let data = await node.callAPI("assets/search", {
@@ -267,7 +297,8 @@ const getOrderBook = async (user) => {
                 data[i]["selfOrder"] = true;
             }
             data[i]["timeStampStr"] = getTimeStamp(data[i]["timeStamp"]);
-            data[i]["collateralAmount"] = data[i]["amount"] * 2;
+            let collateralAmount = await getCollateralAmount(data[i]["amount"], data[i].coin, data[i].collateral);
+            data[i]["collateralAmount"] = collateralAmount.success ? collateralAmount.collateral : "";
             result.push(data[i]);
         }
         return result;
@@ -277,7 +308,7 @@ const getOrderBook = async (user) => {
 }
 
 const getTimeStamp = (date) => {
-    if(!date) return "";
+    if (!date) return "";
     var momentStr = moment(date).fromNow();
     if (new Date(date).getDate() != new Date().getDate()) {
         return new Date(date).toUTCString();
