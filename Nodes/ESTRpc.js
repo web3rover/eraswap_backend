@@ -93,7 +93,7 @@ class ESTRpc {
     async getBalance(address) {
         try {
             var bal = await this.tokenContract.methods.balanceOf(address).call();
-            bal = web3.utils.fromWei(bal.toString(), 'ether');
+            bal = new BigNumber(bal).dividedBy(1e8);
             return bal;
         } catch (ex) {
             //Returned error: no suitable peers available
@@ -188,7 +188,7 @@ class ESTRpc {
                                             op.push({
                                                 type: "receive",
                                                 address: resJSON[i].from,
-                                                amount: web3.utils.fromWei(resJSON[i].value),
+                                                amount: new BigNumber(resJSON[i].value).dividedBy(1e8),
                                                 status: resJSON[i].confirmations > 14 ? "Confirmed" : "Pending",
                                                 txnHash: resJSON[i].hash,
                                                 timeStamp: parseInt(resJSON[i].timeStamp) * 1000,
@@ -253,13 +253,10 @@ class ESTRpc {
                 };
             }
 
-            let amountOfTokenToDeduct = web3.utils.fromWei(
-                new BigNumber(21000)
+            let amountOfTokenToDeduct =  new BigNumber(21000)
                 .multipliedBy(gasPrice)
-                .plus(new BigNumber(gasPrice).multipliedBy(contractGasLimit).multipliedBy(2))
-                .toString(),
-                'ether'
-            );
+                .plus(new BigNumber(gasPrice).multipliedBy(contractGasLimit).multipliedBy(2)).dividedBy(1e8)
+                .toNumber();
 
             let estPrice = await this._getCoinRate('EST');
             let ethPrice = await this._getCoinRate('ETH');
@@ -301,13 +298,10 @@ class ESTRpc {
                 data: data
             });
 
-            let gasInEthForTokenTxn = web3.utils.fromWei(
-                new BigNumber(firstTxnGasLimit)
+            let gasInEthForTokenTxn = new BigNumber(firstTxnGasLimit)
                 .multipliedBy(gasPrice)
-                .plus(new BigNumber(gasPrice).multipliedBy(secondTxnGasLimit))
-                .toString(),
-                'ether'
-            );
+                .plus(new BigNumber(gasPrice).multipliedBy(secondTxnGasLimit)).dividedBy(1e8)
+                .toNumber();
 
             var withdrwal = new Withdrwals({
                 type: "EST",
@@ -524,11 +518,12 @@ class ESTRpc {
             console.log("safeAmount", safeAmount);
             let parts = safeAmount.toString().split('.');
             if (parts.length > 1) {
-                if (parts[1].toString().length > 18) {
-                    safeAmount = amount.toFixed(18);
+                if (parts[1].toString().length > 8) {
+                    safeAmount = amount.toFixed(8);
                 }
             }
-            return web3.utils.toWei(safeAmount.toString(), 'ether');
+            let retVal = new BigNumber(safeAmount).multipliedBy(1e8)
+            return retVal.toNumber();
         } catch (ex) {
             console.log(ex);
             return NaN;
