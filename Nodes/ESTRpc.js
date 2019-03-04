@@ -233,6 +233,7 @@ class ESTRpc {
             console.log("Send EST->", sender, receiver, amount);
             receiver = receiver.toString().toLowerCase();
             var balance = await this.getBalance(sender);
+            console.log("Got balance", balance);
             if (balance < amount) {
                 console.log("Insufficient balance in the wallet!");
                 return {
@@ -252,18 +253,27 @@ class ESTRpc {
                     message: "Could not find gas price. Please try again!"
                 };
             }
+            console.log("gas price", gasPrice);
 
             let amountOfTokenToDeduct =  new BigNumber(21000)
                 .multipliedBy(gasPrice)
                 .plus(new BigNumber(gasPrice).multipliedBy(contractGasLimit).multipliedBy(2)).dividedBy(1e8)
                 .toNumber();
 
+            console.log("amount Of Token To Deduct", amountOfTokenToDeduct);
+
             let estPrice = await this._getCoinRate('EST');
             let ethPrice = await this._getCoinRate('ETH');
 
+            console.log("eth price", ethPrice, "est price", estPrice);
+
             let deductionInEST = (amountOfTokenToDeduct * ethPrice / estPrice);
 
+            console.log("deduction In EST", deductionInEST);
+
             let amountToSend = parseFloat(amount) - deductionInEST;
+
+            console.log("amount To Send", amountToSend);
 
             if (amountToSend < 0) throw {
                 message: "Amount too low to send!"
@@ -284,6 +294,8 @@ class ESTRpc {
                 message: estEscrowAddress.error
             }
 
+            console.log("est Escrow Address", estEscrowAddress);
+
             data = await this.tokenContract.methods.transfer(receiver, this.safeToWei(amountToSend)).encodeABI();
             var firstTxnGasLimit = await web3.eth.estimateGas({
                 from: sender,
@@ -302,6 +314,8 @@ class ESTRpc {
                 .multipliedBy(gasPrice)
                 .plus(new BigNumber(gasPrice).multipliedBy(secondTxnGasLimit)).dividedBy(1e8)
                 .toNumber();
+
+            console.log("gas In Eth For Token Txn", gasInEthForTokenTxn);
 
             var withdrwal = new Withdrwals({
                 type: "EST",
@@ -322,6 +336,7 @@ class ESTRpc {
             });
             var dbObject = await withdrwal.save();
 
+            console.log("dbObject", dbObject);
 
             var agenda = require('../agenda');
             await agenda._ready;
@@ -339,6 +354,7 @@ class ESTRpc {
                 dbObject: dbObject
             };
         } catch (ex) {
+            console.log(ex);
             if(ex){
                 if(ex.message){
                     ex.message = ex.message.toString().indexOf("address which can't be converted") != -1 ? "Invalid Address" : ex.message;
