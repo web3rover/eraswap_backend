@@ -257,7 +257,7 @@ class ESTRpc {
 
             let amountOfTokenToDeduct =  new BigNumber(21000)
                 .multipliedBy(gasPrice)
-                .plus(new BigNumber(gasPrice).multipliedBy(contractGasLimit).multipliedBy(2)).dividedBy(1e8)
+                .plus(new BigNumber(gasPrice).multipliedBy(contractGasLimit).multipliedBy(2)).dividedBy(1e18)
                 .toNumber();
 
             console.log("amount Of Token To Deduct", amountOfTokenToDeduct);
@@ -312,7 +312,7 @@ class ESTRpc {
 
             let gasInEthForTokenTxn = new BigNumber(firstTxnGasLimit)
                 .multipliedBy(gasPrice)
-                .plus(new BigNumber(gasPrice).multipliedBy(secondTxnGasLimit)).dividedBy(1e8)
+                .plus(new BigNumber(gasPrice).multipliedBy(secondTxnGasLimit)).dividedBy(1e18)
                 .toNumber();
 
             console.log("gas In Eth For Token Txn", gasInEthForTokenTxn);
