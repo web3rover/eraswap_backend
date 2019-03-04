@@ -815,7 +815,7 @@ var start = async function () {
                 }
             }
 
-            await agenda.schedule('in ' + 30 + ' minutes', job.attrs.name, job.attrs.data);
+            await agenda.schedule('in 1 day', job.attrs.name, job.attrs.data);
             job.remove();
             done();
         } catch (ex) {
