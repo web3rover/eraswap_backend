@@ -1,15 +1,24 @@
 {
-	"apps" : [{
-	  "name"        : "eraswap_backend",
-	  "script"      : "./bin/www",
-	  "watch"       : true,
-	  "env": {
-		"ENV": "dev"
-	  },
-	  "env_production" : {
-         "ENV": "prod",
-				 "PORT":7000,
-				 "FRONTEND_HOST":"http://18.220.230.245:3000"
-	  }
-	}]
-  }
+  "apps": [
+    {
+      "name": "eraswap_backend",
+      "script": "./bin/www",
+      "env": {
+        "ENV": "dev"
+      },
+      "env_production": {
+        "ENV": "prod",
+        "PORT": 7000,
+        "FRONTEND_HOST": "http://ec2-18-220-230-245.us-east-2.compute.amazonaws.com:3000",
+        "MONGO_URL": "mongodb://saikatharryc:saikat95@ds129720.mlab.com:29720/test2",
+        "G_RED_URI": "http://ec2-18-220-230-245.us-east-2.compute.amazonaws.com:3000/login",
+        "coinMktCapKey": "740a7f8a-5f64-442a-84bd-f4f6dd03a9d1",
+        "ETHERSCAN_URL": "http://api-ropsten.etherscan.io/api",
+        "BLOCKCLUSTER_INSTANCEID": "kojhabcq",
+        "BLOCKCLUSTER_HOST": "app-sf2.blockcluster.io",
+        "JWT_SEC": "!@eraswap@981q",
+        "cryptrPassword": "!@privateKeys@3456"
+      }
+    }
+  ]
+}
