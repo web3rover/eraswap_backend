@@ -194,11 +194,15 @@ const converTdata = async (symbol, id, platForm, fromSymbol, toSymbol, amount, p
       .dividedBy(100)
       .toNumber();
     const depositAdd = await escrrows.getDepositAddress('EST');
-    const sendStatus = await wallets.send(userEmail, fee, depositAdd, 'EST');
-    if (!sendStatus.success) {
-      throw sendStatus;
+    try {
+      const sendStatus = await wallets.send(userEmail, fee, depositAdd, 'EST');
+      if (!sendStatus.success) {
+        throw sendStatus;
+      }
+      console.log(sendStatus); //maybe log this or something
+    } catch (error) {
+      console.log(error);
     }
-    console.log(sendStatus); //maybe log this or something
     placableAmt = amount;
     //deduct 25% from user wallet and send to escrow
   } else if (!txnData.feePaid) {
