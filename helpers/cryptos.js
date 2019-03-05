@@ -11,6 +11,14 @@ let Binance = new ccxt.binance({ verbose: false, ...config.keys.BINANCE });
 
 const Exchanges = [Bittrex, Binance, Cryptopia, Polonix];
 
+const truncateDecimals = (number, digits) => {
+  var multiplier = Math.pow(10, digits),
+    adjustedNum = Number(number) * multiplier,
+    truncatedNum = Math[adjustedNum < 0 ? 'ceil' : 'floor'](adjustedNum);
+
+  return truncatedNum / multiplier;
+};
+
 const getAllCurrency = async () => {
   let allCurs = [];
   for (ele of Exchanges) {
@@ -123,8 +131,9 @@ const verifyTxn = async (dipositTxnId, tiMeFrom, platForm, symbol, amount) => {
         //         }
         //     }
         // ]
+
         const a = txnData.filter(i => {
-          if ((dipositTxnId ? i.txid == dipositTxnId : true) && i.currency == symbol && i.amount.toFixed(5) == Number(amount).toFixed(5)) {
+          if ((dipositTxnId ? i.txid == dipositTxnId : true) && i.currency == symbol && truncateDecimals(i.amount, 6) == truncateDecimals(amount, 6)) {
             return i;
           }
         });
