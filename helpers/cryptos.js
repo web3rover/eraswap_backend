@@ -124,7 +124,7 @@ const verifyTxn = async (dipositTxnId, tiMeFrom, platForm, symbol, amount) => {
         //     }
         // ]
         const a = txnData.filter(i => {
-          if ((dipositTxnId ? i.txid == dipositTxnId : true) && i.currency == symbol && i.amount == amount) {
+          if ((dipositTxnId ? i.txid == dipositTxnId : true) && i.currency == symbol && i.amount.toFixed(5) == Number(amount).toFixed(5)) {
             return i;
           }
         });
