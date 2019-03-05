@@ -51,7 +51,7 @@ module.exports = {
   PLATFORM_FEE: process.env.PLATFORM_FEE || 0.5,
   LB_FEE: process.env.LB_FEE || 0.25,
   P2P_FEE: process.env.P2P_FEE || 0.25,
-  EST_IN_ETH: process.env.EST_IN_ETH || 0.00005804, //in eth
+  EST_IN_ETH: process.env.EST_IN_ETH || 0.000081, //in eth
   coinMktCapKey: process.env.coinMktCapKey || 'd5d13fac-ccfd-49d6-9d1b-8301920fe0f6',
   NODES: {
     btc: {
