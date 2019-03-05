@@ -69,7 +69,7 @@ module.exports = {
     est: {
       host: process.env.EST_HOST || '13.233.168.86',
       port: process.env.EST_PORT || '8545',
-      contractAddress: process.env.EST_CONTRACT || '0x722dd3f80bac40c951b51bdd28dd19d435762180',
+      contractAddress: process.env.EST_CONTRACT || '0x3e4a9ac3ce3796e7a1d4ad4dcf746217c4a8f7e6',
     },
   },
   SOCIAL: {

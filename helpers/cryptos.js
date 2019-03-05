@@ -9,7 +9,7 @@ let Bittrex = new ccxt.bittrex({ verbose: false, ...config.keys.BITTREX });
 let Polonix = new ccxt.poloniex({ verbose: false, ...config.keys.POLONIEX });
 let Binance = new ccxt.binance({ verbose: false, ...config.keys.BINANCE });
 
-const Exchanges = [Bittrex, Binance, Cryptopia, Polonix, Kukoin];
+const Exchanges = [Bittrex, Binance, Cryptopia, Polonix];
 
 const getAllCurrency = async () => {
   let allCurs = [];
