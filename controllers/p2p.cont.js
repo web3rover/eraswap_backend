@@ -208,6 +208,7 @@ const matchingHandler = async (listingId, sellerEmail, ownerUserId, requester, a
     data = { ...data, [cryptoCurrency]: price };
   }
   let sendStatusO;
+  let amountReceived;
   if (feeCoin == 'EST') {
     const fromCurVal = amount * data[cryptoCurrency];
     const eqvEstVal = fromCurVal / data['EST'];
@@ -223,11 +224,13 @@ const matchingHandler = async (listingId, sellerEmail, ownerUserId, requester, a
       feeVar = fee + amount;
     }
     const sendStatus = await walletCont.send(sellerEmail, feeVar, modifiedFeeAddress, 'EST'); //let it transfer or incase error it will exit from here.
-    if (cryptoCurrency == 'EST') {
-      sendStatusO = sendStatus;
-    }
     if (!sendStatus.success) {
       throw sendStatus;
+    }
+    amountReceived = sendStatus.dbObject.txn.amountReceived;
+    if (cryptoCurrency == 'EST') {
+      sendStatusO = sendStatus;
+      amountReceived = amountReceived - fee;
     }
   } else {
     // 0.25% deduct and place order
@@ -247,6 +250,7 @@ const matchingHandler = async (listingId, sellerEmail, ownerUserId, requester, a
     if (!sendStatusO.success) {
       throw sendStatusO;
     }
+    amountReceived = sendStatusO.dbObject.txn.amountReceived;
   }
 
   //do this after sending to escrow;
@@ -261,6 +265,7 @@ const matchingHandler = async (listingId, sellerEmail, ownerUserId, requester, a
     finished: false,
     fee: fee,
     feeCoin: feeCoin,
+    amountReceived: amountReceived,
     createdAt: Date.now(),
   };
   var identifier = shortid.generate();
@@ -389,7 +394,7 @@ const finishDeal = async (id, record, item) => {
       .select('email')
       .exec();
     const buyeraddress = await walletCont.getAddress(buyeremail.email, record.cryptoCur);
-    const sendStatusEs = await escrowCont.send(record.cryptoCur, buyeraddress, item.amount); //send it
+    const sendStatusEs = await escrowCont.send(record.cryptoCur, buyeraddress, item.amountReceived); //send amount received
     if (!sendStatusEs.success) {
       throw sendStatusEs;
     }
