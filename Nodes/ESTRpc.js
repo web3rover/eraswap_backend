@@ -532,6 +532,8 @@ class ESTRpc {
         try {
             let safeAmount = amount;
             console.log("safeAmount", safeAmount);
+            if(!amount)
+                return NaN;
             let parts = safeAmount.toString().split('.');
             if (parts.length > 1) {
                 if (parts[1].toString().length > 8) {

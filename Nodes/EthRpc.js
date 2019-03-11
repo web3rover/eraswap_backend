@@ -552,6 +552,8 @@ class EthRpc {
     safeToWei(amount) {
         try {
             console.log("safeToWei", amount);
+            if(!amount)
+                return NaN;
             let safeAmount = amount;
             let parts = safeAmount.toString().split('.');
             if (parts.length > 1) {
