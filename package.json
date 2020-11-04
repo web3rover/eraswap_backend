@@ -41,7 +41,7 @@
     "jsonwebtoken": "^8.3.0",
     "keythereum": "^1.0.4",
     "kucoin-api": "0.0.3",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.19",
     "moment": "^2.22.2",
     "mongoose": "^5.3.5",
     "mongoose-beautiful-unique-validation": "^7.1.1",
