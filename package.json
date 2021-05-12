@@ -45,7 +45,7 @@
     "moment": "^2.22.2",
     "mongoose": "^5.3.5",
     "mongoose-beautiful-unique-validation": "^7.1.1",
-    "nodemailer": "^4.6.8",
+    "nodemailer": "^6.4.16",
     "ololog": "^1.1.113",
     "request": "^2.88.0",
     "request-promise": "^4.2.2",
