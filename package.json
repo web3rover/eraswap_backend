@@ -37,7 +37,7 @@
     "express": "^4.16.4",
     "express-jwt": "^5.3.1",
     "helmet": "^3.14.0",
-    "html-pdf": "^2.2.0",
+    "html-pdf": "^3.0.1",
     "jsonwebtoken": "^8.3.0",
     "keythereum": "^1.0.4",
     "kucoin-api": "0.0.3",
