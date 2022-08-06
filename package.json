@@ -43,7 +43,7 @@
     "kucoin-api": "0.0.3",
     "lodash": "^4.17.11",
     "moment": "^2.22.2",
-    "mongoose": "^5.3.5",
+    "mongoose": "^5.7.5",
     "mongoose-beautiful-unique-validation": "^7.1.1",
     "nodemailer": "^4.6.8",
     "ololog": "^1.1.113",
