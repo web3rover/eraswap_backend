@@ -34,7 +34,7 @@
     "cryptr": "^4.0.2",
     "ejs": "^2.6.1",
     "eth-lightwallet": "^3.0.1",
-    "express": "^4.16.4",
+    "express": "^4.17.3",
     "express-jwt": "^5.3.1",
     "helmet": "^3.14.0",
     "html-pdf": "^2.2.0",
